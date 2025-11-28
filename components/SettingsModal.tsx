@@ -659,29 +659,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     )}
                 </CollapsibleSection>
-
-                {/* Summarize Prompt Settings */}
-                <CollapsibleSection 
-                    title={t('settings.summarize_prompt', lang)}
-                    rightElement={
-                         <button 
-                            onClick={(e) => { e.stopPropagation(); setLocalSettings({ ...localSettings, summarizePrompt: t('system.summarize', lang) }); }}
-                            className="text-xs text-blue-500 hover:underline"
-                         >
-                            {t('action.reset_default', lang)}
-                         </button>
-                    }
-                >
-                    <div>
-                        <textarea 
-                           value={localSettings.summarizePrompt || ''}
-                           onChange={(e) => setLocalSettings({ ...localSettings, summarizePrompt: e.target.value })}
-                           className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none h-24 resize-y"
-                           placeholder="Enter custom summarization prompt..."
-                        />
-                        <p className="text-[10px] text-gray-400 mt-1">Use <code>{'{lang}'}</code> as a placeholder for the current language.</p>
-                    </div>
-                </CollapsibleSection>
              </div>
           )}
 
