@@ -2,8 +2,8 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Message, Role, Language, TextWrappingMode } from '../types';
-import { User, AlertCircle, Copy, Check, Edit2, Trash2, RefreshCw, X, Save } from 'lucide-react';
+import { Message, Role, Language } from '../types';
+import { Bot, User, AlertCircle, Copy, Check, Edit2, Trash2, RefreshCw, X, Save } from 'lucide-react';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
@@ -14,8 +14,6 @@ interface ChatInterfaceProps {
   onDeleteMessage: (id: string) => void;
   onRegenerate: (id: string) => void;
   language: Language;
-  fontSize: number;
-  textWrapping: TextWrappingMode;
 }
 
 const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, className?: string, lang: Language }) => {
@@ -66,9 +64,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onEditMessage,
   onDeleteMessage,
   onRegenerate,
-  language,
-  fontSize,
-  textWrapping
+  language
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -106,15 +102,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
     if (e.key === 'Escape') {
       cancelEditing();
-    }
-  };
-
-  const getWrappingClass = () => {
-    switch (textWrapping) {
-      case 'forced': return 'whitespace-pre-wrap break-all';
-      case 'auto': return 'whitespace-normal break-words';
-      case 'default':
-      default: return 'whitespace-pre-wrap break-words';
     }
   };
 
@@ -175,34 +162,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, msg)}
-                      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit"
-                      rows={Math.max(1, editText.split('\n').length)}
-                      style={{ fontSize: `${fontSize}px` }}
+                      className="w-full bg-black/5 dark:bg-black/20 text-gray-900 dark:text-white rounded p-2 text-sm outline-none border border-gray-300 dark:border-white/20 focus:border-blue-500 dark:focus:border-white/50 resize-none"
+                      rows={Math.min(10, Math.max(2, editText.split('\n').length))}
                       autoFocus
                     />
                     <div className="flex justify-end gap-2 mt-2">
-                       <button 
-                         onClick={cancelEditing} 
-                         className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
-                             msg.role === Role.USER 
-                             ? 'bg-white/20 text-white hover:bg-white/30' 
-                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400'
-                         }`}
-                         title={t('action.cancel', language)}
-                       >
-                         <X className="w-5 h-5 md:w-4 md:h-4"/>
-                       </button>
-                       <button 
-                         onClick={() => saveEdit(msg)} 
-                         className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
-                            msg.role === Role.USER 
-                            ? 'bg-white/20 text-white hover:bg-white/30' 
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-green-500 dark:hover:text-green-400'
-                         }`}
-                         title={t('action.confirm', language)}
-                       >
-                         <Save className="w-5 h-5 md:w-4 md:h-4"/>
-                       </button>
+                       <button onClick={cancelEditing} className="p-1 text-gray-500 dark:text-gray-300 hover:text-black dark:hover:text-white"><X className="w-4 h-4"/></button>
+                       <button onClick={() => saveEdit(msg)} className="p-1 text-green-500 dark:text-green-300 hover:text-green-700 dark:hover:text-green-100"><Save className="w-4 h-4"/></button>
                     </div>
                   </div>
                 ) : (
@@ -213,10 +179,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <span>{msg.text}</span>
                       </div>
                     ) : (
-                      <div 
-                        className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`}
-                        style={{ fontSize: `${fontSize}px` }}
-                      >
+                      <div className="prose prose-sm max-w-none leading-relaxed break-words dark:prose-invert">
                         <ReactMarkdown
                           components={{
                             code({node, className, children, ...props}) {
@@ -241,7 +204,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
               
               {/* Meta & Actions Row */}
-              <div className="flex items-center gap-2 mt-1 px-1 h-8">
+              <div className="flex items-center gap-2 mt-1 px-1 h-5">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500">
                   {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -255,29 +218,29 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 {/* Actions (Visible on Hover or Editing) */}
                 {!isLoading && editingId !== msg.id && (
-                  <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                  <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity`}>
                     <button 
                       onClick={() => startEditing(msg)} 
-                      className="p-4 md:p-1 text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 rounded transition-colors" 
+                      className="p-1 text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 rounded" 
                       title={t('action.edit', language)}
                     >
-                      <Edit2 className="w-5 h-5 md:w-3 md:h-3" />
+                      <Edit2 className="w-3 h-3" />
                     </button>
                     
                     <button 
                       onClick={() => onRegenerate(msg.id)} 
-                      className="p-4 md:p-1 text-gray-400 hover:text-green-500 dark:text-gray-500 dark:hover:text-green-400 rounded transition-colors" 
+                      className="p-1 text-gray-400 hover:text-green-500 dark:text-gray-500 dark:hover:text-green-400 rounded" 
                       title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}
                     >
-                      <RefreshCw className="w-5 h-5 md:w-3 md:h-3" />
+                      <RefreshCw className="w-3 h-3" />
                     </button>
 
                     <button 
                       onClick={() => onDeleteMessage(msg.id)} 
-                      className="p-4 md:p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-colors" 
+                      className="p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded" 
                       title={t('action.delete', language)}
                     >
-                      <Trash2 className="w-5 h-5 md:w-3 md:h-3" />
+                      <Trash2 className="w-3 h-3" />
                     </button>
                   </div>
                 )}

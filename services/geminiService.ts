@@ -145,19 +145,10 @@ export class GeminiService {
     newMessage: string,
     systemInstruction: string | undefined,
     generationConfig: GenerationConfig,
-    onChunk?: (text: string) => void,
-    abortSignal?: AbortSignal
+    onChunk?: (text: string) => void
   ): Promise<{ text: string, usedKeyIndex: number }> {
     const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
     let attempts = 0;
-
-    // Filter history to strictly valid messages
-    const validHistory = history
-      .filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError)
-      .map(msg => ({
-        role: msg.role === Role.USER ? 'user' : 'model',
-        parts: [{ text: msg.text }]
-      }));
 
     while (attempts < maxRetries) {
       let apiKey = "";
@@ -182,7 +173,10 @@ export class GeminiService {
         const client = ai.chats.create({
           model: modelId,
           config: commonConfig,
-          history: validHistory
+          history: history.map(msg => ({
+            role: msg.role === Role.USER ? 'user' : 'model',
+            parts: [{ text: msg.text }]
+          }))
         });
 
         // Handle Streaming
@@ -190,9 +184,6 @@ export class GeminiService {
           const resultStream = await client.sendMessageStream({ message: newMessage });
           let fullText = '';
           for await (const chunk of resultStream) {
-            if (abortSignal?.aborted) {
-                break;
-            }
             const chunkText = (chunk as GenerateContentResponse).text;
             if (chunkText) {
               fullText += chunkText;
@@ -215,9 +206,6 @@ export class GeminiService {
         }
 
       } catch (error: any) {
-        if (abortSignal?.aborted) {
-             throw new Error("Aborted by user");
-        }
         console.error("API Call failed with key", apiKey.slice(-4), error);
 
         const isRateLimit = error.message?.includes('429') || error.status === 429;
