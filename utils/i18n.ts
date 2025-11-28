@@ -1,6 +1,5 @@
 
 
-
 import { Language } from '../types';
 
 type Translations = {
@@ -38,6 +37,7 @@ const translations: Translations = {
     'action.add_prompt': 'Add System Prompt',
     'action.download_json': 'Download JSON',
     'action.load_json': 'Load JSON',
+    'action.summarize': 'Summarize Chat',
     'input.placeholder': 'Ask anything...',
     'input.no_keys': 'Configure at least one active API key in settings...',
     'input.model_placeholder': 'Select or type model name...',
@@ -78,6 +78,8 @@ const translations: Translations = {
     'msg.fetch_success': 'models fetched successfully!',
     'msg.fetch_no_models': 'Fetched successfully but no compatible models found.',
     'msg.fetch_error': 'Error fetching models. See console for details.',
+    'msg.summarize_prompt': 'Summarize the following conversation into a concise title within 10 characters. Return only the title text.',
+    'msg.summarize_error': 'Failed to summarize chat.',
     'error.load_file': 'Failed to load file.',
     'success.import': 'Settings imported successfully!',
     'theme.light': 'Day',
@@ -119,6 +121,7 @@ const translations: Translations = {
     'action.add_prompt': '添加系统提示词',
     'action.download_json': '下载 JSON',
     'action.load_json': '加载 JSON',
+    'action.summarize': '总结对话',
     'input.placeholder': '输入你想问的...',
     'input.no_keys': '请先在设置中配置至少一个有效的API密钥...',
     'input.model_placeholder': '选择或输入模型名称...',
@@ -159,6 +162,8 @@ const translations: Translations = {
     'msg.fetch_success': '个模型获取成功！',
     'msg.fetch_no_models': '获取成功，但未找到兼容的模型。',
     'msg.fetch_error': '获取模型失败，请检查控制台。',
+    'msg.summarize_prompt': '请将以下对话总结为一个简短的标题，限制在10个字以内。仅返回标题，不要包含其他内容。',
+    'msg.summarize_error': '总结对话失败。',
     'error.load_file': '加载文件失败。',
     'success.import': '配置导入成功！',
     'theme.light': '白天',

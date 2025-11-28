@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square } from 'lucide-react';
+import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession, TextWrappingMode } from './types';
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   // UI State
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -230,22 +232,13 @@ const App: React.FC = () => {
       
       const currentSession = prevSessions[sessionIndex];
       
-      // Auto-title logic for new chats based on first user message
-      let newTitle = currentSession.title;
-      if (messages.length > 0) {
-         const firstUserMsg = messages.find(m => m.role === Role.USER);
-         if (firstUserMsg) {
-             const defaultTitle = t('msg.new_chat_title', settings.language);
-             if (currentSession.title === defaultTitle || currentSession.title === 'New Chat' || currentSession.title === '新对话') {
-                 newTitle = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
-             }
-         }
-      }
-
+      // Auto-title logic removed from here as we use explicit summarization or manual rename
+      // but if title is default 'New Chat' and we have messages, we could auto-title (optional)
+      // For now, keeping title stable unless summarized.
+      
       const updatedSession = { 
           ...currentSession, 
           messages: messages,
-          title: newTitle 
       };
 
       const newSessions = [...prevSessions];
@@ -536,6 +529,40 @@ const App: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleSummarize = async () => {
+    if (messages.length === 0 || !geminiService) return;
+    
+    setIsSummarizing(true); 
+
+    try {
+        const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
+        const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
+        
+        // Use a non-streaming call effectively by ignoring chunks
+        // Pass empty history to avoid context duplication issues
+        const { text } = await geminiService.streamChatResponse(
+            settings.model,
+            [], // Empty history
+            prompt,
+            undefined, 
+            settings.generation
+        );
+        
+        const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, ''); // Clean up quotes and trailing dot
+        if (newTitle) {
+            setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
+        } else {
+             throw new Error("Empty response");
+        }
+
+    } catch (error) {
+        alert(t('msg.summarize_error', settings.language));
+        console.error(error);
+    } finally {
+        setIsSummarizing(false);
+    }
+  };
+
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
 
@@ -744,6 +771,15 @@ const App: React.FC = () => {
                    >
                      {currentSessionTitle}
                    </h1>
+                   
+                   <button 
+                     onClick={handleSummarize}
+                     disabled={isSummarizing || messages.length === 0}
+                     className="p-1.5 text-gray-400 hover:text-blue-500 dark:text-gray-500 dark:hover:text-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                     title={t('action.summarize', settings.language)}
+                   >
+                     {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4" />}
+                   </button>
               </div>
           </header>
 
@@ -757,6 +793,14 @@ const App: React.FC = () => {
                     <span className="font-bold text-lg dark:text-white truncate">
                         {currentSessionTitle}
                     </span>
+                    <button 
+                     onClick={handleSummarize}
+                     disabled={isSummarizing || messages.length === 0}
+                     className="p-1 text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                     title={t('action.summarize', settings.language)}
+                   >
+                     {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4" />}
+                   </button>
                 </div>
             </div>
             <div className="flex gap-1 flex-shrink-0 ml-2">
