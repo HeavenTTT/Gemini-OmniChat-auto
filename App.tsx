@@ -156,7 +156,7 @@ const App: React.FC = () => {
     const newId = uuidv4();
     const newSession: ChatSession = {
       id: newId,
-      title: t('msg.new_chat_title', settings.language),
+      title: 'New Chat',
       messages: [],
       createdAt: Date.now()
     };
@@ -206,9 +206,7 @@ const App: React.FC = () => {
       if (messages.length > 0) {
          const firstUserMsg = messages.find(m => m.role === Role.USER);
          if (firstUserMsg) {
-             const defaultTitle = t('msg.new_chat_title', settings.language);
-             // If title is "New Chat" (in any language) or empty
-             if (currentSession.title === defaultTitle || currentSession.title === 'New Chat' || currentSession.title === '新对话') {
+             if (currentSession.title === 'New Chat') {
                  newTitle = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
              }
          }
@@ -373,7 +371,7 @@ const App: React.FC = () => {
     const newId = uuidv4();
     const newSession: ChatSession = {
       id: newId,
-      title: t('msg.new_chat_title', settings.language),
+      title: 'New Chat',
       messages: [],
       createdAt: Date.now()
     };
@@ -473,10 +471,10 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
-      <div className="flex w-full h-full bg-transparent text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <div className="flex w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:border-gray-800 dark:from-gray-900 dark:to-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
         
         {/* Sidebar (Desktop) */}
-        <aside className="hidden md:flex flex-col w-72 bg-white/40 dark:bg-black/40 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 p-4">
+        <aside className="hidden md:flex flex-col w-72 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 p-4">
           <div className="flex items-center gap-3 px-2 mb-6">
             <div className="w-10 h-10 overflow-hidden rounded-full">
               <KirbyIcon />
@@ -486,7 +484,7 @@ const App: React.FC = () => {
 
           <button 
             onClick={handleNewChat}
-            className="flex items-center gap-2 w-full bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 rounded-lg transition-all border border-gray-200 dark:border-gray-700 mb-6 group shadow-sm"
+            className="flex items-center gap-2 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 rounded-lg transition-all border border-gray-200 dark:border-gray-700 mb-6 group shadow-sm"
           >
             <Plus className="w-5 h-5 text-blue-500 group-hover:text-blue-400" />
             <span className="font-medium">{t('action.new_chat', settings.language)}</span>
@@ -505,8 +503,8 @@ const App: React.FC = () => {
                   className={`
                     group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors text-sm
                     ${activeSessionId === session.id 
-                      ? 'bg-gray-200/80 dark:bg-gray-800/80 text-gray-900 dark:text-white font-medium' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-gray-200'
+                      ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200'
                     }
                   `}
                 >
@@ -548,10 +546,10 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex gap-2 px-1 mt-4">
-              <button onClick={handleSaveChat} className="flex-1 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.download_json', settings.language)}>
+              <button onClick={handleSaveChat} className="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.download_json', settings.language)}>
                   <Download className="w-3 h-3" /> {t('action.save', settings.language)}
               </button>
-              <button onClick={handleLoadChatTrigger} className="flex-1 bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.load_json', settings.language)}>
+              <button onClick={handleLoadChatTrigger} className="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.load_json', settings.language)}>
                   <Upload className="w-3 h-3" /> {t('action.load', settings.language)}
               </button>
               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
@@ -559,7 +557,7 @@ const App: React.FC = () => {
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-3 px-2 py-3 mt-3 w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hover:bg-white/50 dark:hover:bg-gray-800/50 rounded-lg"
+              className="flex items-center gap-3 px-2 py-3 mt-3 w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
             >
               <Settings className="w-4 h-4" />
               <span>{t('action.settings', settings.language)}</span>
@@ -637,7 +635,7 @@ const App: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 flex flex-col relative h-full min-w-0">
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/40 backdrop-blur-md sticky top-0 z-10">
+          <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
             <div className="flex items-center gap-3">
                 <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 text-gray-700 dark:text-gray-200">
                     <Menu className="w-6 h-6" />
@@ -674,7 +672,7 @@ const App: React.FC = () => {
           {/* Input Area */}
           <div className="p-3 md:p-4 bg-transparent">
             <div className="max-w-5xl mx-auto">
-              <div className="relative flex items-center bg-white dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500 transition-all">
+              <div className="relative flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500 transition-all">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
