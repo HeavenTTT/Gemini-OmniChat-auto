@@ -45,6 +45,7 @@ export interface SystemPrompt {
 
 export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink';
 export type Language = 'en' | 'zh';
+export type TextWrappingMode = 'default' | 'forced' | 'auto';
 
 export interface SecurityQuestion {
   id: string;
@@ -69,9 +70,12 @@ export interface GenerationConfig {
 
 export interface AppSettings {
   model: string; 
+  savedModels: string[]; // List of models fetched from API
   systemPrompts: SystemPrompt[];
   theme: Theme;
   language: Language;
+  fontSize: number; // Font size in px
+  textWrapping: TextWrappingMode; // Replaced enableTextWrapping
   security: SecurityConfig;
   generation: GenerationConfig;
 }
