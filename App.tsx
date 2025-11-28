@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square } from 'lucide-react';
+import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession, TextWrappingMode } from './types';
@@ -31,6 +31,7 @@ const App: React.FC = () => {
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -113,6 +114,11 @@ const App: React.FC = () => {
       }
       if (!loadedSettings.textWrapping) loadedSettings.textWrapping = 'default';
 
+      // Initialize Summarize Prompt if missing
+      if (!loadedSettings.summarizePrompt) {
+          loadedSettings.summarizePrompt = t('system.summarize', loadedSettings.language);
+      }
+
     } else if (oldStoredSettings) {
       const old = JSON.parse(oldStoredSettings);
       loadedSettings = {
@@ -124,7 +130,11 @@ const App: React.FC = () => {
         security: old.security || settings.security,
         generation: old.generation || settings.generation,
         textWrapping: 'default',
+        summarizePrompt: t('system.summarize', old.language || 'en')
       };
+    } else {
+        // First run initialization for summarize prompt
+        loadedSettings.summarizePrompt = t('system.summarize', loadedSettings.language);
     }
     setSettings(loadedSettings);
 
@@ -348,6 +358,65 @@ const App: React.FC = () => {
       };
       setSettings(newSettings);
       localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(newSettings));
+  };
+
+  const handleSummarize = async () => {
+    if (!geminiService || messages.length === 0 || isLoading || isSummarizing) return;
+    
+    setIsSummarizing(true);
+    try {
+        const langName = settings.language === 'zh' ? 'Chinese' : 'English';
+        // Use custom prompt from settings or fallback to default
+        const rawPrompt = settings.summarizePrompt || t('system.summarize', settings.language);
+        // Replace placeholder if present
+        const systemInstruction = rawPrompt.replace('{lang}', langName);
+        
+        const userCommand = t('msg.summarize_command', settings.language);
+
+        // Explicitly construct the conversation context string
+        // This ensures the model treats this as a document to summarize rather than a chat continuation
+        const conversationText = messages
+            .filter(m => !m.isError && m.text && m.text.trim())
+            .map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`)
+            .join('\n\n');
+        
+        if (!conversationText) {
+             alert("No valid conversation content to summarize.");
+             setIsSummarizing(false);
+             return;
+        }
+
+        const fullPrompt = `Here is the conversation content:\n\n${conversationText}\n\n${userCommand}`;
+        
+        // Pass empty history array [] to ensure it treats this as a fresh summarization task
+        const { text: newTitle } = await geminiService.streamChatResponse(
+            settings.model,
+            [], // Pass empty history to avoid duplicate context
+            fullPrompt, 
+            systemInstruction, 
+            { ...settings.generation, stream: false, maxOutputTokens: 100 }, 
+            undefined,
+            undefined
+        );
+        
+        if (newTitle && newTitle.trim()) {
+            // Remove any markdown like **Title**, quotes, etc.
+            const cleanTitle = newTitle.trim().replace(/^["']|["']$/g, '').replace(/\*\*/g, '');
+            
+            // Auto update without confirmation
+            setSessions(prev => prev.map(s => 
+                s.id === activeSessionId ? { ...s, title: cleanTitle } : s
+            ));
+        } else {
+             console.warn("Summarization returned empty text");
+             alert(t('error.summarize_empty', settings.language));
+        }
+    } catch (e) {
+        console.error("Summarize failed", e);
+        alert("Failed to summarize: " + (e as any).message);
+    } finally {
+        setIsSummarizing(false);
+    }
   };
 
 
@@ -709,7 +778,7 @@ const App: React.FC = () => {
                    <h1 
                     className="font-bold text-lg text-gray-800 dark:text-white truncate max-w-xl cursor-pointer hover:underline decoration-dashed underline-offset-4"
                     onClick={() => {
-                        const newTitle = prompt(t('msg.rename_chat', settings.language), currentSessionTitle);
+                        const newTitle = prompt(t('msg.confirm_title_update', settings.language), currentSessionTitle);
                         if (newTitle && newTitle.trim()) {
                             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
                         }
@@ -718,6 +787,14 @@ const App: React.FC = () => {
                    >
                      {currentSessionTitle}
                    </h1>
+                   <button 
+                    onClick={handleSummarize}
+                    disabled={isSummarizing || messages.length === 0}
+                    className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-colors disabled:opacity-30"
+                    title={t('action.summarize', settings.language)}
+                   >
+                    <Sparkles className={`w-4 h-4 ${isSummarizing ? 'animate-pulse text-blue-500' : ''}`} />
+                   </button>
               </div>
           </header>
 
@@ -731,6 +808,14 @@ const App: React.FC = () => {
                     <span className="font-bold text-lg dark:text-white truncate">
                         {currentSessionTitle}
                     </span>
+                    <button 
+                        onClick={handleSummarize}
+                        disabled={isSummarizing || messages.length === 0}
+                        className="p-1 flex-shrink-0 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-colors disabled:opacity-30"
+                        title={t('action.summarize', settings.language)}
+                    >
+                        <Sparkles className={`w-4 h-4 ${isSummarizing ? 'animate-pulse text-blue-500' : ''}`} />
+                    </button>
                 </div>
             </div>
             <div className="flex gap-1 flex-shrink-0 ml-2">
