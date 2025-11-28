@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders } from 'lucide-react';
+import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders, ExternalLink } from 'lucide-react';
 import { GeminiModel, AppSettings, KeyConfig, SystemPrompt, Language, Theme, TextWrappingMode } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from '../services/geminiService';
@@ -89,9 +90,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [availableModels, setAvailableModels] = useState<string[]>([
     GeminiModel.FLASH,
     GeminiModel.PRO,
-    GeminiModel.FLASH_THINKING,
-    'gemini-1.5-flash',
-    'gemini-1.5-pro'
+    GeminiModel.FLASH_THINKING
   ]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -415,6 +414,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                     }
                 >
+                    {/* Link to get API Key */}
+                    <div className="flex justify-end mb-2">
+                        <a 
+                            href="https://aistudio.google.com/app/apikey" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-600 hover:underline"
+                        >
+                            {t('action.get_api_key', lang)}
+                            <ExternalLink className="w-3 h-3" />
+                        </a>
+                    </div>
+
                     <div className="space-y-3">
                     {localKeys.map((keyConfig) => (
                         <KeyRow 

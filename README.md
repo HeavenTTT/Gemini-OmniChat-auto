@@ -1,20 +1,87 @@
+
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+<img width="150" height="150" alt="Logo" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/39.svg" />
+<h1>Gemini OmniChat</h1>
+<p>A high-performance, feature-rich chat interface for Google Gemini API.</p>
+
+<p>
+  <a href="./README_zh.md">🇨🇳 中文说明</a> | 
+  <span>🇺🇸 English</span>
+</p>
 </div>
 
-# Run and deploy your AI Studio app
+---
 
-This contains everything you need to run your app locally.
+## 🚀 Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1lIEfBE8qGd6-zkOlGmCNxrREJTElwtZ0
+*   **Multi-API Key Rotation**: Automatically rotates through a pool of API keys to handle rate limits and quotas efficiently.
+*   **Markdown Support**: Full Markdown rendering including code blocks with syntax highlighting and copy functionality.
+*   **Persistent History**: Automatically saves chat sessions and allows exporting/importing as JSON.
+*   **Customizable Themes**: Includes Day, Night, Twilight, Sky, and Pink themes.
+*   **Security Lock**: Optional password and security question protection for your chat history.
+*   **System Instructions**: Manage and merge multiple system prompts (personas).
+*   **Model Selection**: Auto-fetch available models from your API key.
 
-## Run Locally
+## 🛠 Getting Started
 
-**Prerequisites:**  Node.js
+### 1. Obtain a Gemini API Key
 
+To use OmniChat, you need at least one valid API Key from Google AI Studio.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1.  Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  Click on **"Create API Key"**.
+3.  Select a project or create a new one to generate your key.
+4.  Copy the key string (starts with `AIza...`).
+
+### 2. Run Locally
+
+**Prerequisites:** Node.js (v18 or higher) and npm.
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/yourusername/gemini-omnichat.git
+    cd gemini-omnichat
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **(Optional) Environment Variable:**
+    You can pre-configure an API key using an environment variable. Create a `.env.local` file in the root directory:
+    ```bash
+    echo "GEMINI_API_KEY=your_api_key_here" > .env.local
+    ```
+
+4.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+
+5.  Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### 3. Usage
+
+1.  **Configure API Keys**: 
+    *   Click the **Settings** (gear icon) button.
+    *   Under "General Settings" -> "API Keys Pool", paste your API key and click the **+** button.
+    *   You can add multiple keys to distribute the load.
+2.  **Select Model**:
+    *   Go to the **Model Settings** tab.
+    *   Click **Fetch from API** to see available models for your key, or type a model name manually (e.g., `gemini-2.5-flash`).
+3.  **Chat**:
+    *   Start typing in the input box and press Enter or the Send button.
+
+## 📦 Deployment
+
+This project is optimized for deployment on Vercel.
+
+1.  Push your code to a GitHub repository.
+2.  Import the project into Vercel.
+3.  (Optional) Add `GEMINI_API_KEY` to the Environment Variables in Vercel settings.
+4.  Deploy!
+
+## 📄 License
+
+MIT License
