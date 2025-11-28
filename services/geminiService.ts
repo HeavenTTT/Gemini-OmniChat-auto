@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig } from "../types";
 
@@ -152,6 +151,14 @@ export class GeminiService {
     const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
     let attempts = 0;
 
+    // Filter history to strictly valid messages
+    const validHistory = history
+      .filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError)
+      .map(msg => ({
+        role: msg.role === Role.USER ? 'user' : 'model',
+        parts: [{ text: msg.text }]
+      }));
+
     while (attempts < maxRetries) {
       let apiKey = "";
       try {
@@ -175,10 +182,7 @@ export class GeminiService {
         const client = ai.chats.create({
           model: modelId,
           config: commonConfig,
-          history: history.map(msg => ({
-            role: msg.role === Role.USER ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-          }))
+          history: validHistory
         });
 
         // Handle Streaming

@@ -1,9 +1,7 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square } from 'lucide-react';
+import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession, TextWrappingMode } from './types';
@@ -33,6 +31,7 @@ const App: React.FC = () => {
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -115,6 +114,11 @@ const App: React.FC = () => {
       }
       if (!loadedSettings.textWrapping) loadedSettings.textWrapping = 'default';
 
+      // Initialize Summarize Prompt if missing
+      if (!loadedSettings.summarizePrompt) {
+          loadedSettings.summarizePrompt = t('system.summarize', loadedSettings.language);
+      }
+
     } else if (oldStoredSettings) {
       const old = JSON.parse(oldStoredSettings);
       loadedSettings = {
@@ -125,8 +129,12 @@ const App: React.FC = () => {
         language: old.language || 'en',
         security: old.security || settings.security,
         generation: old.generation || settings.generation,
-        textWrapping: 'default'
+        textWrapping: 'default',
+        summarizePrompt: t('system.summarize', old.language || 'en')
       };
+    } else {
+        // First run initialization for summarize prompt
+        loadedSettings.summarizePrompt = t('system.summarize', loadedSettings.language);
     }
     setSettings(loadedSettings);
 
@@ -221,13 +229,14 @@ const App: React.FC = () => {
       if (sessionIndex === -1) return prevSessions;
       
       const currentSession = prevSessions[sessionIndex];
-      // Generate title from first user message if title is still default
+      // Note: We no longer auto-generate title here if we have a summarize button, 
+      // but keeping basic auto-title for new chats is fine.
       let newTitle = currentSession.title;
       if (messages.length > 0) {
          const firstUserMsg = messages.find(m => m.role === Role.USER);
          if (firstUserMsg) {
              const defaultTitle = t('msg.new_chat_title', settings.language);
-             // If title is "New Chat" (in any language) or empty
+             // Only auto-update if title is still the default and we haven't manually set it (we assume manual if it differs)
              if (currentSession.title === defaultTitle || currentSession.title === 'New Chat' || currentSession.title === '新对话') {
                  newTitle = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
              }
@@ -351,6 +360,65 @@ const App: React.FC = () => {
       localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(newSettings));
   };
 
+  const handleSummarize = async () => {
+    if (!geminiService || messages.length === 0 || isLoading || isSummarizing) return;
+    
+    setIsSummarizing(true);
+    try {
+        const langName = settings.language === 'zh' ? 'Chinese' : 'English';
+        // Use custom prompt from settings or fallback to default
+        const rawPrompt = settings.summarizePrompt || t('system.summarize', settings.language);
+        // Replace placeholder if present
+        const systemInstruction = rawPrompt.replace('{lang}', langName);
+        
+        const userCommand = t('msg.summarize_command', settings.language);
+
+        // Explicitly construct the conversation context string
+        // This ensures the model treats this as a document to summarize rather than a chat continuation
+        const conversationText = messages
+            .filter(m => !m.isError && m.text && m.text.trim())
+            .map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`)
+            .join('\n\n');
+        
+        if (!conversationText) {
+             alert("No valid conversation content to summarize.");
+             setIsSummarizing(false);
+             return;
+        }
+
+        const fullPrompt = `Here is the conversation content:\n\n${conversationText}\n\n${userCommand}`;
+        
+        // Pass empty history array [] to ensure it treats this as a fresh summarization task
+        const { text: newTitle } = await geminiService.streamChatResponse(
+            settings.model,
+            [], // Pass empty history to avoid duplicate context
+            fullPrompt, 
+            systemInstruction, 
+            { ...settings.generation, stream: false, maxOutputTokens: 100 }, 
+            undefined,
+            undefined
+        );
+        
+        if (newTitle && newTitle.trim()) {
+            // Remove any markdown like **Title**, quotes, etc.
+            const cleanTitle = newTitle.trim().replace(/^["']|["']$/g, '').replace(/\*\*/g, '');
+            
+            // Auto update without confirmation
+            setSessions(prev => prev.map(s => 
+                s.id === activeSessionId ? { ...s, title: cleanTitle } : s
+            ));
+        } else {
+             console.warn("Summarization returned empty text");
+             alert(t('error.summarize_empty', settings.language));
+        }
+    } catch (e) {
+        console.error("Summarize failed", e);
+        alert("Failed to summarize: " + (e as any).message);
+    } finally {
+        setIsSummarizing(false);
+    }
+  };
+
 
   // --- Handlers ---
 
@@ -462,8 +530,13 @@ const App: React.FC = () => {
   };
 
   const handleSaveChat = () => {
+    const activeSession = sessions.find(s => s.id === activeSessionId);
+    const title = activeSession?.title || "Session";
+    // Sanitize title for filename
+    const safeTitle = title.replace(/[^a-z0-9\u4e00-\u9fa5]/gi, '_').substring(0, 50);
+    
     const chatData = {
-      title: sessions.find(s => s.id === activeSessionId)?.title || "Gemini OmniChat Session",
+      title: title,
       date: new Date().toISOString(),
       messages: messages
     };
@@ -471,7 +544,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `omnichat_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `OmniChat-${safeTitle}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -508,7 +581,7 @@ const App: React.FC = () => {
   };
 
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
-  const activePromptsCount = settings.systemPrompts.filter(p => p.isActive).length;
+  const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
 
   if (isLocked) {
       return (
@@ -698,18 +771,54 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col relative h-full min-w-0">
+          
+          {/* Desktop Header */}
+          <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-10 transition-colors">
+              <div className="flex items-center gap-3 overflow-hidden">
+                   <h1 
+                    className="font-bold text-lg text-gray-800 dark:text-white truncate max-w-xl cursor-pointer hover:underline decoration-dashed underline-offset-4"
+                    onClick={() => {
+                        const newTitle = prompt(t('msg.confirm_title_update', settings.language), currentSessionTitle);
+                        if (newTitle && newTitle.trim()) {
+                            setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
+                        }
+                    }}
+                    title="Click to rename manually"
+                   >
+                     {currentSessionTitle}
+                   </h1>
+                   <button 
+                    onClick={handleSummarize}
+                    disabled={isSummarizing || messages.length === 0}
+                    className="p-1.5 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-colors disabled:opacity-30"
+                    title={t('action.summarize', settings.language)}
+                   >
+                    <Sparkles className={`w-4 h-4 ${isSummarizing ? 'animate-pulse text-blue-500' : ''}`} />
+                   </button>
+              </div>
+          </header>
+
           {/* Mobile Header */}
           <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/40 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 text-gray-700 dark:text-gray-200">
+            <div className="flex items-center gap-2 overflow-hidden flex-1">
+                <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 flex-shrink-0 text-gray-700 dark:text-gray-200">
                     <Menu className="w-6 h-6" />
                 </button>
-                <span className="font-bold text-lg dark:text-white flex items-center gap-2">
-                    <div className="w-6 h-6"><KirbyIcon/></div>
-                    {t('app.title', settings.language)}
-                </span>
+                <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                    <span className="font-bold text-lg dark:text-white truncate">
+                        {currentSessionTitle}
+                    </span>
+                    <button 
+                        onClick={handleSummarize}
+                        disabled={isSummarizing || messages.length === 0}
+                        className="p-1 flex-shrink-0 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-full transition-colors disabled:opacity-30"
+                        title={t('action.summarize', settings.language)}
+                    >
+                        <Sparkles className={`w-4 h-4 ${isSummarizing ? 'animate-pulse text-blue-500' : ''}`} />
+                    </button>
+                </div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0 ml-2">
                 <button onClick={handleNewChat} className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white">
                   <Plus className="w-5 h-5" />
                 </button>

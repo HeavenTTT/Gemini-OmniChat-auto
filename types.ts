@@ -73,6 +73,7 @@ export interface AppSettings {
   model: string; 
   savedModels: string[]; // List of models fetched from API
   systemPrompts: SystemPrompt[];
+  summarizePrompt?: string; // Custom prompt for summarization
   theme: Theme;
   language: Language;
   fontSize: number; // Font size in px
