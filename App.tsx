@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History } from 'lucide-react';
+import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession, TextWrappingMode } from './types';
@@ -65,6 +66,9 @@ const App: React.FC = () => {
 
   // File Input Ref for loading chat
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Abort Controller for stopping generation
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // --- Initialization ---
   useEffect(() => {
@@ -262,6 +266,14 @@ const App: React.FC = () => {
   const triggerBotResponse = async (history: Message[], promptText: string) => {
     if (!geminiService) return;
     setIsLoading(true);
+    
+    // Setup AbortController
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const tempBotId = uuidv4();
     
     const botMessage: Message = {
@@ -290,7 +302,8 @@ const App: React.FC = () => {
               msg.id === tempBotId ? { ...msg, text: chunkText } : msg
             )
           );
-        }
+        },
+        controller.signal
       );
       
       setMessages(prev => 
@@ -300,18 +313,32 @@ const App: React.FC = () => {
       );
 
     } catch (error: any) {
-      console.error(error);
-      const errorMessage: Message = {
-        id: uuidv4(),
-        role: Role.MODEL,
-        text: `Error: ${error.message || 'Something went wrong.'}`,
-        timestamp: Date.now(),
-        isError: true
-      };
-      setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+      // Ignore abort errors usually
+      if (error.message === "Aborted by user") {
+          console.log("Generation stopped by user");
+      } else {
+          console.error(error);
+          const errorMessage: Message = {
+            id: uuidv4(),
+            role: Role.MODEL,
+            text: `Error: ${error.message || 'Something went wrong.'}`,
+            timestamp: Date.now(),
+            isError: true
+          };
+          setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleStopGeneration = () => {
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+          setIsLoading(false);
+      }
   };
 
   const handleUnlock = () => {
@@ -386,6 +413,7 @@ const App: React.FC = () => {
   };
 
   const handleNewChat = () => {
+    handleStopGeneration();
     const newId = uuidv4();
     const newSession: ChatSession = {
       id: newId,
@@ -406,6 +434,7 @@ const App: React.FC = () => {
         setIsMobileMenuOpen(false);
         return;
     }
+    handleStopGeneration();
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setActiveSessionId(sessionId);
@@ -422,6 +451,7 @@ const App: React.FC = () => {
     setSessions(newSessions);
 
     if (activeSessionId === sessionId) {
+       handleStopGeneration();
        if (newSessions.length > 0) {
          setActiveSessionId(newSessions[0].id);
          setMessages(newSessions[0].messages);
@@ -462,6 +492,7 @@ const App: React.FC = () => {
         const content = event.target?.result as string;
         const parsed = JSON.parse(content);
         if (parsed.messages && Array.isArray(parsed.messages)) {
+          handleStopGeneration();
           setMessages(parsed.messages);
           setInput('');
         } else {
@@ -730,16 +761,20 @@ const App: React.FC = () => {
                 />
                 <div className="absolute right-2 bottom-2">
                   <button
-                    onClick={handleSendMessage}
-                    disabled={!input.trim() || isLoading || activeKeysCount === 0}
+                    onClick={isLoading ? handleStopGeneration : handleSendMessage}
+                    disabled={(!input.trim() && !isLoading) || activeKeysCount === 0}
                     className={`
                       p-2 rounded-xl flex items-center justify-center transition-all
-                      ${input.trim() && !isLoading && activeKeysCount > 0 
-                        ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-500' 
-                        : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'}
+                      ${isLoading
+                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-md'
+                        : (input.trim() && activeKeysCount > 0 
+                            ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-500' 
+                            : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed')
+                      }
                     `}
+                    title={isLoading ? t('action.stop', settings.language) : t('action.send', settings.language)}
                   >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    {isLoading ? <Square className="w-5 h-5 fill-current" /> : <Send className="w-5 h-5" />}
                   </button>
                 </div>
               </div>

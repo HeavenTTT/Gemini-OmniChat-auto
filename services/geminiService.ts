@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig } from "../types";
 
@@ -145,7 +146,8 @@ export class GeminiService {
     newMessage: string,
     systemInstruction: string | undefined,
     generationConfig: GenerationConfig,
-    onChunk?: (text: string) => void
+    onChunk?: (text: string) => void,
+    abortSignal?: AbortSignal
   ): Promise<{ text: string, usedKeyIndex: number }> {
     const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
     let attempts = 0;
@@ -184,6 +186,9 @@ export class GeminiService {
           const resultStream = await client.sendMessageStream({ message: newMessage });
           let fullText = '';
           for await (const chunk of resultStream) {
+            if (abortSignal?.aborted) {
+                break;
+            }
             const chunkText = (chunk as GenerateContentResponse).text;
             if (chunkText) {
               fullText += chunkText;
@@ -206,6 +211,9 @@ export class GeminiService {
         }
 
       } catch (error: any) {
+        if (abortSignal?.aborted) {
+             throw new Error("Aborted by user");
+        }
         console.error("API Call failed with key", apiKey.slice(-4), error);
 
         const isRateLimit = error.message?.includes('429') || error.status === 429;
