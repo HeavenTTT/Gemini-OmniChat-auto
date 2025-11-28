@@ -1,11 +1,10 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History } from 'lucide-react';
+import { Send, Settings, Plus, Loader2, Download, Upload, MessageSquare, Trash2, X, Menu, History, Square } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
-import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession } from './types';
+import { Message, Role, GeminiModel, AppSettings, KeyConfig, SystemPrompt, Theme, Language, ChatSession, TextWrappingMode } from './types';
 import ChatInterface from './components/ChatInterface';
 import SettingsModal from './components/SettingsModal';
 import SecurityLock from './components/SecurityLock';
@@ -15,7 +14,7 @@ import { KirbyIcon } from './components/Kirby';
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
 const STORAGE_KEYS_KEY = 'gemini_omnichat_keys_v3'; 
-const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v4'; 
+const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v5'; 
 const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 
@@ -40,9 +39,12 @@ const App: React.FC = () => {
   const [apiKeys, setApiKeys] = useState<KeyConfig[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     model: DEFAULT_MODEL,
+    savedModels: [],
     systemPrompts: [],
     theme: 'dark',
     language: 'en',
+    fontSize: 14,
+    textWrapping: 'default',
     security: {
         enabled: false,
         questions: [],
@@ -62,6 +64,9 @@ const App: React.FC = () => {
 
   // File Input Ref for loading chat
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Abort Controller for stopping generation
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // --- Initialization ---
   useEffect(() => {
@@ -89,15 +94,25 @@ const App: React.FC = () => {
 
     // 2. Load Settings & Security Check
     const storedSettings = localStorage.getItem(STORAGE_SETTINGS_KEY);
-    const oldStoredSettings = localStorage.getItem('gemini_omnichat_settings_v3');
+    const oldStoredSettings = localStorage.getItem('gemini_omnichat_settings_v4');
     
     let loadedSettings = settings;
 
     if (storedSettings) {
-      loadedSettings = { ...settings, ...JSON.parse(storedSettings) };
-      // Ensure deeper objects exist if migrating from older versions
+      const parsed = JSON.parse(storedSettings);
+      loadedSettings = { ...settings, ...parsed };
+      // Ensure properties exist if migrating from older versions
       if (!loadedSettings.security) loadedSettings.security = settings.security;
       if (!loadedSettings.generation) loadedSettings.generation = settings.generation;
+      if (loadedSettings.savedModels === undefined) loadedSettings.savedModels = [];
+      if (loadedSettings.fontSize === undefined) loadedSettings.fontSize = 14;
+      
+      // Migrate enableTextWrapping (boolean) to textWrapping (string)
+      if ((loadedSettings as any).enableTextWrapping !== undefined && loadedSettings.textWrapping === undefined) {
+         loadedSettings.textWrapping = (loadedSettings as any).enableTextWrapping ? 'default' : 'auto';
+      }
+      if (!loadedSettings.textWrapping) loadedSettings.textWrapping = 'default';
+
     } else if (oldStoredSettings) {
       const old = JSON.parse(oldStoredSettings);
       loadedSettings = {
@@ -105,7 +120,10 @@ const App: React.FC = () => {
         model: old.model || DEFAULT_MODEL,
         systemPrompts: old.systemPrompts || [],
         theme: old.theme || 'dark',
-        language: old.language || 'en'
+        language: old.language || 'en',
+        security: old.security || settings.security,
+        generation: old.generation || settings.generation,
+        textWrapping: 'default',
       };
     }
     setSettings(loadedSettings);
@@ -156,7 +174,7 @@ const App: React.FC = () => {
     const newId = uuidv4();
     const newSession: ChatSession = {
       id: newId,
-      title: 'New Chat',
+      title: t('msg.new_chat_title', settings.language),
       messages: [],
       createdAt: Date.now()
     };
@@ -201,12 +219,15 @@ const App: React.FC = () => {
       if (sessionIndex === -1) return prevSessions;
       
       const currentSession = prevSessions[sessionIndex];
-      // Generate title from first user message if title is still default
+      // Note: We no longer auto-generate title here if we have a summarize button, 
+      // but keeping basic auto-title for new chats is fine.
       let newTitle = currentSession.title;
       if (messages.length > 0) {
          const firstUserMsg = messages.find(m => m.role === Role.USER);
          if (firstUserMsg) {
-             if (currentSession.title === 'New Chat') {
+             const defaultTitle = t('msg.new_chat_title', settings.language);
+             // Only auto-update if title is still the default and we haven't manually set it (we assume manual if it differs)
+             if (currentSession.title === defaultTitle || currentSession.title === 'New Chat' || currentSession.title === '新对话') {
                  newTitle = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
              }
          }
@@ -244,6 +265,14 @@ const App: React.FC = () => {
   const triggerBotResponse = async (history: Message[], promptText: string) => {
     if (!geminiService) return;
     setIsLoading(true);
+    
+    // Setup AbortController
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const tempBotId = uuidv4();
     
     const botMessage: Message = {
@@ -272,7 +301,8 @@ const App: React.FC = () => {
               msg.id === tempBotId ? { ...msg, text: chunkText } : msg
             )
           );
-        }
+        },
+        controller.signal
       );
       
       setMessages(prev => 
@@ -282,18 +312,32 @@ const App: React.FC = () => {
       );
 
     } catch (error: any) {
-      console.error(error);
-      const errorMessage: Message = {
-        id: uuidv4(),
-        role: Role.MODEL,
-        text: `Error: ${error.message || 'Something went wrong.'}`,
-        timestamp: Date.now(),
-        isError: true
-      };
-      setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+      // Ignore abort errors usually
+      if (error.message === "Aborted by user") {
+          console.log("Generation stopped by user");
+      } else {
+          console.error(error);
+          const errorMessage: Message = {
+            id: uuidv4(),
+            role: Role.MODEL,
+            text: `Error: ${error.message || 'Something went wrong.'}`,
+            timestamp: Date.now(),
+            isError: true
+          };
+          setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+      }
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
+  };
+
+  const handleStopGeneration = () => {
+      if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+          setIsLoading(false);
+      }
   };
 
   const handleUnlock = () => {
@@ -368,10 +412,11 @@ const App: React.FC = () => {
   };
 
   const handleNewChat = () => {
+    handleStopGeneration();
     const newId = uuidv4();
     const newSession: ChatSession = {
       id: newId,
-      title: 'New Chat',
+      title: t('msg.new_chat_title', settings.language),
       messages: [],
       createdAt: Date.now()
     };
@@ -388,6 +433,7 @@ const App: React.FC = () => {
         setIsMobileMenuOpen(false);
         return;
     }
+    handleStopGeneration();
     const session = sessions.find(s => s.id === sessionId);
     if (session) {
       setActiveSessionId(sessionId);
@@ -404,6 +450,7 @@ const App: React.FC = () => {
     setSessions(newSessions);
 
     if (activeSessionId === sessionId) {
+       handleStopGeneration();
        if (newSessions.length > 0) {
          setActiveSessionId(newSessions[0].id);
          setMessages(newSessions[0].messages);
@@ -414,8 +461,13 @@ const App: React.FC = () => {
   };
 
   const handleSaveChat = () => {
+    const activeSession = sessions.find(s => s.id === activeSessionId);
+    const title = activeSession?.title || "Session";
+    // Sanitize title for filename
+    const safeTitle = title.replace(/[^a-z0-9\u4e00-\u9fa5]/gi, '_').substring(0, 50);
+    
     const chatData = {
-      title: sessions.find(s => s.id === activeSessionId)?.title || "Gemini OmniChat Session",
+      title: title,
       date: new Date().toISOString(),
       messages: messages
     };
@@ -423,7 +475,7 @@ const App: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `omnichat_${new Date().toISOString().slice(0,10)}.json`;
+    a.download = `OmniChat-${safeTitle}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -444,6 +496,7 @@ const App: React.FC = () => {
         const content = event.target?.result as string;
         const parsed = JSON.parse(content);
         if (parsed.messages && Array.isArray(parsed.messages)) {
+          handleStopGeneration();
           setMessages(parsed.messages);
           setInput('');
         } else {
@@ -459,7 +512,7 @@ const App: React.FC = () => {
   };
 
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
-  const activePromptsCount = settings.systemPrompts.filter(p => p.isActive).length;
+  const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
 
   if (isLocked) {
       return (
@@ -471,12 +524,12 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
-      <div className="flex w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 dark:border-gray-800 dark:from-gray-900 dark:to-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <div className="flex w-full h-full bg-transparent text-gray-900 dark:text-gray-100 transition-colors duration-300">
         
         {/* Sidebar (Desktop) */}
-        <aside className="hidden md:flex flex-col w-72 bg-white/50 dark:bg-gray-900/50 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 p-4">
+        <aside className="hidden md:flex flex-col w-72 bg-white/40 dark:bg-black/40 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 p-4 transition-colors">
           <div className="flex items-center gap-3 px-2 mb-6">
-            <div className="w-10 h-10 overflow-hidden rounded-full">
+            <div className="w-10 h-10 overflow-hidden rounded-full drop-shadow-md">
               <KirbyIcon />
             </div>
             <span className="font-bold text-xl tracking-tight dark:text-white">{t('app.title', settings.language)}</span>
@@ -484,9 +537,9 @@ const App: React.FC = () => {
 
           <button 
             onClick={handleNewChat}
-            className="flex items-center gap-2 w-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 rounded-lg transition-all border border-gray-200 dark:border-gray-700 mb-6 group shadow-sm"
+            className="flex items-center gap-2 w-full bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-700 text-gray-900 dark:text-white px-4 py-3 rounded-lg transition-all border border-gray-200 dark:border-gray-700 mb-6 group shadow-sm hover:shadow-md"
           >
-            <Plus className="w-5 h-5 text-blue-500 group-hover:text-blue-400" />
+            <Plus className="w-5 h-5 text-blue-500 group-hover:text-blue-400 transition-colors" />
             <span className="font-medium">{t('action.new_chat', settings.language)}</span>
           </button>
 
@@ -503,8 +556,8 @@ const App: React.FC = () => {
                   className={`
                     group flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors text-sm
                     ${activeSessionId === session.id 
-                      ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-gray-200'
+                      ? 'bg-gray-200/80 dark:bg-gray-800/80 text-gray-900 dark:text-white font-medium shadow-sm' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-gray-800/30 hover:text-gray-900 dark:hover:text-gray-200'
                     }
                   `}
                 >
@@ -527,37 +580,52 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          {/* Status Section */}
-          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 pt-4">
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 mb-2">
+          {/* Status & Actions Section */}
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-800 pt-4 space-y-3">
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2">
               {t('status.title', settings.language)}
             </div>
-            <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
-              <span>{t('status.active_keys', settings.language)}</span>
-              <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeKeysCount > 0 ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
-                {activeKeysCount} / {apiKeys.length}
-              </span>
-            </div>
-            <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-400 flex flex-col gap-1 mt-1">
-              <span>{t('status.current_model', settings.language)}</span>
-              <span className="text-[10px] text-blue-500 dark:text-blue-400 font-mono truncate" title={settings.model}>
-                {settings.model}
-              </span>
-            </div>
             
-            <div className="flex gap-2 px-1 mt-4">
-              <button onClick={handleSaveChat} className="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.download_json', settings.language)}>
-                  <Download className="w-3 h-3" /> {t('action.save', settings.language)}
-              </button>
-              <button onClick={handleLoadChatTrigger} className="flex-1 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-xs py-2 rounded flex items-center justify-center gap-1 border border-gray-200 dark:border-gray-700 transition-colors shadow-sm" title={t('action.load_json', settings.language)}>
-                  <Upload className="w-3 h-3" /> {t('action.load', settings.language)}
-              </button>
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+            {/* Status indicators */}
+            <div className="space-y-1 px-2">
+                <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
+                <span>{t('status.active_keys', settings.language)}</span>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] ${activeKeysCount > 0 ? 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'}`}>
+                    {activeKeysCount} / {apiKeys.length}
+                </span>
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 flex flex-col gap-1">
+                <span>{t('status.current_model', settings.language)}</span>
+                <span className="text-[10px] text-blue-500 dark:text-blue-400 font-mono truncate" title={settings.model}>
+                    {settings.model}
+                </span>
+                </div>
+            </div>
+
+            {/* Bottom Actions Grid */}
+            <div className="grid grid-cols-2 gap-2">
+                <button 
+                    onClick={handleSaveChat} 
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                    title={t('action.download_json', settings.language)}
+                >
+                    <Download className="w-3.5 h-3.5" /> 
+                    {t('action.save', settings.language)}
+                </button>
+                <button 
+                    onClick={handleLoadChatTrigger} 
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
+                    title={t('action.load_json', settings.language)}
+                >
+                    <Upload className="w-3.5 h-3.5" /> 
+                    {t('action.load', settings.language)}
+                </button>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
             </div>
 
             <button 
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-3 px-2 py-3 mt-3 w-full text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium bg-white/50 dark:bg-gray-800/50 hover:bg-white dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors shadow-sm"
             >
               <Settings className="w-4 h-4" />
               <span>{t('action.settings', settings.language)}</span>
@@ -574,8 +642,8 @@ const App: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               ></div>
               
-              {/* Drawer Content */}
-              <div className="relative w-[80%] max-w-sm h-full bg-white dark:bg-gray-900 shadow-2xl flex flex-col p-4 animate-slide-in-left">
+              {/* Drawer Content - Matching Desktop Sidebar Style */}
+              <div className="relative w-[85%] max-w-sm h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl flex flex-col p-4 animate-slide-in-left border-r border-gray-200 dark:border-gray-800">
                   <div className="flex items-center justify-between mb-6">
                     <span className="font-bold text-lg dark:text-white flex items-center gap-2">
                         <History className="w-5 h-5"/> {t('status.history', settings.language)}
@@ -587,7 +655,7 @@ const App: React.FC = () => {
                   
                   <button 
                     onClick={handleNewChat}
-                    className="flex items-center gap-2 w-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-4 py-3 rounded-lg transition-all border border-blue-200 dark:border-blue-800 mb-6"
+                    className="flex items-center gap-2 w-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-4 py-3 rounded-lg transition-all border border-blue-200 dark:border-blue-800 mb-6 shadow-sm"
                   >
                     <Plus className="w-5 h-5" />
                     <span className="font-medium">{t('action.new_chat', settings.language)}</span>
@@ -602,15 +670,15 @@ const App: React.FC = () => {
                         className={`
                             flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors text-sm
                             ${activeSessionId === session.id 
-                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium border-l-4 border-blue-500' 
-                            : 'text-gray-600 dark:text-gray-400 border-l-4 border-transparent'
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium border-l-4 border-blue-500 shadow-sm' 
+                            : 'text-gray-600 dark:text-gray-400 border-l-4 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'
                             }
                         `}
                         >
                         <span className="truncate flex-1">{session.title || 'New Chat'}</span>
                         <button 
                             onClick={(e) => handleDeleteSession(e, session.id)}
-                            className="p-2 text-gray-400 hover:text-red-500"
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -622,7 +690,7 @@ const App: React.FC = () => {
                   <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800">
                      <button 
                         onClick={() => { setIsSettingsOpen(true); setIsMobileMenuOpen(false); }}
-                        className="flex items-center gap-3 w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                        className="flex items-center gap-3 w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
                      >
                         <Settings className="w-5 h-5" />
                         {t('action.settings', settings.language)}
@@ -634,18 +702,38 @@ const App: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 flex flex-col relative h-full min-w-0">
+          
+          {/* Desktop Header */}
+          <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-10 transition-colors">
+              <div className="flex items-center gap-3 overflow-hidden">
+                   <h1 
+                    className="font-bold text-lg text-gray-800 dark:text-white truncate max-w-xl cursor-pointer hover:underline decoration-dashed underline-offset-4"
+                    onClick={() => {
+                        const newTitle = prompt(t('msg.rename_chat', settings.language), currentSessionTitle);
+                        if (newTitle && newTitle.trim()) {
+                            setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
+                        }
+                    }}
+                    title="Click to rename manually"
+                   >
+                     {currentSessionTitle}
+                   </h1>
+              </div>
+          </header>
+
           {/* Mobile Header */}
-          <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
-            <div className="flex items-center gap-3">
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 text-gray-700 dark:text-gray-200">
+          <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/40 backdrop-blur-md sticky top-0 z-10">
+            <div className="flex items-center gap-2 overflow-hidden flex-1">
+                <button onClick={() => setIsMobileMenuOpen(true)} className="p-1 flex-shrink-0 text-gray-700 dark:text-gray-200">
                     <Menu className="w-6 h-6" />
                 </button>
-                <span className="font-bold text-lg dark:text-white flex items-center gap-2">
-                    <div className="w-6 h-6"><KirbyIcon/></div>
-                    {t('app.title', settings.language)}
-                </span>
+                <div className="flex items-center gap-2 overflow-hidden min-w-0">
+                    <span className="font-bold text-lg dark:text-white truncate">
+                        {currentSessionTitle}
+                    </span>
+                </div>
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-shrink-0 ml-2">
                 <button onClick={handleNewChat} className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white">
                   <Plus className="w-5 h-5" />
                 </button>
@@ -665,6 +753,8 @@ const App: React.FC = () => {
                 onDeleteMessage={handleDeleteMessage}
                 onRegenerate={handleRegenerate}
                 language={settings.language}
+                fontSize={settings.fontSize}
+                textWrapping={settings.textWrapping}
               />
             </div>
           </div>
@@ -672,7 +762,7 @@ const App: React.FC = () => {
           {/* Input Area */}
           <div className="p-3 md:p-4 bg-transparent">
             <div className="max-w-5xl mx-auto">
-              <div className="relative flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500 transition-all">
+              <div className="relative flex items-center bg-white dark:bg-gray-900/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-blue-500/50 focus-within:border-blue-500 transition-all">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -684,9 +774,9 @@ const App: React.FC = () => {
                   }}
                   placeholder={activeKeysCount === 0 ? t('input.no_keys', settings.language) : t('input.placeholder', settings.language)}
                   disabled={activeKeysCount === 0}
-                  className="w-full bg-transparent text-gray-900 dark:text-white p-3 md:p-4 pr-12 max-h-48 min-h-[52px] resize-none outline-none scrollbar-hide text-base"
+                  className="w-full bg-transparent text-gray-900 dark:text-white p-3 md:p-4 pr-12 max-h-48 min-h-[52px] resize-none outline-none scrollbar-hide"
                   rows={1}
-                  style={{ height: 'auto', minHeight: '52px' }}
+                  style={{ height: 'auto', minHeight: '52px', fontSize: `${settings.fontSize}px` }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;
                     target.style.height = 'auto';
@@ -695,16 +785,20 @@ const App: React.FC = () => {
                 />
                 <div className="absolute right-2 bottom-2">
                   <button
-                    onClick={handleSendMessage}
-                    disabled={!input.trim() || isLoading || activeKeysCount === 0}
+                    onClick={isLoading ? handleStopGeneration : handleSendMessage}
+                    disabled={(!input.trim() && !isLoading) || activeKeysCount === 0}
                     className={`
                       p-2 rounded-xl flex items-center justify-center transition-all
-                      ${input.trim() && !isLoading && activeKeysCount > 0 
-                        ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-500' 
-                        : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'}
+                      ${isLoading
+                        ? 'bg-red-500 text-white hover:bg-red-600 shadow-md'
+                        : (input.trim() && activeKeysCount > 0 
+                            ? 'bg-blue-600 text-white shadow-lg hover:bg-blue-500' 
+                            : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed')
+                      }
                     `}
+                    title={isLoading ? t('action.stop', settings.language) : t('action.send', settings.language)}
                   >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    {isLoading ? <Square className="w-5 h-5 fill-current" /> : <Send className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
