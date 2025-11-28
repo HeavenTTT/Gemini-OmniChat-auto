@@ -1,11 +1,19 @@
 
 <div align="center">
-<img width="150" alt="Kirby Logo" src="https://upload.wikimedia.org/wikipedia/en/2/22/Kirby_the_Hero.png" />
+
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+  <h1>Built with AI Studio</h2>
+
+  <p>The fastest path from prompt to production with Gemini.</p>
+
+  <a href="https://aistudio.google.com/apps">Start building</a>
+
 <h1>Gemini OmniChat</h1>
 <p>一个基于 Google Gemini API 的高性能、功能丰富的聊天界面。</p>
 
 <p>
-  <span>🇨🇳 中文说明</span> | 
+  <span>🇨🇳 中文说明</span>
   <a href="./README.md">🇺🇸 English</a>
 </p>
 
