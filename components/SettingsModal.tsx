@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, Download, Upload, Shield, Sliders } from 'lucide-react';
-import { GeminiModel, AppSettings, KeyConfig, SystemPrompt, Language, Theme } from '../types';
+import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders } from 'lucide-react';
+import { GeminiModel, AppSettings, KeyConfig, SystemPrompt, Language, Theme, TextWrappingMode } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
@@ -17,6 +16,49 @@ interface SettingsModalProps {
   onUpdateSettings: (settings: AppSettings) => void;
   geminiService: GeminiService | null;
 }
+
+// CollapsibleSection Component
+const CollapsibleSection = ({ 
+  title, 
+  children, 
+  defaultOpen = false, 
+  rightElement = null,
+  count = null
+}: { 
+  title: string, 
+  children?: React.ReactNode, 
+  defaultOpen?: boolean, 
+  rightElement?: React.ReactNode,
+  count?: React.ReactNode
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 overflow-hidden mb-4 shadow-sm transition-all">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                {title}
+            </h3>
+            {count && <span className="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] px-2 py-0.5 rounded-full">{count}</span>}
+        </div>
+        <div className="flex items-center gap-3">
+             {rightElement && <div onClick={e => e.stopPropagation()}>{rightElement}</div>}
+            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+      
+      {isOpen && (
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in-up">
+            {children}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
@@ -59,9 +101,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setLocalKeys(JSON.parse(JSON.stringify(apiKeys))); // Deep copy
       setLocalSettings(JSON.parse(JSON.stringify(settings)));
       
-      if (!availableModels.includes(settings.model)) {
-        setAvailableModels(prev => [...prev, settings.model].sort());
-      }
+      // Merge saved models with default models and current setting model
+      const saved = settings.savedModels || [];
+      const combined = Array.from(new Set([...availableModels, ...saved, settings.model]));
+      setAvailableModels(combined.sort());
     }
   }, [isOpen, apiKeys, settings]);
 
@@ -108,6 +151,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     try {
       const models = await geminiService.listModels(activeKey);
       if (models.length > 0) {
+        // Save fetched models to settings
+        setLocalSettings(prev => ({ ...prev, savedModels: models }));
+        
         const merged = Array.from(new Set([...availableModels, ...models]));
         setAvailableModels(merged.sort());
         alert(`${models.length} ${t('msg.fetch_success', lang)}`);
@@ -275,48 +321,83 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           
           {/* General Tab */}
           {activeTab === 'general' && (
-            <>
-                <section className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.language', lang)}</label>
-                        <select 
-                            value={localSettings.language}
-                            onChange={(e) => setLocalSettings({...localSettings, language: e.target.value as Language})}
-                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white outline-none"
-                        >
-                            <option value="en">English</option>
-                            <option value="zh">中文</option>
-                        </select>
+            <div className="space-y-1">
+                {/* Language & Theme */}
+                <CollapsibleSection title={t('settings.general', lang)} defaultOpen={true}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.language', lang)}</label>
+                            <select 
+                                value={localSettings.language}
+                                onChange={(e) => setLocalSettings({...localSettings, language: e.target.value as Language})}
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="en">English</option>
+                                <option value="zh">中文</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.theme', lang)}</label>
+                            <select 
+                                value={localSettings.theme}
+                                onChange={(e) => setLocalSettings({...localSettings, theme: e.target.value as Theme})}
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="light">{t('theme.light', lang)}</option>
+                                <option value="dark">{t('theme.dark', lang)}</option>
+                                <option value="twilight">{t('theme.twilight', lang)}</option>
+                                <option value="sky">{t('theme.sky', lang)}</option>
+                                <option value="pink">{t('theme.pink', lang)}</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.theme', lang)}</label>
-                        <select 
-                            value={localSettings.theme}
-                            onChange={(e) => setLocalSettings({...localSettings, theme: e.target.value as Theme})}
-                            className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white outline-none"
-                        >
-                            <option value="light">{t('theme.light', lang)}</option>
-                            <option value="dark">{t('theme.dark', lang)}</option>
-                            <option value="twilight">{t('theme.twilight', lang)}</option>
-                            <option value="sky">{t('theme.sky', lang)}</option>
-                            <option value="pink">{t('theme.pink', lang)}</option>
-                        </select>
+                </CollapsibleSection>
+
+                {/* Appearance Settings */}
+                <CollapsibleSection title={t('settings.appearance', lang)}>
+                    <div className="space-y-4">
+                        <div>
+                            <div className="flex justify-between text-sm mb-1">
+                                <span className="text-gray-600 dark:text-gray-300">{t('settings.font_size', lang)}</span>
+                                <span className="text-blue-500">{localSettings.fontSize}px</span>
+                            </div>
+                            <input 
+                                type="range" min="12" max="24" step="1"
+                                value={localSettings.fontSize}
+                                onChange={(e) => setLocalSettings({...localSettings, fontSize: parseInt(e.target.value)})}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.text_wrapping', lang)}</label>
+                            <select 
+                                value={localSettings.textWrapping}
+                                onChange={(e) => setLocalSettings({...localSettings, textWrapping: e.target.value as TextWrappingMode})}
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="default">{t('wrap.default', lang)}</option>
+                                <option value="forced">{t('wrap.forced', lang)}</option>
+                                <option value="auto">{t('wrap.auto', lang)}</option>
+                            </select>
+                        </div>
                     </div>
-                </section>
+                </CollapsibleSection>
 
                 {/* API Keys */}
-                <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings.api_keys_pool', lang)}</h3>
-                    <div className="text-xs text-gray-500">
-                        {localKeys.filter(k => k.isActive).length} {t('status.active', lang)} / {localKeys.length} Total
-                    </div>
-                    </div>
-
+                <CollapsibleSection 
+                    title={t('settings.api_keys_pool', lang)} 
+                    defaultOpen={true}
+                    rightElement={
+                        <div className="text-xs text-gray-500">
+                            {localKeys.filter(k => k.isActive).length} {t('status.active', lang)} / {localKeys.length} Total
+                        </div>
+                    }
+                >
                     <div className="space-y-3">
                     {localKeys.map((keyConfig) => (
                         <KeyRow 
@@ -333,33 +414,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         {t('input.no_keys', lang)}
                         </div>
                     )}
-                    </div>
-
+                    
                     <div className="flex gap-2 pt-2">
-                    <input 
-                        type="text" 
-                        placeholder={t('settings.add_key_placeholder', lang)}
-                        className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
-                        value={newKeyInput}
-                        onChange={(e) => setNewKeyInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddKey()}
-                    />
-                    <button 
-                        onClick={handleAddKey}
-                        disabled={!newKeyInput.trim()}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white p-2.5 rounded-lg transition-colors shadow-lg shadow-blue-900/20"
-                    >
-                        <Plus className="w-5 h-5" />
-                    </button>
+                        <input 
+                            type="text" 
+                            placeholder={t('settings.add_key_placeholder', lang)}
+                            className="flex-1 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none font-mono text-sm"
+                            value={newKeyInput}
+                            onChange={(e) => setNewKeyInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleAddKey()}
+                        />
+                        <button 
+                            onClick={handleAddKey}
+                            disabled={!newKeyInput.trim()}
+                            className="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 text-white p-2.5 rounded-lg transition-colors shadow-lg shadow-blue-900/20"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                        {t('msg.keys_rotated', lang)}
+                        </p>
                     </div>
-                    <p className="text-xs text-gray-500">
-                    {t('msg.keys_rotated', lang)}
-                    </p>
-                </section>
+                </CollapsibleSection>
 
                 {/* Manage Config File */}
-                <section className="space-y-2 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings.manage', lang)}</h3>
+                <CollapsibleSection title={t('settings.manage', lang)}>
                     <div className="flex gap-3">
                     <button 
                         onClick={handleExportSettings}
@@ -383,27 +463,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         className="hidden" 
                     />
                     </div>
-                </section>
-            </>
+                </CollapsibleSection>
+            </div>
           )}
 
           {/* Model Tab */}
           {activeTab === 'model' && (
-             <div className="space-y-8">
+             <div className="space-y-1">
                  {/* Model Selection */}
-                 <section className="space-y-4">
-                    <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings.model_settings', lang)}</h3>
-                    <button 
-                        onClick={handleFetchModels}
-                        disabled={isFetchingModels}
-                        className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
-                    >
-                        {isFetchingModels ? <RotateCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
-                        {t('settings.fetch', lang)}
-                    </button>
-                    </div>
-                    
+                 <CollapsibleSection 
+                    title={t('settings.model_settings', lang)} 
+                    defaultOpen={true}
+                    rightElement={
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); handleFetchModels(); }}
+                            disabled={isFetchingModels}
+                            className="text-xs flex items-center gap-1 text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50 px-2 py-1 bg-blue-50 dark:bg-blue-900/10 rounded"
+                        >
+                            {isFetchingModels ? <RotateCw className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                            {t('settings.fetch', lang)}
+                        </button>
+                    }
+                 >
                     <div>
                         <div className="flex justify-between mb-1">
                         <label className="block text-sm text-gray-600 dark:text-gray-300">{t('settings.model_name', lang)}</label>
@@ -423,12 +504,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             ))}
                         </datalist>
                     </div>
-                </section>
+                </CollapsibleSection>
 
                 {/* AI Parameters */}
-                <section className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings.ai_parameters', lang)}</h3>
-                    
+                <CollapsibleSection title={t('settings.ai_parameters', lang)}>
                     <div className="space-y-4">
                         <div>
                             <div className="flex justify-between text-sm mb-1">
@@ -439,7 +518,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="0" max="2" step="0.1"
                                 value={localSettings.generation.temperature}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, temperature: parseFloat(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                             />
                         </div>
 
@@ -452,7 +531,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="0" max="1" step="0.05"
                                 value={localSettings.generation.topP}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, topP: parseFloat(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                             />
                         </div>
 
@@ -465,7 +544,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="1" max="100" step="1"
                                 value={localSettings.generation.topK}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, topK: parseInt(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-blue-600"
                             />
                         </div>
 
@@ -478,7 +557,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="number" 
                                 value={localSettings.generation.maxOutputTokens}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, maxOutputTokens: parseInt(e.target.value)}})}
-                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm"
+                                className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
 
@@ -492,15 +571,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             </button>
                         </div>
                     </div>
-                </section>
+                </CollapsibleSection>
 
                 {/* System Instructions */}
-                <section className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('settings.system_instructions', lang)}</h3>
-                    <div className="text-xs text-gray-500">{activePromptCount} {t('status.active', lang)}</div>
-                    </div>
-
+                <CollapsibleSection 
+                    title={t('settings.system_instructions', lang)}
+                    count={activePromptCount > 0 ? `${activePromptCount} ${t('status.active', lang)}` : null}
+                >
                     <div className="space-y-3">
                     {localSettings.systemPrompts.map(prompt => (
                         <div key={prompt.id} className="bg-gray-50 dark:bg-gray-800/30 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-all">
@@ -546,7 +623,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="text" 
                                 value={prompt.title} 
                                 onChange={(e) => handleUpdatePrompt(prompt.id, { title: e.target.value })}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none"
+                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none"
                                 placeholder={t('input.title_placeholder', lang)}
                                 />
                             </div>
@@ -555,7 +632,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <textarea 
                                 value={prompt.content}
                                 onChange={(e) => handleUpdatePrompt(prompt.id, { content: e.target.value })}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none h-24 resize-y"
+                                className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm text-gray-900 dark:text-white focus:border-blue-500 outline-none h-24 resize-y"
                                 placeholder={t('input.instruction_placeholder', lang)}
                                 />
                             </div>
@@ -581,7 +658,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         </div>
                     </div>
                     )}
-                </section>
+                </CollapsibleSection>
              </div>
           )}
 
@@ -602,7 +679,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   {localSettings.security.enabled && (
-                      <div className="space-y-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+                      <div className="space-y-4 border-t border-gray-200 dark:border-gray-800 pt-4 animate-fade-in-up">
                           <div>
                               <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">Password</label>
                               <input 
@@ -643,14 +720,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                   <input 
                                       type="text"
                                       placeholder={t('input.question', lang)}
-                                      className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm"
+                                      className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm"
                                       value={newQuestion.q}
                                       onChange={(e) => setNewQuestion({...newQuestion, q: e.target.value})}
                                   />
                                   <input 
                                       type="text"
                                       placeholder={t('input.answer', lang)}
-                                      className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded p-2 text-sm"
+                                      className="w-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg p-2 text-sm"
                                       value={newQuestion.a}
                                       onChange={(e) => setNewQuestion({...newQuestion, a: e.target.value})}
                                   />
