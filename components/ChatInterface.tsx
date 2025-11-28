@@ -239,7 +239,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   </>
                 )}
               </div>
-              
+               
               {/* Meta & Actions Row */}
               <div className="flex items-center gap-2 mt-1 px-1 h-8">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500">
