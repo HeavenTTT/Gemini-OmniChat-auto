@@ -1,5 +1,6 @@
 
 
+
 import { Language } from '../types';
 
 type Translations = {
@@ -15,7 +16,6 @@ const translations: Translations = {
     'status.title': 'Status',
     'status.active_keys': 'Active Keys',
     'status.current_model': 'Current Model',
-    'status.system_prompts': 'System Prompts',
     'status.active': 'Active',
     'status.history': 'History',
     'status.no_history': 'No history yet',
@@ -34,8 +34,6 @@ const translations: Translations = {
     'action.copied': 'Copied',
     'action.export_settings': 'Export Settings',
     'action.import_settings': 'Import Settings',
-    'action.unlock': 'Unlock',
-    'action.setup_security': 'Setup Security',
     'action.add_question': 'Add Question',
     'action.add_prompt': 'Add System Prompt',
     'action.download_json': 'Download JSON',
@@ -72,10 +70,7 @@ const translations: Translations = {
     'msg.new_chat_title': 'New Chat',
     'msg.rename_chat': 'Rename Chat:',
     'msg.rate_limited': 'Rate Limited',
-    'msg.key_index': 'Key #',
-    'msg.welcome_kirby': 'Hello, I\'m Kirby! ⭐',
     'msg.welcome_desc': 'I\'m ready to help you with Gemini\'s power.',
-    'msg.security_enabled': 'Security Lock is Active',
     'msg.security_desc': 'Protect your chat with a password and security questions. If inactive for 24h, verification will be required.',
     'msg.enter_password': 'Enter Password',
     'msg.answer_question': 'Answer Security Question',
@@ -83,7 +78,6 @@ const translations: Translations = {
     'msg.fetch_success': 'models fetched successfully!',
     'msg.fetch_no_models': 'Fetched successfully but no compatible models found.',
     'msg.fetch_error': 'Error fetching models. See console for details.',
-    'confirm.new_chat': 'Start a new chat? Unsaved progress will be lost.',
     'error.load_file': 'Failed to load file.',
     'success.import': 'Settings imported successfully!',
     'theme.light': 'Day',
@@ -103,7 +97,6 @@ const translations: Translations = {
     'status.title': '状态',
     'status.active_keys': '活跃密钥',
     'status.current_model': '当前模型',
-    'status.system_prompts': '系统提示词',
     'status.active': '启用',
     'status.history': '历史记录',
     'status.no_history': '暂无历史',
@@ -122,8 +115,6 @@ const translations: Translations = {
     'action.copied': '已复制',
     'action.export_settings': '导出配置',
     'action.import_settings': '导入配置',
-    'action.unlock': '解锁',
-    'action.setup_security': '设置安全锁',
     'action.add_question': '添加问题',
     'action.add_prompt': '添加系统提示词',
     'action.download_json': '下载 JSON',
@@ -160,10 +151,7 @@ const translations: Translations = {
     'msg.new_chat_title': '新对话',
     'msg.rename_chat': '重命名对话：',
     'msg.rate_limited': '受限',
-    'msg.key_index': '密钥 #',
-    'msg.welcome_kirby': '你好，我是卡比！⭐',
     'msg.welcome_desc': '我已经准备好利用 Gemini 的力量为您服务了。',
-    'msg.security_enabled': '安全锁已启用',
     'msg.security_desc': '使用密码和安全问题保护您的聊天。若24小时无操作，将需要验证。',
     'msg.enter_password': '输入密码',
     'msg.answer_question': '回答安全问题',
@@ -171,7 +159,6 @@ const translations: Translations = {
     'msg.fetch_success': '个模型获取成功！',
     'msg.fetch_no_models': '获取成功，但未找到兼容的模型。',
     'msg.fetch_error': '获取模型失败，请检查控制台。',
-    'confirm.new_chat': '确定开启新对话？未保存的内容将丢失。',
     'error.load_file': '加载文件失败。',
     'success.import': '配置导入成功！',
     'theme.light': '白天',

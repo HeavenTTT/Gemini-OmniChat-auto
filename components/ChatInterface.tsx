@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
@@ -18,6 +19,10 @@ interface ChatInterfaceProps {
   textWrapping: TextWrappingMode;
 }
 
+/**
+ * CodeBlock Component
+ * Renders code with a copy button and language badge.
+ */
 const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, className?: string, lang: Language }) => {
   const [copied, setCopied] = React.useState(false);
   const textRef = useRef<string>("");
@@ -60,6 +65,10 @@ const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, 
   );
 };
 
+/**
+ * ChatInterface Component
+ * Renders the list of messages, handles empty states, and message actions (edit, delete, regenerate).
+ */
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   messages, 
   isLoading,
@@ -74,6 +83,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
 
+  // Auto-scroll to bottom on new messages
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -82,6 +92,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     scrollToBottom();
   }, [messages, isLoading]);
 
+  // --- Edit Mode Handlers ---
   const startEditing = (msg: Message) => {
     setEditingId(msg.id);
     setEditText(msg.text);
@@ -109,6 +120,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Determine CSS class for text wrapping based on setting
   const getWrappingClass = () => {
     switch (textWrapping) {
       case 'forced': return 'whitespace-pre-wrap break-all';
@@ -118,6 +130,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Empty State
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -170,6 +183,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 }
               `}>
                 {editingId === msg.id ? (
+                  /* Edit Mode */
                   <div className="w-full min-w-[280px]">
                     <textarea
                       value={editText}
@@ -206,6 +220,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                   </div>
                 ) : (
+                  /* View Mode */
                   <>
                     {msg.isError ? (
                       <div className="flex items-center gap-2">
@@ -288,6 +303,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
       ))}
 
+      {/* Loading Indicator */}
       {isLoading && (
         <div className="flex justify-start animate-fade-in-up px-2 md:px-0">
            <div className="flex gap-3">

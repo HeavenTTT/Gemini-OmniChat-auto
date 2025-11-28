@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -11,7 +12,7 @@ import SecurityLock from './components/SecurityLock';
 import { t } from './utils/i18n';
 import { KirbyIcon } from './components/Kirby';
 
-// --- Default Configuration ---
+// --- Default Configuration Constants ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
 const STORAGE_KEYS_KEY = 'gemini_omnichat_keys_v3'; 
 const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v5'; 
@@ -20,22 +21,28 @@ const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 
 const ENV_KEY = process.env.API_KEY || '';
 
+/**
+ * Main Application Component.
+ * Orchestrates state, services, UI layout, and settings management.
+ */
 const App: React.FC = () => {
-  // --- State ---
+  // --- State Management ---
+  
+  // Chat History & Sessions
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>('');
   
-  // Displayed messages are derived from the active session, 
-  // but we keep a local state for immediate UI responsiveness and sync back.
+  // Current active messages (derived from session, kept for UI responsiveness)
   const [messages, setMessages] = useState<Message[]>([]);
   
+  // UI State
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   
-  // Settings & Keys
+  // Application Configuration
   const [apiKeys, setApiKeys] = useState<KeyConfig[]>([]);
   const [settings, setSettings] = useState<AppSettings>({
     model: DEFAULT_MODEL,
@@ -59,16 +66,16 @@ const App: React.FC = () => {
     }
   });
 
-  // Service Instance
+  // Services & Refs
   const [geminiService, setGeminiService] = useState<GeminiService | null>(null);
-
-  // File Input Ref for loading chat
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Abort Controller for stopping generation
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // --- Initialization ---
+  // --- Initialization Effects ---
+
+  /**
+   * Load API Keys, Settings, and Security State on Mount.
+   */
   useEffect(() => {
     // 1. Load Keys
     const storedKeys = localStorage.getItem(STORAGE_KEYS_KEY);
@@ -128,15 +135,15 @@ const App: React.FC = () => {
     }
     setSettings(loadedSettings);
 
-    // Check Lock
+    // Check Security Lock Logic
     if (loadedSettings.security.enabled) {
         const now = Date.now();
         const lastLogin = loadedSettings.security.lastLogin || 0;
-        // 24 hours = 86400000 ms
+        // Lock if last login was > 24 hours ago
         if (now - lastLogin > 86400000) {
             setIsLocked(true);
         } else {
-             // Update last login if valid session
+             // Refresh last login if valid session
              const newSettings = { 
                  ...loadedSettings, 
                  security: { ...loadedSettings.security, lastLogin: now } 
@@ -144,7 +151,6 @@ const App: React.FC = () => {
              setSettings(newSettings);
         }
     }
-
 
     // 3. Load Sessions (History)
     const storedSessions = localStorage.getItem(STORAGE_SESSIONS_KEY);
@@ -169,7 +175,9 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Helper to create initial session
+  /**
+   * Helper to create a new session instance.
+   */
   const createNewSession = () => {
     const newId = uuidv4();
     const newSession: ChatSession = {
@@ -183,7 +191,9 @@ const App: React.FC = () => {
     setMessages([]);
   };
 
-  // Sync Keys to LocalStorage
+  // --- Persistence Side Effects ---
+
+  // Sync Keys to LocalStorage & Service
   useEffect(() => {
     if (geminiService) {
       geminiService.updateKeys(apiKeys);
@@ -193,7 +203,7 @@ const App: React.FC = () => {
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
   }, [apiKeys, geminiService]);
 
-  // Sync Settings to LocalStorage & Apply Theme
+  // Sync Settings to LocalStorage & Apply Theme classes
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     
@@ -210,7 +220,7 @@ const App: React.FC = () => {
     }
   }, [settings]);
 
-  // Sync Active Session Messages to Sessions State
+  // Sync active messages back to the Session state
   useEffect(() => {
     if (!activeSessionId) return;
 
@@ -219,14 +229,13 @@ const App: React.FC = () => {
       if (sessionIndex === -1) return prevSessions;
       
       const currentSession = prevSessions[sessionIndex];
-      // Note: We no longer auto-generate title here if we have a summarize button, 
-      // but keeping basic auto-title for new chats is fine.
+      
+      // Auto-title logic for new chats based on first user message
       let newTitle = currentSession.title;
       if (messages.length > 0) {
          const firstUserMsg = messages.find(m => m.role === Role.USER);
          if (firstUserMsg) {
              const defaultTitle = t('msg.new_chat_title', settings.language);
-             // Only auto-update if title is still the default and we haven't manually set it (we assume manual if it differs)
              if (currentSession.title === defaultTitle || currentSession.title === 'New Chat' || currentSession.title === '新对话') {
                  newTitle = firstUserMsg.text.slice(0, 30) + (firstUserMsg.text.length > 30 ? '...' : '');
              }
@@ -262,11 +271,15 @@ const App: React.FC = () => {
 
   // --- Logic Helpers ---
 
+  /**
+   * Triggers the AI response generation.
+   * Handles stream aborting, system prompt combination, and error handling.
+   */
   const triggerBotResponse = async (history: Message[], promptText: string) => {
     if (!geminiService) return;
     setIsLoading(true);
     
-    // Setup AbortController
+    // Setup AbortController for stop functionality
     if (abortControllerRef.current) {
         abortControllerRef.current.abort();
     }
@@ -284,6 +297,7 @@ const App: React.FC = () => {
     setMessages([...history, botMessage]);
 
     try {
+      // Combine all active system prompts
       const combinedSystemInstruction = settings.systemPrompts
         .filter(p => p.isActive)
         .map(p => p.content)
@@ -296,6 +310,7 @@ const App: React.FC = () => {
         combinedSystemInstruction,
         settings.generation,
         (chunkText) => {
+           // Update message with partial chunks
            setMessages(prev => 
             prev.map(msg => 
               msg.id === tempBotId ? { ...msg, text: chunkText } : msg
@@ -305,6 +320,7 @@ const App: React.FC = () => {
         controller.signal
       );
       
+      // Final update with full text and key index
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempBotId ? { ...msg, text: fullText, keyIndex: usedKeyIndex } : msg
@@ -332,6 +348,9 @@ const App: React.FC = () => {
     }
   };
 
+  /**
+   * Stops the current AI generation process.
+   */
   const handleStopGeneration = () => {
       if (abortControllerRef.current) {
           abortControllerRef.current.abort();
@@ -340,6 +359,9 @@ const App: React.FC = () => {
       }
   };
 
+  /**
+   * Unlocks the application and refreshes the login session.
+   */
   const handleUnlock = () => {
       setIsLocked(false);
       const newSettings = {
@@ -351,11 +373,12 @@ const App: React.FC = () => {
   };
 
 
-  // --- Handlers ---
+  // --- Event Handlers ---
 
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || !geminiService) return;
     
+    // Enforce API key requirement
     if (apiKeys.filter(k => k.isActive).length === 0) {
       setIsSettingsOpen(true);
       return;
@@ -392,11 +415,13 @@ const App: React.FC = () => {
     const targetMsg = messages[index];
     
     if (targetMsg.role === Role.USER) {
+       // Regenerate from this user message point
        const newHistory = messages.slice(0, index + 1);
        setMessages(newHistory);
        await triggerBotResponse(newHistory, targetMsg.text);
     } 
     else {
+      // Regenerate the bot's last response (find preceding user message)
       let userMsgIndex = index - 1;
       while (userMsgIndex >= 0 && messages[userMsgIndex].role !== Role.USER) {
         userMsgIndex--;
@@ -514,6 +539,7 @@ const App: React.FC = () => {
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
 
+  // Security Lock Screen
   if (isLocked) {
       return (
           <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>

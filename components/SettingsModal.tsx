@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -17,7 +18,10 @@ interface SettingsModalProps {
   geminiService: GeminiService | null;
 }
 
-// CollapsibleSection Component
+/**
+ * CollapsibleSection Component
+ * Renders a section of settings that can be expanded or collapsed.
+ */
 const CollapsibleSection = ({ 
   title, 
   children, 
@@ -60,6 +64,10 @@ const CollapsibleSection = ({
   );
 };
 
+/**
+ * SettingsModal Component
+ * Manages all application configurations including API keys, Models, Theme, and Security.
+ */
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
@@ -69,6 +77,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateSettings,
   geminiService
 }) => {
+  // Local state to buffer changes before saving
   const [localKeys, setLocalKeys] = useState<KeyConfig[]>([]);
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [activeTab, setActiveTab] = useState<'general' | 'model' | 'security'>('general');
@@ -90,12 +99,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   // New key inputs
   const [newKeyInput, setNewKeyInput] = useState('');
 
-  // Prompt editing
+  // Prompt editing state
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
 
-  // Security editing
+  // Security editing state
   const [newQuestion, setNewQuestion] = useState({ q: '', a: '' });
 
+  // Initialize local state when modal opens
   useEffect(() => {
     if (isOpen) {
       setLocalKeys(JSON.parse(JSON.stringify(apiKeys))); // Deep copy
@@ -108,6 +118,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen, apiKeys, settings]);
 
+  // --- Handlers for API Keys ---
   const handleAddKey = () => {
     if (newKeyInput.trim()) {
       const isDuplicate = localKeys.some(k => k.key === newKeyInput.trim());
@@ -136,6 +147,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     setLocalKeys(localKeys.map(k => k.id === id ? { ...k, ...updates } : k));
   };
 
+  // --- Handlers for Models ---
   const handleFetchModels = async () => {
     if (!geminiService) return;
     
@@ -169,6 +181,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  // --- Handlers for System Prompts ---
   const handleAddPrompt = () => {
     const newId = uuidv4();
     const newPrompt: SystemPrompt = {
@@ -201,12 +214,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     if (editingPromptId === id) setEditingPromptId(null);
   };
 
+  // --- Main Save Handler ---
   const handleSave = () => {
     onUpdateKeys(localKeys);
     onUpdateSettings(localSettings);
     onClose();
   };
 
+  // --- Config Export/Import ---
   const handleExportSettings = () => {
     const data = {
       version: 2,
@@ -265,6 +280,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     reader.readAsText(file);
   };
 
+  // --- Security Helpers ---
   const handleAddSecurityQuestion = () => {
     if (newQuestion.q && newQuestion.a) {
         setLocalSettings({
@@ -307,7 +323,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Tab Navigation */}
         <div className="flex border-b border-gray-200 dark:border-gray-800 px-6">
             {tabs.map(tab => (
                 <button
@@ -321,6 +337,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             ))}
         </div>
 
+        {/* Scrollable Content Area */}
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           
           {/* General Tab */}
@@ -747,7 +764,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
         </div>
 
-        {/* Footer */}
+        {/* Footer Actions */}
         <div className="p-6 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 rounded-b-xl flex justify-end gap-3 flex-shrink-0">
           <button 
             onClick={onClose}

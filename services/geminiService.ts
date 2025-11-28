@@ -5,15 +5,28 @@ import { Message, Role, KeyConfig, GenerationConfig } from "../types";
 // Helper to wait/sleep
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+/**
+ * Service class for handling Google Gemini API interactions.
+ * Manages API key rotation, model listing, and streaming chat responses.
+ */
 export class GeminiService {
   private keys: KeyConfig[] = [];
   private currentKeyIndex: number = 0;
   private currentKeyUsageCount: number = 0;
 
+  /**
+   * Initializes the service with a list of API keys.
+   * @param initialKeys Array of KeyConfig objects.
+   */
   constructor(initialKeys: KeyConfig[]) {
     this.updateKeys(initialKeys);
   }
 
+  /**
+   * Updates the internal list of API keys.
+   * Resets usage counters if the current index becomes invalid.
+   * @param newKeys New array of KeyConfig objects.
+   */
   public updateKeys(newKeys: KeyConfig[]) {
     this.keys = newKeys;
     // Reset counters if current index is out of bounds
@@ -23,6 +36,12 @@ export class GeminiService {
     }
   }
 
+  /**
+   * Fetches the list of available models using a specific API key.
+   * Handles differences in SDK response formats (iterator vs array).
+   * @param apiKey The API key to use for the request.
+   * @returns A promise resolving to an array of model names (strings).
+   */
   public async listModels(apiKey: string): Promise<string[]> {
     try {
       const ai = new GoogleGenAI({ apiKey });
@@ -60,6 +79,12 @@ export class GeminiService {
     }
   }
 
+  /**
+   * Retrieves the next available active API key based on rotation logic.
+   * Checks for rate limits and usage limits per key.
+   * @returns The selected API key string.
+   * @throws Error if no active or usable keys are available.
+   */
   private getNextAvailableKey(): string {
     const activeKeys = this.keys.filter(k => k.isActive);
     
@@ -70,16 +95,19 @@ export class GeminiService {
     const currentKeyConfig = this.keys[this.currentKeyIndex];
     let shouldSwitch = false;
 
+    // Check conditions to switch key
     if (!currentKeyConfig || !currentKeyConfig.isActive) {
       shouldSwitch = true;
     }
     else if (currentKeyConfig.isRateLimited) {
+      // If rate limited, check if cooldown period (1 min) has passed
       if (Date.now() - currentKeyConfig.lastUsed > 60000) {
          currentKeyConfig.isRateLimited = false;
       } else {
          shouldSwitch = true;
       }
     }
+    // Check usage limit (polling count)
     else if (this.currentKeyUsageCount >= (currentKeyConfig.usageLimit || 1)) {
       shouldSwitch = true;
     }
@@ -89,6 +117,7 @@ export class GeminiService {
       return currentKeyConfig.key;
     }
 
+    // Find next usable key
     const startIndex = (this.currentKeyIndex + 1) % this.keys.length;
     let foundIndex = -1;
 
@@ -114,6 +143,7 @@ export class GeminiService {
       return this.keys[foundIndex].key;
     }
 
+    // Fallback: If all are rate limited, pick the first active one anyway
     const fallbackIndex = this.keys.findIndex((k, i) => i >= startIndex && k.isActive) 
                          ?? this.keys.findIndex(k => k.isActive);
     
@@ -126,6 +156,10 @@ export class GeminiService {
     throw new Error("No usable API keys found.");
   }
 
+  /**
+   * Marks a specific key as rate-limited and records the timestamp.
+   * @param keyString The API key to mark.
+   */
   private markKeyRateLimited(keyString: string) {
     const config = this.keys.find(k => k.key === keyString);
     if (config) {
@@ -135,10 +169,28 @@ export class GeminiService {
     }
   }
 
+  /**
+   * Helper to get the 1-based index of a key for display purposes.
+   * @param keyString The API key.
+   * @returns The index + 1.
+   */
   private getKeyIndex(keyString: string): number {
     return this.keys.findIndex(k => k.key === keyString) + 1;
   }
 
+  /**
+   * Sends a message to the Gemini API and streams the response.
+   * Handles key rotation automatically on 429/403 errors.
+   * 
+   * @param modelId The model to use.
+   * @param history Previous chat history.
+   * @param newMessage The new user message.
+   * @param systemInstruction Optional system instruction/prompt.
+   * @param generationConfig Config for temperature, topP, etc.
+   * @param onChunk Callback for receiving streaming text chunks.
+   * @param abortSignal Signal to abort the request.
+   * @returns Object containing the full text response and the key index used.
+   */
   public async streamChatResponse(
     modelId: string,
     history: Message[],
@@ -223,12 +275,14 @@ export class GeminiService {
         const isRateLimit = error.message?.includes('429') || error.status === 429;
         const isQuota = error.message?.includes('403') || error.status === 403;
 
+        // If rate limited, mark key and retry loop will pick next key
         if (isRateLimit || isQuota) {
           this.markKeyRateLimited(apiKey);
           attempts++;
           await delay(500); 
           continue; 
         } else {
+          // Fatal error (e.g. bad request), rethrow
           throw error;
         }
       }

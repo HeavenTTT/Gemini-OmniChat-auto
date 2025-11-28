@@ -13,12 +13,17 @@ interface SecurityLockProps {
   lang: Language;
 }
 
+/**
+ * SecurityLock Component
+ * Displays a lock screen requiring a password or security question answer to proceed.
+ */
 const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) => {
   const [mode, setMode] = useState<'password' | 'question'>('password');
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
   const [questionIndex, setQuestionIndex] = useState(0);
 
+  // Initialize state based on configuration
   useEffect(() => {
     // If no password set but enabled (edge case), default to question or disable
     if (!config.password && config.questions.length > 0) {
@@ -31,6 +36,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
     }
   }, [config, onUnlock]);
 
+  // Handle form submission
   const handleUnlock = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     
@@ -52,6 +58,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
     }
   };
 
+  // Toggle between Password and Security Question modes
   const switchMode = () => {
       setMode(mode === 'password' ? 'question' : 'password');
       setInput('');
