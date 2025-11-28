@@ -1,6 +1,6 @@
 
 <div align="center">
-<img width="150" height="150" alt="Logo" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/39.svg" />
+<img width="150" alt="Kirby Logo" src="https://upload.wikimedia.org/wikipedia/en/2/22/Kirby_the_Hero.png" />
 <h1>Gemini OmniChat</h1>
 <p>一个基于 Google Gemini API 的高性能、功能丰富的聊天界面。</p>
 
@@ -8,11 +8,15 @@
   <span>🇨🇳 中文说明</span> | 
   <a href="./README.md">🇺🇸 English</a>
 </p>
+
+<p style="color: #999; font-style: italic; font-size: 0.75rem;">* 注意：本应用程序的代码完全由 AI 生成。 *</p>
 </div>
 
 ---
 
 ## 🚀 功能特性
+
+<div align="right"><sub style="color: #aaa; font-style: italic;">* (代码完全由 AI 生成) *</sub></div>
 
 *   **多 API Key 轮询**: 自动在 API Key 池中轮询切换，有效应对速率限制 (Rate Limits) 和配额问题。
 *   **Markdown 支持**: 完整的 Markdown 渲染，包含代码块高亮和一键复制功能。
@@ -21,6 +25,8 @@
 *   **安全锁**: 可选的密码和安全问题保护，防止他人查看您的聊天记录。
 *   **系统提示词 (System Instructions)**: 管理并合并多个系统提示词（人设/指令）。
 *   **模型选择**: 支持从 API 自动获取当前 Key 可用的模型列表。
+
+<p align="center" style="color: #aaa; font-style: italic; font-size: 0.7rem; margin-top: -10px; margin-bottom: 20px;">* ...每一行代码都是 AI 生成的... *</p>
 
 ## 🛠 快速开始
 
@@ -61,6 +67,8 @@
 
 5.  在浏览器中打开 [http://localhost:3000](http://localhost:3000)。
 
+<div align="right"><sub style="color: #bbb; font-style: italic;">* 由 AI 生成 *</sub></div>
+
 ### 3. 使用指南
 
 1.  **配置 API Keys**: 
@@ -81,6 +89,13 @@
 2.  在 Vercel 中导入该项目。
 3.  (可选) 在 Vercel 设置的 Environment Variables (环境变量) 中添加 `GEMINI_API_KEY`。
 4.  点击 Deploy 部署！
+
+---
+<div align="center">
+  <p style="color: #ccc; font-style: italic; font-size: 0.7rem;">
+    * 免责声明：整个项目，包括逻辑、UI 和文档，均完全由 AI 生成。 *
+  </p>
+</div>
 
 ## 📄 开源协议
 
