@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message, Role, Language, TextWrappingMode } from '../types';
 import { User, AlertCircle, Copy, Check, Edit2, Trash2, RefreshCw, X, Save } from 'lucide-react';
@@ -57,6 +57,45 @@ const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, 
   );
 };
 
+// Helper component for auto-resizing textarea
+const AutoResizeTextarea = ({ 
+  value, 
+  onChange, 
+  onKeyDown, 
+  fontSize, 
+  autoFocus 
+}: { 
+  value: string, 
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, 
+  onKeyDown: (e: React.KeyboardEvent) => void, 
+  fontSize: number,
+  autoFocus?: boolean
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    if (textareaRef.current) {
+      // Reset height to auto to correctly calculate scrollHeight for shrinking content
+      textareaRef.current.style.height = 'auto';
+      // Set height to scrollHeight to fit content
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [value]);
+
+  return (
+    <textarea 
+      ref={textareaRef}
+      value={value} 
+      onChange={onChange} 
+      onKeyDown={onKeyDown} 
+      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit" 
+      rows={1}
+      style={{ fontSize: `${fontSize}px` }} 
+      autoFocus={autoFocus} 
+    />
+  );
+};
+
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEditMessage, onDeleteMessage, onRegenerate, language, fontSize, textWrapping, bubbleTransparency }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -90,77 +129,109 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
 
   return (
     <div className="flex flex-col space-y-4 pb-4">
-      {messages.map((msg) => (
-        <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
-          <div className={`flex max-w-[95%] md:max-w-[85%] gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'}`}>
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
-              {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
-            </div>
-            <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'}`}>
-              <div 
-                  className={`relative px-3 py-2.5 rounded-2xl shadow-sm w-full backdrop-blur-sm transition-all duration-300 ${
-                    msg.role === Role.USER 
-                      ? 'text-white rounded-tr-sm' 
-                      : msg.isError 
-                        ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-sm' 
-                        : 'border border-primary-100 dark:border-primary-800 text-gray-800 dark:text-gray-100 rounded-tl-sm'
-                  }`}
-                  style={
-                    msg.role === Role.USER 
-                    ? { backgroundColor: `rgba(var(--color-theme-primary-rgb), ${bubbleTransparency / 100})` }
-                    : (msg.role === Role.MODEL && !msg.isError) 
-                      ? { 
-                          // Apply a lighter tint of the theme color for the bot (15% opacity scaling)
-                          backgroundColor: `rgba(var(--color-theme-primary-rgb), ${(bubbleTransparency / 100) * 0.15})` 
-                        } 
-                      : {}
-                  }
-              >
-                {editingId === msg.id ? (
-                  <div className="w-full min-w-[280px]">
-                    <textarea value={editText} onChange={(e) => setEditText(e.target.value)} onKeyDown={(e) => handleKeyDown(e, msg)} className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit" rows={Math.max(1, editText.split('\n').length)} style={{ fontSize: `${fontSize}px` }} autoFocus />
-                    <div className="flex justify-end gap-2 mt-2">
-                       <button onClick={cancelEditing} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400'}`} title={t('action.cancel', language)}><X className="w-5 h-5 md:w-4 md:h-4"/></button>
-                       <button onClick={() => saveEdit(msg)} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/50'}`} title={t('action.confirm', language)}><Save className="w-5 h-5 md:w-4 md:h-4"/></button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {msg.isError ? (
-                      <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
-                    ) : (
-                      <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
-                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
-                      </div>
-                    )}
-                  </>
-                )}
+      {messages.map((msg) => {
+        const isEditing = editingId === msg.id;
+        
+        // Dynamic opacity: If editing, force 100% opacity, otherwise use setting
+        const effectiveTransparency = isEditing ? 100 : bubbleTransparency;
+        
+        // Calculate styles based on effectiveTransparency
+        const borderAlpha = 0.5 + (effectiveTransparency / 100) * 0.5;
+        const shadowAlpha = (100 - effectiveTransparency) / 100;
+        
+        const textShadowStyle = effectiveTransparency < 90 
+          ? `0 1px 2px rgba(var(--color-theme-primary-rgb), ${shadowAlpha})` 
+          : 'none';
+
+        // Background color calculation
+        let backgroundColor;
+        if (msg.role === Role.USER) {
+             backgroundColor = `rgba(var(--color-theme-primary-rgb), ${effectiveTransparency / 100})`;
+        } else if (msg.role === Role.MODEL && !msg.isError) {
+             // For bot, standard tint is 15%. If opaque (100% setting), it stays 15% tint. 
+             // Logic: (Setting/100) * 0.15. 
+             backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
+        }
+
+        return (
+          <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
+            <div className={`flex max-w-[95%] md:max-w-[85%] gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'}`}>
+              <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
+                {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
               </div>
-               
-              <div className="flex items-center gap-2 mt-1 px-1 h-8">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                {msg.role === Role.MODEL && !msg.isError && (
-                  <div className="flex items-center gap-1">
-                      {msg.keyIndex && (
-                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="API Key Index">#{msg.keyIndex}</span>
+              <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'}`}>
+                <div 
+                    className={`relative px-3 py-2.5 rounded-2xl shadow-sm w-full backdrop-blur-sm transition-all duration-300 ${
+                      msg.role === Role.USER 
+                        ? 'text-white rounded-tr-sm border' 
+                        : msg.isError 
+                          ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-sm' 
+                          : 'border text-gray-800 dark:text-gray-100 rounded-tl-sm'
+                    }`}
+                    style={
+                      !msg.isError ? { 
+                          backgroundColor,
+                          borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`,
+                          textShadow: textShadowStyle
+                        } : {}
+                    }
+                >
+                  {isEditing ? (
+                    <div className="w-full">
+                      <AutoResizeTextarea 
+                        value={editText} 
+                        onChange={(e) => setEditText(e.target.value)} 
+                        onKeyDown={(e) => handleKeyDown(e, msg)} 
+                        fontSize={fontSize}
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                         <button onClick={cancelEditing} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400'}`} title={t('action.cancel', language)}>
+                             <X className="w-5 h-5 md:w-4 md:h-4"/>
+                         </button>
+                         <button onClick={() => saveEdit(msg)} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50'}`} title={t('action.confirm', language)}>
+                             <Save className="w-5 h-5 md:w-4 md:h-4"/>
+                         </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {msg.isError ? (
+                        <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
+                      ) : (
+                        <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
+                          <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
+                        </div>
                       )}
-                      {msg.model && (
-                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="Model Used">{msg.model}</span>
-                      )}
-                  </div>
-                )}
-                {!isLoading && editingId !== msg.id && (
-                  <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                    <button onClick={() => startEditing(msg)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={t('action.edit', language)}><Edit2 className="w-5 h-5 md:w-3 md:h-3" /></button>
-                    <button onClick={() => onRegenerate(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}><RefreshCw className="w-5 h-5 md:w-3 md:h-3" /></button>
-                    <button onClick={() => onDeleteMessage(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-colors" title={t('action.delete', language)}><Trash2 className="w-5 h-5 md:w-3 md:h-3" /></button>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
+                 
+                <div className="flex items-center gap-2 mt-1 px-1 h-8">
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  {msg.role === Role.MODEL && !msg.isError && (
+                    <div className="flex items-center gap-1">
+                        {msg.keyIndex && (
+                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="API Key Index">#{msg.keyIndex}</span>
+                        )}
+                        {msg.model && (
+                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="Model Used">{msg.model}</span>
+                        )}
+                    </div>
+                  )}
+                  {!isLoading && editingId !== msg.id && (
+                    <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                      <button onClick={() => startEditing(msg)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={t('action.edit', language)}><Edit2 className="w-5 h-5 md:w-3 md:h-3" /></button>
+                      <button onClick={() => onRegenerate(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}><RefreshCw className="w-5 h-5 md:w-3 md:h-3" /></button>
+                      <button onClick={() => onDeleteMessage(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-colors" title={t('action.delete', language)}><Trash2 className="w-5 h-5 md:w-3 md:h-3" /></button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
       {isLoading && (
         <div className="flex justify-start animate-fade-in-up px-2 md:px-0">
            <div className="flex gap-3">

@@ -17,7 +17,7 @@ import { t } from './utils/i18n';
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
 const STORAGE_KEYS_KEY = 'gemini_omnichat_keys_v4';
-const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v6'; 
+const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v7'; 
 const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 
@@ -44,7 +44,7 @@ const App: React.FC = () => {
     theme: 'light', // Default to Day/Light
     language: 'zh', // Default to Chinese
     fontSize: 14,
-    textWrapping: 'default',
+    textWrapping: 'auto', // Default to Auto
     bubbleTransparency: 100, // Default to 100% opacity
     security: {
         enabled: false,

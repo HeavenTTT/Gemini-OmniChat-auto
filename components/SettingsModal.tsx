@@ -91,6 +91,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen, apiKeys, settings]);
 
+  // --- Theme Preview Logic ---
+  useEffect(() => {
+    if (!isOpen) return;
+    const root = document.documentElement;
+    // Remove all possible theme classes
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    
+    // Add the currently selected local theme (Preview)
+    root.classList.add(`theme-${localSettings.theme}`);
+    if (['dark', 'twilight'].includes(localSettings.theme)) {
+        root.classList.add('dark');
+    }
+  }, [localSettings.theme, isOpen]);
+
+  const handleCloseOrCancel = () => {
+    // Revert to original settings theme on cancel
+    const root = document.documentElement;
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    
+    root.classList.add(`theme-${settings.theme}`);
+    if (['dark', 'twilight'].includes(settings.theme)) {
+        root.classList.add('dark');
+    }
+    onClose();
+  };
+
   // --- Handlers for API Keys ---
   const handleAddKey = () => {
     setLocalKeys([
@@ -156,6 +182,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSave = () => {
     onUpdateKeys(localKeys);
     onUpdateSettings(localSettings);
+    // Note: No need to revert theme here, as App.tsx will pick up the new settings
     onClose();
   };
 
@@ -243,7 +270,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             {t('settings.title', lang)}
           </h2>
-          <button onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
+          <button onClick={handleCloseOrCancel} className="p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -579,7 +606,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="p-5 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-b-2xl flex justify-end gap-3 flex-shrink-0">
-          <button onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm">
+          <button onClick={handleCloseOrCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm">
             {t('action.cancel', lang)}
           </button>
           <button onClick={handleSave} className="px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
