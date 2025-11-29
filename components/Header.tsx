@@ -1,0 +1,141 @@
+
+"use client";
+
+import React, { useRef } from 'react';
+import { Menu, Plus, Settings, Loader2, Sparkles, Download, Upload } from 'lucide-react';
+import { Language } from '../types';
+import { t } from '../utils/i18n';
+
+interface HeaderProps {
+  currentSessionTitle: string;
+  isSummarizing: boolean;
+  hasMessages: boolean;
+  language: Language;
+  onRename: () => void;
+  onSummarize: () => void;
+  onOpenMobileMenu: () => void;
+  onNewChat: () => void;
+  onOpenSettings: () => void;
+  onSaveChat: () => void;
+  onLoadSession: (messages: any[]) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({
+  currentSessionTitle,
+  isSummarizing,
+  hasMessages,
+  language,
+  onRename,
+  onSummarize,
+  onOpenMobileMenu,
+  onNewChat,
+  onOpenSettings,
+  onSaveChat,
+  onLoadSession
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLoadTrigger = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.messages && Array.isArray(parsed.messages)) {
+          onLoadSession(parsed.messages);
+        } else {
+          alert("Invalid chat file format.");
+        }
+      } catch (err) {
+        alert(t('error.load_file', language));
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
+  };
+
+  const ActionButtons = () => (
+    <div className="flex items-center gap-1">
+      <button 
+        onClick={onSaveChat} 
+        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        title={t('action.save', language)}
+      >
+        <Download className="w-5 h-5" />
+      </button>
+      <button 
+        onClick={handleLoadTrigger} 
+        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        title={t('action.load', language)}
+      >
+        <Upload className="w-5 h-5" />
+      </button>
+      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Header */}
+      <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-10 transition-colors">
+        <div className="flex items-center gap-3 overflow-hidden">
+          <h1 
+            className="font-bold text-lg text-gray-800 dark:text-white truncate max-w-xl cursor-pointer hover:underline decoration-dashed underline-offset-4" 
+            onClick={onRename} 
+            title="Click to rename manually"
+          >
+            {currentSessionTitle}
+          </h1>
+          <button 
+            onClick={onSummarize} 
+            disabled={isSummarizing || !hasMessages} 
+            className="p-1.5 text-gray-400 hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" 
+            title={t('action.summarize', language)}
+          >
+            {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin"/> : <Sparkles className="w-4 h-4" />}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2">
+            <ActionButtons />
+        </div>
+      </header>
+
+      {/* Mobile Header */}
+      <header className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/40 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex items-center gap-2 overflow-hidden flex-1">
+          <button onClick={onOpenMobileMenu} className="p-1 flex-shrink-0 text-gray-700 dark:text-gray-200">
+            <Menu className="w-6 h-6" />
+          </button>
+          <div className="flex items-center gap-1 overflow-hidden min-w-0">
+            <span className="font-bold text-lg dark:text-white truncate max-w-[120px]">{currentSessionTitle}</span>
+            <button 
+              onClick={onSummarize} 
+              disabled={isSummarizing || !hasMessages} 
+              className="p-1 text-gray-500 hover:text-primary-500 dark:text-gray-400 dark:hover:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors flex-shrink-0" 
+              title={t('action.summarize', language)}
+            >
+              {isSummarizing ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Sparkles className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+        <div className="flex gap-0.5 flex-shrink-0 ml-1">
+          <ActionButtons />
+          <button onClick={onNewChat} className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" title={t('action.new_chat', language)}>
+            <Plus className="w-5 h-5" />
+          </button>
+          <button onClick={onOpenSettings} className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" title={t('action.settings', language)}>
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+    </>
+  );
+};
+
+export default Header;

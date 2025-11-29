@@ -1,293 +1,272 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { Message, Role, KeyConfig, GenerationConfig } from "../types";
+import { Message, Role, KeyConfig, GenerationConfig, ModelProvider } from "../types";
+import { OpenAIService } from "./openaiService";
 
 // Helper to wait/sleep
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Service class for handling Google Gemini API interactions.
- * Manages API key rotation, model listing, and streaming chat responses.
+ * Service class for handling Multi-Provider LLM interactions.
+ * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini or OpenAI).
  */
 export class GeminiService {
   private keys: KeyConfig[] = [];
-  private currentKeyIndex: number = 0;
-  private currentKeyUsageCount: number = 0;
+  private keyIndex: number = 0;
+  private keyUsageCount: number = 0;
+  
+  private openAIService: OpenAIService;
 
-  /**
-   * Initializes the service with a list of API keys.
-   * @param initialKeys Array of KeyConfig objects.
-   */
   constructor(initialKeys: KeyConfig[]) {
     this.updateKeys(initialKeys);
+    this.openAIService = new OpenAIService();
   }
 
   /**
-   * Updates the internal list of API keys.
-   * Resets usage counters if the current index becomes invalid.
-   * @param newKeys New array of KeyConfig objects.
+   * Updates the pool of API keys available for rotation.
+   * Resets usage counters if the key list changes significantly.
    */
   public updateKeys(newKeys: KeyConfig[]) {
     this.keys = newKeys;
-    // Reset counters if current index is out of bounds
-    if (this.currentKeyIndex >= this.keys.length) {
-      this.currentKeyIndex = 0;
-      this.currentKeyUsageCount = 0;
+    if (this.keyIndex >= this.keys.length) {
+        this.keyIndex = 0;
+        this.keyUsageCount = 0;
     }
   }
 
   /**
-   * Fetches the list of available models using a specific API key.
-   * Handles differences in SDK response formats (iterator vs array).
-   * @param apiKey The API key to use for the request.
-   * @returns A promise resolving to an array of model names (strings).
+   * Lists available models for a specific key configuration.
+   * Supports both Google GenAI and OpenAI compatible endpoints.
    */
-  public async listModels(apiKey: string): Promise<string[]> {
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.list();
-      
-      const models: string[] = [];
-      
-      // Handle response being iterable (Pager)
-      try {
-          for await (const model of response) {
-            const m = model as any;
-            if (m.name) {
-              models.push(m.name.replace('models/', ''));
+  public async listModels(keyConfig: KeyConfig): Promise<string[]> {
+    if (keyConfig.provider === 'openai') {
+        if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
+        return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+    } else {
+        // Google Implementation
+        const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+        const response = await ai.models.list();
+        const models: string[] = [];
+        try {
+            for await (const model of response) {
+                const m = model as any;
+                if (m.name) models.push(m.name.replace('models/', ''));
             }
-          }
-      } catch (iterError) {
-          console.warn("Async iteration failed, checking properties", iterError);
-          const raw = response as any;
-          if (Array.isArray(raw.models)) {
-             raw.models.forEach((m: any) => {
-                 if (m.name) models.push(m.name.replace('models/', ''));
-             });
-          }
-      }
-      
-      return models.filter(m => 
-          m.includes('gemini') || 
-          m.includes('flash') || 
-          m.includes('pro') || 
-          m.includes('thinking')
-      );
-    } catch (error) {
-      console.error("Failed to list models", error);
-      throw error;
+        } catch (e) {
+             const raw = response as any;
+             if (Array.isArray(raw.models)) {
+                 raw.models.forEach((m: any) => {
+                     if (m.name) models.push(m.name.replace('models/', ''));
+                 });
+             }
+        }
+        return models.filter(m => 
+            m.includes('gemini') || m.includes('flash') || m.includes('pro') || m.includes('thinking')
+        );
     }
   }
 
   /**
-   * Retrieves the next available active API key based on rotation logic.
-   * Checks for rate limits and usage limits per key.
-   * @returns The selected API key string.
-   * @throws Error if no active or usable keys are available.
+   * Tests connection for a specific key configuration to ensure validity.
    */
-  private getNextAvailableKey(): string {
+  public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
+      try {
+          const models = await this.listModels(keyConfig);
+          return models.length > 0;
+      } catch (e) {
+          console.error("Test connection failed", e);
+          return false;
+      }
+  }
+
+  /**
+   * Retrieves the next available active API key using a Round-Robin strategy.
+   * Handles usage limits per key (Poll Count) and skips rate-limited keys.
+   */
+  private getNextAvailableKey(): KeyConfig {
     const activeKeys = this.keys.filter(k => k.isActive);
     
     if (activeKeys.length === 0) {
-      throw new Error("No active API keys available. Please enable at least one key in settings.");
+      throw new Error("No active API keys available. Please enable at least one in settings.");
     }
 
-    const currentKeyConfig = this.keys[this.currentKeyIndex];
-    let shouldSwitch = false;
-
-    // Check conditions to switch key
-    if (!currentKeyConfig || !currentKeyConfig.isActive) {
-      shouldSwitch = true;
-    }
-    else if (currentKeyConfig.isRateLimited) {
-      // If rate limited, check if cooldown period (1 min) has passed
-      if (Date.now() - currentKeyConfig.lastUsed > 60000) {
-         currentKeyConfig.isRateLimited = false;
-      } else {
-         shouldSwitch = true;
-      }
-    }
-    // Check usage limit (polling count)
-    else if (this.currentKeyUsageCount >= (currentKeyConfig.usageLimit || 1)) {
-      shouldSwitch = true;
-    }
-
-    if (!shouldSwitch) {
-      this.currentKeyUsageCount++;
-      return currentKeyConfig.key;
-    }
-
-    // Find next usable key
-    const startIndex = (this.currentKeyIndex + 1) % this.keys.length;
-    let foundIndex = -1;
-
-    for (let i = 0; i < this.keys.length; i++) {
-      const idx = (startIndex + i) % this.keys.length;
-      const key = this.keys[idx];
-      
-      if (key.isActive) {
-        if (key.isRateLimited && Date.now() - key.lastUsed > 60000) {
-          key.isRateLimited = false;
-        }
-
-        if (!key.isRateLimited) {
-          foundIndex = idx;
-          break;
-        }
-      }
-    }
-
-    if (foundIndex !== -1) {
-      this.currentKeyIndex = foundIndex;
-      this.currentKeyUsageCount = 1; 
-      return this.keys[foundIndex].key;
-    }
-
-    // Fallback: If all are rate limited, pick the first active one anyway
-    const fallbackIndex = this.keys.findIndex((k, i) => i >= startIndex && k.isActive) 
-                         ?? this.keys.findIndex(k => k.isActive);
+    // Simple round-robin strategy across ALL active keys
+    // In a mixed-provider pool, this means we might switch from Gemini to OpenAI per message.
     
-    if (fallbackIndex !== -1) {
-      this.currentKeyIndex = fallbackIndex;
-      this.currentKeyUsageCount = 1;
-      return this.keys[fallbackIndex].key;
+    const currentKey = activeKeys[this.keyIndex % activeKeys.length];
+    
+    // Check usage limits (Poll Count)
+    if (this.keyUsageCount >= (currentKey.usageLimit || 1)) {
+        this.keyIndex = (this.keyIndex + 1) % activeKeys.length;
+        this.keyUsageCount = 0;
+    }
+    
+    const selectedKey = activeKeys[this.keyIndex % activeKeys.length];
+    
+    // Check rate limits (basic check: skip if limited < 60s ago)
+    if (selectedKey.isRateLimited && Date.now() - selectedKey.lastUsed < 60000) {
+        // Find next non-limited key
+        for (let i = 1; i < activeKeys.length; i++) {
+            const nextIdx = (this.keyIndex + i) % activeKeys.length;
+            const k = activeKeys[nextIdx];
+            if (!k.isRateLimited || Date.now() - k.lastUsed > 60000) {
+                this.keyIndex = nextIdx;
+                this.keyUsageCount = 0;
+                return k;
+            }
+        }
     }
 
-    throw new Error("No usable API keys found.");
+    this.keyUsageCount++;
+    return selectedKey;
   }
 
   /**
-   * Marks a specific key as rate-limited and records the timestamp.
-   * @param keyString The API key to mark.
+   * Marks a specific key as rate-limited to avoid using it temporarily.
    */
-  private markKeyRateLimited(keyString: string) {
-    const config = this.keys.find(k => k.key === keyString);
-    if (config) {
-      config.isRateLimited = true;
-      config.lastUsed = Date.now();
-      console.warn(`Key ...${keyString.slice(-4)} marked as rate limited.`);
+  private markKeyRateLimited(id: string) {
+    const key = this.keys.find(k => k.id === id);
+    if (key) {
+      key.isRateLimited = true;
+      key.lastUsed = Date.now();
     }
   }
 
-  /**
-   * Helper to get the 1-based index of a key for display purposes.
-   * @param keyString The API key.
-   * @returns The index + 1.
-   */
-  private getKeyIndex(keyString: string): number {
-    return this.keys.findIndex(k => k.key === keyString) + 1;
+  private getKeyDisplayIndex(id: string): number {
+      return this.keys.findIndex(k => k.id === id) + 1;
   }
 
   /**
-   * Sends a message to the Gemini API and streams the response.
-   * Handles key rotation automatically on 429/403 errors.
-   * 
-   * @param modelId The model to use.
-   * @param history Previous chat history.
-   * @param newMessage The new user message.
-   * @param systemInstruction Optional system instruction/prompt.
-   * @param generationConfig Config for temperature, topP, etc.
-   * @param onChunk Callback for receiving streaming text chunks.
-   * @param abortSignal Signal to abort the request.
-   * @returns Object containing the full text response and the key index used.
+   * Streams chat response using the next available key and its specific configuration.
+   * Handles retries on failure and switches keys automatically.
    */
   public async streamChatResponse(
-    modelId: string,
+    // We no longer accept global modelId, we use key's preferred model
+    _ignoredGlobalModelId: string, 
     history: Message[],
     newMessage: string,
     systemInstruction: string | undefined,
     generationConfig: GenerationConfig,
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal
-  ): Promise<{ text: string, usedKeyIndex: number }> {
+  ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
+
     const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
     let attempts = 0;
+    const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
 
-    // Filter history to strictly valid messages
-    const validHistory = history
-      .filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError)
-      .map(msg => ({
+    while (attempts < maxRetries) {
+        let keyConfig: KeyConfig;
+        try {
+            keyConfig = this.getNextAvailableKey();
+        } catch (e: any) {
+            throw e;
+        }
+
+        const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-2.5-flash';
+
+        try {
+            let text = "";
+            if (keyConfig.provider === 'openai') {
+                if (!keyConfig.baseUrl) throw new Error("Base URL missing for OpenAI key");
+                text = await this.openAIService.streamChat(
+                    keyConfig.key,
+                    keyConfig.baseUrl,
+                    modelToUse,
+                    history,
+                    newMessage,
+                    systemInstruction,
+                    generationConfig,
+                    onChunk,
+                    abortSignal
+                );
+            } else {
+                // Google Gemini API Call
+                text = await this.callGoogle(
+                    keyConfig.key,
+                    modelToUse,
+                    validHistory,
+                    newMessage,
+                    systemInstruction,
+                    generationConfig,
+                    onChunk,
+                    abortSignal
+                );
+            }
+
+            return { 
+                text, 
+                usedKeyIndex: this.getKeyDisplayIndex(keyConfig.id), 
+                provider: keyConfig.provider,
+                usedModel: modelToUse
+            };
+
+        } catch (error: any) {
+            if (abortSignal?.aborted) throw new Error("Aborted by user");
+            
+            console.error(`API Call failed (${keyConfig.provider})`, error);
+            
+            const isRateLimit = error.message?.includes('429') || error.status === 429;
+            if (isRateLimit) {
+                this.markKeyRateLimited(keyConfig.id);
+                attempts++;
+                await delay(500);
+                continue;
+            }
+            throw error;
+        }
+    }
+    throw new Error("All active keys failed.");
+  }
+
+  /**
+   * Direct call to Google GenAI SDK.
+   */
+  private async callGoogle(
+      apiKey: string, 
+      modelId: string, 
+      history: Message[], 
+      newMessage: string, 
+      systemInstruction: string | undefined, 
+      config: GenerationConfig,
+      onChunk?: (text: string) => void,
+      abortSignal?: AbortSignal
+  ): Promise<string> {
+      const ai = new GoogleGenAI({ apiKey });
+      const googleHistory = history.map(msg => ({
         role: msg.role === Role.USER ? 'user' : 'model',
         parts: [{ text: msg.text }]
       }));
 
-    while (attempts < maxRetries) {
-      let apiKey = "";
-      try {
-        apiKey = this.getNextAvailableKey();
-      } catch (e: any) {
-        throw e;
-      }
-      
-      try {
-        const ai = new GoogleGenAI({ apiKey });
-        
-        // Common config
-        const commonConfig = {
-          systemInstruction: systemInstruction,
-          temperature: generationConfig.temperature,
-          topP: generationConfig.topP,
-          topK: generationConfig.topK,
-          maxOutputTokens: generationConfig.maxOutputTokens
-        };
+      const commonConfig = {
+        systemInstruction: systemInstruction,
+        temperature: config.temperature,
+        topP: config.topP,
+        topK: config.topK,
+        maxOutputTokens: config.maxOutputTokens
+      };
 
-        const client = ai.chats.create({
-          model: modelId,
-          config: commonConfig,
-          history: validHistory
-        });
+      const client = ai.chats.create({
+        model: modelId,
+        config: commonConfig,
+        history: googleHistory
+      });
 
-        // Handle Streaming
-        if (generationConfig.stream) {
-          const resultStream = await client.sendMessageStream({ message: newMessage });
-          let fullText = '';
-          for await (const chunk of resultStream) {
-            if (abortSignal?.aborted) {
-                break;
-            }
-            const chunkText = (chunk as GenerateContentResponse).text;
-            if (chunkText) {
-              fullText += chunkText;
-              if (onChunk) onChunk(fullText);
-            }
+      if (config.stream) {
+        const resultStream = await client.sendMessageStream({ message: newMessage });
+        let fullText = '';
+        for await (const chunk of resultStream) {
+          if (abortSignal?.aborted) break;
+          const chunkText = (chunk as GenerateContentResponse).text;
+          if (chunkText) {
+            fullText += chunkText;
+            if (onChunk) onChunk(fullText);
           }
-          return { 
-            text: fullText, 
-            usedKeyIndex: this.getKeyIndex(apiKey) 
-          };
-        } 
-        // Handle Non-Streaming
-        else {
-          const result = await client.sendMessage({ message: newMessage });
-          const text = result.text || '';
-          return { 
-             text, 
-             usedKeyIndex: this.getKeyIndex(apiKey) 
-          };
         }
-
-      } catch (error: any) {
-        if (abortSignal?.aborted) {
-             throw new Error("Aborted by user");
-        }
-        console.error("API Call failed with key", apiKey.slice(-4), error);
-
-        const isRateLimit = error.message?.includes('429') || error.status === 429;
-        const isQuota = error.message?.includes('403') || error.status === 403;
-
-        // If rate limited, mark key and retry loop will pick next key
-        if (isRateLimit || isQuota) {
-          this.markKeyRateLimited(apiKey);
-          attempts++;
-          await delay(500); 
-          continue; 
-        } else {
-          // Fatal error (e.g. bad request), rethrow
-          throw error;
-        }
+        return fullText;
+      } else {
+        const result = await client.sendMessage({ message: newMessage });
+        return result.text || '';
       }
-    }
-
-    throw new Error("All active API keys exhausted or failed.");
   }
 }

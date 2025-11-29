@@ -11,6 +11,8 @@ export interface Message {
   timestamp: number;
   isError?: boolean;
   keyIndex?: number; // 1-based index of the key used
+  provider?: ModelProvider; // Track which provider generated this
+  model?: string; // The specific model used for this message
 }
 
 export interface ChatSession {
@@ -20,14 +22,19 @@ export interface ChatSession {
   createdAt: number;
 }
 
+export type ModelProvider = 'google' | 'openai';
+
 export interface KeyConfig {
   id: string;
   key: string;
+  provider: ModelProvider; 
   label?: string;
   isActive: boolean;
   usageLimit: number; // Number of requests before switching
   isRateLimited: boolean;
   lastUsed: number;
+  baseUrl?: string; // Specific Base URL for this key (OpenAI)
+  model?: string;   // Specific Model for this key
 }
 
 export enum GeminiModel {
@@ -69,13 +76,18 @@ export interface GenerationConfig {
 }
 
 export interface AppSettings {
-  model: string; 
-  savedModels: string[]; // List of models fetched from API
+  // Removed global 'model' and 'openAIBaseUrl' as they are now per-key or defaults for new keys
+  defaultModel: string; // Default model for new keys
+  defaultBaseUrl: string; // Default URL for new OpenAI keys
+  
   systemPrompts: SystemPrompt[];
   theme: Theme;
   language: Language;
-  fontSize: number; // Font size in px
-  textWrapping: TextWrappingMode; // Replaced enableTextWrapping
+  fontSize: number; 
+  textWrapping: TextWrappingMode;
+  bubbleTransparency: number; // 0-100
   security: SecurityConfig;
   generation: GenerationConfig;
+  
+  savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }

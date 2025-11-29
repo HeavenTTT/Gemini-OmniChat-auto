@@ -13,6 +13,17 @@
             colors: {
               gray: {
                 950: '#030712',
+              },
+              primary: {
+                DEFAULT: 'rgba(var(--color-theme-primary-rgb), <alpha-value>)',
+                50: 'rgba(var(--color-theme-primary-rgb), 0.1)',
+                100: 'rgba(var(--color-theme-primary-rgb), 0.2)',
+                200: 'rgba(var(--color-theme-primary-rgb), 0.3)',
+                300: 'rgba(var(--color-theme-primary-rgb), 0.4)',
+                400: 'rgba(var(--color-theme-primary-rgb), 0.6)',
+                500: 'rgba(var(--color-theme-primary-rgb), 0.8)',
+                600: 'rgba(var(--color-theme-primary-rgb), 1.0)',
+                700: 'rgba(var(--color-theme-primary-rgb), 1.0)',
               }
             }
           }
@@ -69,7 +80,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="text-gray-100 antialiased h-screen overflow-hidden selection:bg-blue-500/30">
+  <body class="text-gray-100 antialiased h-screen overflow-hidden selection:bg-primary-500/30">
     <div id="root" class="h-full w-full"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
