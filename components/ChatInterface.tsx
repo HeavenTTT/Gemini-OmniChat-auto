@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect } from 'react';
@@ -88,7 +87,7 @@ const AutoResizeTextarea = ({
       value={value} 
       onChange={onChange} 
       onKeyDown={onKeyDown} 
-      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit" 
+      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit min-w-[200px]" 
       rows={1}
       style={{ fontSize: `${fontSize}px` }} 
       autoFocus={autoFocus} 
@@ -157,8 +156,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
           <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
             {/* 
               Bubble Container 
-              - Inherit max-width logic for both display and edit modes
-              - Use w-full inside flex-col to fill the available max-width
+              - Constrain max width to 95% (mobile) or 85% (desktop)
+              - Use w-fit so it hugs content
+              - DO NOT switch to w-full on edit, to preserve visual continuity
             */}
             <div className={`flex max-w-[95%] md:max-w-[85%] gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'}`}>
               
@@ -170,7 +170,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
               {/* Message Content Wrapper */}
               <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
                 <div 
-                    className={`relative px-3 py-2.5 rounded-2xl shadow-sm w-full backdrop-blur-sm transition-all duration-300 ${
+                    className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-fit max-w-full ${
                       msg.role === Role.USER 
                         ? 'text-white rounded-tr-sm border' 
                         : msg.isError 
@@ -186,7 +186,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
                     }
                 >
                   {isEditing ? (
-                    <div className="w-full">
+                    <div className="w-full min-w-[200px]">
                       <AutoResizeTextarea 
                         value={editText} 
                         onChange={(e) => setEditText(e.target.value)} 

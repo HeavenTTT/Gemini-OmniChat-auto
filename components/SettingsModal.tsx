@@ -1,8 +1,7 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders, ExternalLink, Globe, Zap, Network, Server, Link, Settings } from 'lucide-react';
+import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders, ExternalLink, Globe, Zap, Network, Server, Link, Settings, Activity, Power } from 'lucide-react';
 import { GeminiModel, AppSettings, KeyConfig, SystemPrompt, Language, Theme, TextWrappingMode, ModelProvider } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from '../services/geminiService';
@@ -684,77 +683,97 @@ const KeyConfigCard: React.FC<{
     };
 
     return (
-        <div className={`p-5 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
-            <div className="flex flex-col gap-4">
-                {/* Row 1: Provider & Poll Count (Simplified) */}
+        <div className={`p-4 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
+            <div className="flex flex-col gap-3">
+                {/* Row 1: Provider */}
                 <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="relative">
-                             <select
-                                value={config.provider}
-                                onChange={(e) => onUpdate({ provider: e.target.value as ModelProvider, baseUrl: e.target.value === 'openai' ? 'https://api.openai.com/v1' : '' })}
-                                className="appearance-none bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-1.5 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20"
-                            >
-                                <option value="google">Google Gemini</option>
-                                <option value="openai">OpenAI Compatible</option>
-                            </select>
-                            <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-2 pointer-events-none" />
-                        </div>
+                    <div className="relative w-full">
+                         <select
+                            value={config.provider}
+                            onChange={(e) => onUpdate({ provider: e.target.value as ModelProvider, baseUrl: e.target.value === 'openai' ? 'https://api.openai.com/v1' : '' })}
+                            className="appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20"
+                        >
+                            <option value="google">Google Gemini</option>
+                            <option value="openai">OpenAI Compatible</option>
+                        </select>
+                        <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
+                    </div>
+                </div>
+
+                {/* Row 2: API Key Input (Full width) */}
+                <div className="flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors cursor-text" onClick={() => setIsEditingKey(true)}>
+                    <Key className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    {isEditingKey ? (
+                            <input 
+                            type="text" 
+                            autoFocus
+                            placeholder={t('input.apikey_placeholder', lang)}
+                            className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200 min-w-0"
+                            value={config.key}
+                            onChange={(e) => onUpdate({ key: e.target.value })}
+                            onBlur={() => setIsEditingKey(false)}
+                        />
+                    ) : (
+                        <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
+                            {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
+                        </span>
+                    )}
+                </div>
+
+                {/* Row 3: Action Buttons (Activation, Delete, Poll, Test) - Moved BELOW Key Input */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Activation Toggle */}
+                    <button 
+                        onClick={() => onUpdate({ isActive: !config.isActive })}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all flex-1 justify-center border ${
+                            config.isActive 
+                                ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
+                                : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
+                        }`}
+                        title={config.isActive ? t('action.deactivate', lang) : t('action.activate', lang)}
+                    >
+                        {config.isActive ? <Power className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5 opacity-50" />}
+                        {config.isActive ? t('status.active', lang) : t('status.inactive', lang)}
+                    </button>
+
+                     {/* Polling Count */}
+                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg px-2 py-1.5 border border-gray-200 dark:border-gray-700" title={t('settings.poll_count', lang)}>
+                        <Activity className="w-3.5 h-3.5 text-gray-500" />
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase">{t('label.poll_count', lang)}:</span>
+                        <input 
+                            type="number" min="1" max="100"
+                            value={config.usageLimit}
+                            onChange={(e) => onUpdate({ usageLimit: parseInt(e.target.value) || 1 })}
+                            className="w-8 bg-transparent text-xs text-center outline-none font-mono text-gray-800 dark:text-gray-200"
+                        />
                     </div>
                     
-                    <div className="flex items-center gap-2">
-                         <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 rounded-lg px-2 py-1 border border-gray-200 dark:border-gray-800" title={t('settings.poll_count', lang)}>
-                            <span className="text-[10px] font-semibold text-gray-500 uppercase">{t('label.poll', lang)}</span>
-                            <input 
-                                type="number" min="1" max="100"
-                                value={config.usageLimit}
-                                onChange={(e) => onUpdate({ usageLimit: parseInt(e.target.value) || 1 })}
-                                className="w-6 bg-transparent text-xs text-center outline-none font-mono"
-                            />
-                        </div>
-                    </div>
+                    {/* Delete Button */}
+                    <button 
+                        onClick={onRemove} 
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800"
+                        title={t('action.delete_key', lang)}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    {/* Test Button */}
+                     <button 
+                        onClick={handleTest}
+                        disabled={isTesting || !config.key}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm border flex-1 justify-center ${
+                            testResult === true ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400' :
+                            testResult === false ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' :
+                            'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        }`}
+                        title={t('action.test_key', lang)}
+                    >
+                        {isTesting ? <RotateCw className="w-3 h-3 animate-spin"/> : <Network className="w-3 h-3"/>}
+                        {testResult === true ? t('action.ok', lang) : testResult === false ? t('action.error', lang) : t('action.test', lang)}
+                    </button>
                 </div>
 
-                {/* Row 2: API Key Input (Masked) & Active/Delete Controls */}
-                <div className="flex items-center gap-2">
-                    <div className="flex-1 flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors cursor-text" onClick={() => setIsEditingKey(true)}>
-                        <Key className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        {isEditingKey ? (
-                             <input 
-                                type="text" 
-                                autoFocus
-                                placeholder={t('input.apikey_placeholder', lang)}
-                                className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200 min-w-0"
-                                value={config.key}
-                                onChange={(e) => onUpdate({ key: e.target.value })}
-                                onBlur={() => setIsEditingKey(false)}
-                            />
-                        ) : (
-                            <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
-                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                         <button 
-                            onClick={() => onUpdate({ isActive: !config.isActive })}
-                            className={`p-2 rounded-lg transition-all ${config.isActive ? 'bg-primary-100 text-primary-600 hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-200 text-gray-500 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400'}`}
-                            title={config.isActive ? "Deactivate Key" : "Activate Key"}
-                        >
-                            {config.isActive ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                        </button>
-                        <button 
-                            onClick={onRemove} 
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                            title="Remove Key"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Row 3: Base URL (Conditional) */}
+                {/* Row 4: Base URL (Conditional) */}
                 {config.provider === 'openai' && (
                     <div className="flex items-center gap-2 group">
                         <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
@@ -770,7 +789,7 @@ const KeyConfigCard: React.FC<{
                     </div>
                 )}
 
-                {/* Row 4: Model Selector & Actions */}
+                {/* Row 5: Model Selector */}
                 <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label.model', lang)}</span>
@@ -787,30 +806,15 @@ const KeyConfigCard: React.FC<{
                         </datalist>
                     </div>
                     
-                    <div className="flex gap-2 flex-shrink-0">
-                        <button 
-                            onClick={handleFetchModels}
-                            disabled={isFetching || !config.key}
-                            className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={t('action.fetch_models', lang)}
-                        >
-                           <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
-                           <span className="hidden sm:inline">{t('action.fetch', lang)}</span>
-                        </button>
-                        
-                        <button 
-                            onClick={handleTest}
-                            disabled={isTesting || !config.key}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm border ${
-                                testResult === true ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400' :
-                                testResult === false ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' :
-                                'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                        >
-                            {isTesting ? <RotateCw className="w-3 h-3 animate-spin"/> : <Network className="w-3 h-3"/>}
-                            {testResult === true ? t('action.ok', lang) : testResult === false ? t('action.error', lang) : t('action.test', lang)}
-                        </button>
-                    </div>
+                     <button 
+                        onClick={handleFetchModels}
+                        disabled={isFetching || !config.key}
+                        className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={t('action.fetch_models', lang)}
+                    >
+                       <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+                       <span className="hidden sm:inline">{t('action.fetch', lang)}</span>
+                    </button>
                 </div>
             </div>
         </div>
