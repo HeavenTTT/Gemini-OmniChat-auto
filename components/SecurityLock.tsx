@@ -23,18 +23,29 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
   const [error, setError] = useState('');
   const [questionIndex, setQuestionIndex] = useState(0);
 
+  const hasPassword = !!config.password;
+  const hasQuestions = config.questions.length > 0;
+
   // Initialize state based on configuration
   useEffect(() => {
-    // If no password set but enabled (edge case), default to question or disable
-    if (!config.password && config.questions.length > 0) {
-      setMode('question');
-      setQuestionIndex(Math.floor(Math.random() * config.questions.length));
-    }
-    // If neither (bad state), just unlock to prevent lockout
-    if (!config.password && config.questions.length === 0) {
+    if (hasPassword && hasQuestions) {
+        // Randomly choose between password and question
+        if (Math.random() < 0.5) {
+            setMode('password');
+        } else {
+            setMode('question');
+            setQuestionIndex(Math.floor(Math.random() * config.questions.length));
+        }
+    } else if (hasPassword) {
+        setMode('password');
+    } else if (hasQuestions) {
+        setMode('question');
+        setQuestionIndex(Math.floor(Math.random() * config.questions.length));
+    } else {
+        // Should not happen if security is enabled, but as a fallback
         onUnlock();
     }
-  }, [config, onUnlock]);
+  }, [config.password, config.questions.length, onUnlock, hasPassword, hasQuestions]);
 
   // Handle form submission
   const handleUnlock = (e?: React.FormEvent) => {
@@ -44,7 +55,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
       if (input === config.password) {
         onUnlock();
       } else {
-        setError("Incorrect password");
+        setError(t('error.incorrect_password', lang));
         setInput('');
       }
     } else {
@@ -52,7 +63,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
       if (input.trim().toLowerCase() === currentQ.answer.trim().toLowerCase()) {
         onUnlock();
       } else {
-        setError("Incorrect answer");
+        setError(t('error.incorrect_answer', lang));
         setInput('');
       }
     }
@@ -67,9 +78,6 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
           setQuestionIndex(Math.floor(Math.random() * config.questions.length));
       }
   };
-
-  const hasQuestions = config.questions.length > 0;
-  const hasPassword = !!config.password;
 
   return (
     <div className="fixed inset-0 z-[100] bg-gray-100 dark:bg-gray-950 flex flex-col items-center justify-center p-4">
@@ -88,10 +96,10 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
         </p>
 
         <form onSubmit={handleUnlock} className="space-y-4">
-            {mode === 'question' && (
+            {mode === 'question' && hasQuestions && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800 mb-4">
                     <p className="text-blue-800 dark:text-blue-200 text-sm font-medium text-center">
-                        {config.questions[questionIndex]?.question}
+                        {config.questions[questionIndex]?.question || 'N/A'}
                     </p>
                 </div>
             )}

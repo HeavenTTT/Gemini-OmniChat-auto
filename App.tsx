@@ -17,7 +17,7 @@ import { t } from './utils/i18n';
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
 const STORAGE_KEYS_KEY = 'gemini_omnichat_keys_v4';
-const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v7'; 
+const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v8'; 
 const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 
@@ -49,7 +49,8 @@ const App: React.FC = () => {
     security: {
         enabled: false,
         questions: [],
-        lastLogin: Date.now()
+        lastLogin: Date.now(),
+        lockoutDurationSeconds: 86400 // Default 24 hours in seconds
     },
     generation: {
         temperature: 1.0,
@@ -107,6 +108,10 @@ const App: React.FC = () => {
 
     if (storedSettings) {
       loadedSettings = { ...settings, ...JSON.parse(storedSettings) };
+      // Ensure lockoutDurationSeconds is set, even if loaded from older schema
+      if (loadedSettings.security && loadedSettings.security.lockoutDurationSeconds === undefined) {
+          loadedSettings.security.lockoutDurationSeconds = 86400; // Default to 24 hours
+      }
     } 
     setSettings(loadedSettings);
     
@@ -115,7 +120,8 @@ const App: React.FC = () => {
 
     // Security
     if (loadedSettings.security.enabled) {
-        if (Date.now() - (loadedSettings.security.lastLogin || 0) > 86400000) {
+        const lockoutThresholdMs = (loadedSettings.security.lockoutDurationSeconds || 86400) * 1000;
+        if (Date.now() - (loadedSettings.security.lastLogin || 0) > lockoutThresholdMs) {
             setIsLocked(true);
         } else {
              const newSettings = { ...loadedSettings, security: { ...loadedSettings.security, lastLogin: Date.now() } };

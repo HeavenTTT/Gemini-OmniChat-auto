@@ -65,6 +65,7 @@ export interface SecurityConfig {
   password?: string;
   questions: SecurityQuestion[];
   lastLogin: number;
+  lockoutDurationSeconds?: number; // New: Duration in seconds for inactivity lockout
 }
 
 export interface GenerationConfig {
