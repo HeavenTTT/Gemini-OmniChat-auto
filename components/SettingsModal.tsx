@@ -259,8 +259,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in-up">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4 p-0 animate-fade-in-up">
+      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 md:rounded-2xl rounded-none w-full md:max-w-3xl h-full md:h-auto md:max-h-[90vh] shadow-2xl flex flex-col">
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 bg-gray-50/50 dark:bg-gray-900/50 rounded-t-2xl">
@@ -528,7 +528,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                </div>
                            </div>
                            <textarea 
-                             className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[80px] outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
+                             className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[80px] md:h-auto h-[50vh] outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
                              rows={3}
                              value={prompt.content}
                              onChange={e => handleUpdatePrompt(prompt.id, {content: e.target.value})}
@@ -631,6 +631,7 @@ const KeyConfigCard: React.FC<{
     const [isFetching, setIsFetching] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
+    const [isEditingKey, setIsEditingKey] = useState(false);
     
     // Load cached models specific to this key (or generic cache)
     useEffect(() => {
@@ -677,11 +678,16 @@ const KeyConfigCard: React.FC<{
         }
     };
 
+    const getMaskedKey = (key: string) => {
+        if (!key || key.length < 8) return '********';
+        return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
+    };
+
     return (
         <div className={`p-5 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
             <div className="flex flex-col gap-4">
-                {/* Row 1: Provider & Active Switch */}
-                <div className="flex justify-between items-start">
+                {/* Row 1: Provider & Poll Count (Simplified) */}
+                <div className="flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="relative">
                              <select
@@ -693,10 +699,6 @@ const KeyConfigCard: React.FC<{
                                 <option value="openai">OpenAI Compatible</option>
                             </select>
                             <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-2 pointer-events-none" />
-                        </div>
-                        
-                        <div className={`text-[10px] px-2 py-1 rounded-md border font-mono uppercase tracking-wider ${config.provider === 'google' ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-green-50 text-green-600 border-green-100 dark:bg-green-900/20 dark:border-green-800'}`}>
-                            {config.provider === 'google' ? 'GEMINI' : 'OPENAI'}
                         </div>
                     </div>
                     
@@ -710,17 +712,41 @@ const KeyConfigCard: React.FC<{
                                 className="w-6 bg-transparent text-xs text-center outline-none font-mono"
                             />
                         </div>
-                        <div className="h-4 w-px bg-gray-300 dark:bg-gray-700 mx-1"></div>
-                        <button 
+                    </div>
+                </div>
+
+                {/* Row 2: API Key Input (Masked) & Active/Delete Controls */}
+                <div className="flex items-center gap-2">
+                    <div className="flex-1 flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors cursor-text" onClick={() => setIsEditingKey(true)}>
+                        <Key className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        {isEditingKey ? (
+                             <input 
+                                type="text" 
+                                autoFocus
+                                placeholder={t('input.apikey_placeholder', lang)}
+                                className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200 min-w-0"
+                                value={config.key}
+                                onChange={(e) => onUpdate({ key: e.target.value })}
+                                onBlur={() => setIsEditingKey(false)}
+                            />
+                        ) : (
+                            <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
+                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                         <button 
                             onClick={() => onUpdate({ isActive: !config.isActive })}
-                            className={`p-1.5 rounded-lg transition-all ${config.isActive ? 'bg-primary-100 text-primary-600 hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-200 text-gray-500 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400'}`}
+                            className={`p-2 rounded-lg transition-all ${config.isActive ? 'bg-primary-100 text-primary-600 hover:bg-primary-200 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-200 text-gray-500 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-400'}`}
                             title={config.isActive ? "Deactivate Key" : "Activate Key"}
                         >
                             {config.isActive ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
                         </button>
                         <button 
                             onClick={onRemove} 
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                             title="Remove Key"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -728,7 +754,7 @@ const KeyConfigCard: React.FC<{
                     </div>
                 </div>
 
-                {/* Row 2: Base URL (Conditional) */}
+                {/* Row 3: Base URL (Conditional) */}
                 {config.provider === 'openai' && (
                     <div className="flex items-center gap-2 group">
                         <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
@@ -744,18 +770,6 @@ const KeyConfigCard: React.FC<{
                     </div>
                 )}
 
-                {/* Row 3: API Key Input */}
-                <div className="flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors">
-                    <Key className="w-4 h-4 text-gray-400" />
-                    <input 
-                        type="password" 
-                        placeholder={t('input.apikey_placeholder', lang)}
-                        className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200"
-                        value={config.key}
-                        onChange={(e) => onUpdate({ key: e.target.value })}
-                    />
-                </div>
-
                 {/* Row 4: Model Selector & Actions */}
                 <div className="flex items-center gap-2 mt-1">
                     <div className="flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all">
@@ -763,7 +777,7 @@ const KeyConfigCard: React.FC<{
                         <input 
                            type="text"
                            list={`models-${config.id}`}
-                           className="flex-1 bg-transparent text-xs outline-none font-medium text-gray-700 dark:text-gray-200"
+                           className="flex-1 bg-transparent text-xs outline-none font-medium text-gray-700 dark:text-gray-200 min-w-0"
                            placeholder={t('input.model_placeholder', lang)}
                            value={config.model || ''}
                            onChange={(e) => onUpdate({ model: e.target.value })}
@@ -773,7 +787,7 @@ const KeyConfigCard: React.FC<{
                         </datalist>
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-shrink-0">
                         <button 
                             onClick={handleFetchModels}
                             disabled={isFetching || !config.key}

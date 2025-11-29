@@ -155,11 +155,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
 
         return (
           <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
+            {/* 
+              Bubble Container 
+              - Inherit max-width logic for both display and edit modes
+              - Use w-full inside flex-col to fill the available max-width
+            */}
             <div className={`flex max-w-[95%] md:max-w-[85%] gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'}`}>
+              
+              {/* Avatar */}
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
                 {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
               </div>
-              <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'}`}>
+
+              {/* Message Content Wrapper */}
+              <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
                 <div 
                     className={`relative px-3 py-2.5 rounded-2xl shadow-sm w-full backdrop-blur-sm transition-all duration-300 ${
                       msg.role === Role.USER 
@@ -186,10 +195,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
                         autoFocus
                       />
                       <div className="flex justify-end gap-2 mt-2">
-                         <button onClick={cancelEditing} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400'}`} title={t('action.cancel', language)}>
+                         {/* 
+                           Edit Action Buttons
+                           - User: White transparent (matches User Bubble style)
+                           - Bot: Primary solid (matches User Bubble style, provides theme consistency)
+                         */}
+                         <button 
+                            onClick={cancelEditing} 
+                            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                msg.role === Role.USER 
+                                    ? 'bg-white/20 text-white hover:bg-white/30' 
+                                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
+                            }`} 
+                            title={t('action.cancel', language)}
+                        >
                              <X className="w-5 h-5 md:w-4 md:h-4"/>
                          </button>
-                         <button onClick={() => saveEdit(msg)} className={`p-2 rounded-lg transition-colors flex items-center justify-center ${msg.role === Role.USER ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 hover:bg-primary-200 dark:hover:bg-primary-900/50'}`} title={t('action.confirm', language)}>
+                         <button 
+                            onClick={() => saveEdit(msg)} 
+                            className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                msg.role === Role.USER 
+                                    ? 'bg-white/20 text-white hover:bg-white/30' 
+                                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
+                            }`} 
+                            title={t('action.confirm', language)}
+                        >
                              <Save className="w-5 h-5 md:w-4 md:h-4"/>
                          </button>
                       </div>
@@ -207,15 +237,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
                   )}
                 </div>
                  
+                {/* Meta Info & Actions */}
                 <div className="flex items-center gap-2 mt-1 px-1 h-8">
                   <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   {msg.role === Role.MODEL && !msg.isError && (
                     <div className="flex items-center gap-1">
                         {msg.keyIndex && (
-                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="API Key Index">#{msg.keyIndex}</span>
+                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
                         )}
                         {msg.model && (
-                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800" title="Model Used">{msg.model}</span>
+                          <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
                         )}
                     </div>
                   )}

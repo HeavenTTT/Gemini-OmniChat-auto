@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Send, Square } from 'lucide-react';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
@@ -29,6 +29,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
   language,
   activeKeysCount
 }) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -41,12 +43,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
     target.style.height = 'auto';
     target.style.height = `${Math.min(target.scrollHeight, 192)}px`;
   };
+  
+  // Use useEffect to reset height when input is cleared via ref
+  useEffect(() => {
+    if (!input && textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      // Reset to standard height matching styling (p-3 + 1.5line-height approx 52px)
+      textareaRef.current.style.height = '52px'; 
+    }
+  }, [input]);
 
   return (
     <div className="p-3 md:p-4 bg-transparent">
       <div className="max-w-5xl mx-auto">
         <div className="relative flex items-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
           <textarea 
+            ref={textareaRef}
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             onKeyDown={handleKeyDown}
