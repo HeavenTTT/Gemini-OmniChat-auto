@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect } from 'react';
@@ -87,7 +88,7 @@ const AutoResizeTextarea = ({
       value={value} 
       onChange={onChange} 
       onKeyDown={onKeyDown} 
-      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit min-w-[200px]" 
+      className="w-full bg-transparent text-inherit rounded-none p-0 outline-none border-none focus:ring-0 resize-none overflow-hidden leading-relaxed font-inherit min-w-[200px] whitespace-normal break-words" 
       rows={1}
       style={{ fontSize: `${fontSize}px` }} 
       autoFocus={autoFocus} 
@@ -156,11 +157,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
           <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
             {/* 
               Bubble Container 
-              - Constrain max width to 95% (mobile) or 85% (desktop)
-              - Use w-fit so it hugs content
-              - DO NOT switch to w-full on edit, to preserve visual continuity
+              - Constrain max width to 95% (mobile) or 85% (desktop) by default
+              - If editing, expand to w-full max-w-full to fill parent container
             */}
-            <div className={`flex max-w-[95%] md:max-w-[85%] gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
               
               {/* Avatar */}
               <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
@@ -170,7 +170,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
               {/* Message Content Wrapper */}
               <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
                 <div 
-                    className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-fit max-w-full ${
+                    className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full ${ // Always w-full and max-w-full here, parent container controls overall width.
                       msg.role === Role.USER 
                         ? 'text-white rounded-tr-sm border' 
                         : msg.isError 

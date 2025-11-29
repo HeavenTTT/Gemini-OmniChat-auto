@@ -63,17 +63,19 @@ const Header: React.FC<HeaderProps> = ({
     <div className="flex items-center gap-1">
       <button 
         onClick={onSaveChat} 
-        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1"
         title={t('action.save', language)}
       >
         <Download className="w-5 h-5" />
+        <span className="hidden md:inline">{t('action.save', language)}</span>
       </button>
       <button 
         onClick={handleLoadTrigger} 
-        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1"
         title={t('action.load', language)}
       >
         <Upload className="w-5 h-5" />
+        <span className="hidden md:inline">{t('action.load', language)}</span>
       </button>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
     </div>
