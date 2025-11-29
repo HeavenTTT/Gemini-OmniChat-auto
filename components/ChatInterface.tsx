@@ -100,14 +100,76 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Fix: Changed NodeJS.Timeout to number for browser compatibility
+  const deleteTimerRef = useRef<number | null>(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
 
-  const startEditing = (msg: Message) => { setEditingId(msg.id); setEditText(msg.text); };
-  const cancelEditing = () => { setEditingId(null); setEditText(''); };
-  const saveEdit = (msg: Message) => { if (editText.trim() !== msg.text) onEditMessage(msg.id, editText); setEditingId(null); };
-  const handleKeyDown = (e: React.KeyboardEvent, msg: Message) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(msg); } if (e.key === 'Escape') cancelEditing(); };
+  useEffect(() => {
+    // Cleanup any pending timer when component unmounts or messages/state changes significantly
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+    };
+  }, [messages]); // Dependency on messages to reset timer if messages change (e.g., new chat, delete)
+
+  const clearDeleteConfirmation = () => {
+    setConfirmDeleteId(null);
+    if (deleteTimerRef.current) {
+      clearTimeout(deleteTimerRef.current);
+      deleteTimerRef.current = null;
+    }
+  };
+
+  const startEditing = (msg: Message) => { 
+    setEditingId(msg.id); 
+    setEditText(msg.text); 
+    clearDeleteConfirmation(); // Clear any pending delete confirmation
+  };
+  const cancelEditing = () => { 
+    setEditingId(null); 
+    setEditText(''); 
+    clearDeleteConfirmation(); // Clear any pending delete confirmation
+  };
+  const saveEdit = (msg: Message) => { 
+    if (editText.trim() !== msg.text) onEditMessage(msg.id, editText); 
+    setEditingId(null); 
+    clearDeleteConfirmation(); // Clear any pending delete confirmation
+  };
+  const handleKeyDown = (e: React.KeyboardEvent, msg: Message) => { 
+    if (e.key === 'Enter' && !e.shiftKey) { 
+      e.preventDefault(); 
+      saveEdit(msg); 
+    } 
+    if (e.key === 'Escape') cancelEditing(); 
+  };
+
+  const handleDeleteClick = (msgId: string) => {
+    setEditingId(null); // Clear any editing state first
+    if (confirmDeleteId === msgId) {
+      // Second click, confirm deletion
+      onDeleteMessage(msgId);
+      clearDeleteConfirmation();
+    } else {
+      // First click, prompt for confirmation
+      setConfirmDeleteId(msgId);
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+      deleteTimerRef.current = setTimeout(() => {
+        setConfirmDeleteId(null);
+        deleteTimerRef.current = null;
+      }, 3000); // 3 seconds to confirm
+    }
+  };
+
+  const handleRegenerateClick = (id: string) => {
+    onRegenerate(id);
+    clearDeleteConfirmation(); // Clear any pending delete confirmation
+  }
 
   const getWrappingClass = () => {
     switch (textWrapping) {
@@ -131,6 +193,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
     <div className="flex flex-col space-y-4 pb-4">
       {messages.map((msg) => {
         const isEditing = editingId === msg.id;
+        const isConfirmingDelete = confirmDeleteId === msg.id;
         
         // Dynamic opacity: If editing, force 100% opacity, otherwise use setting
         const effectiveTransparency = isEditing ? 100 : bubbleTransparency;
@@ -253,8 +316,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
                   {!isLoading && editingId !== msg.id && (
                     <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
                       <button onClick={() => startEditing(msg)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={t('action.edit', language)}><Edit2 className="w-5 h-5 md:w-3 md:h-3" /></button>
-                      <button onClick={() => onRegenerate(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}><RefreshCw className="w-5 h-5 md:w-3 md:h-3" /></button>
-                      <button onClick={() => onDeleteMessage(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 rounded transition-colors" title={t('action.delete', language)}><Trash2 className="w-5 h-5 md:w-3 md:h-3" /></button>
+                      <button onClick={() => handleRegenerateClick(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}><RefreshCw className="w-5 h-5 md:w-3 md:h-3" /></button>
+                      <button 
+                        onClick={() => handleDeleteClick(msg.id)} 
+                        className={`p-4 md:p-1 rounded transition-colors flex items-center gap-1 ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
+                        title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
+                      >
+                        <Trash2 className="w-5 h-5 md:w-3 md:h-3" />
+                        {isConfirmingDelete && <span className="text-xs">{t('action.confirm', language)}</span>}
+                      </button>
                     </div>
                   )}
                 </div>

@@ -83,11 +83,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const lang = localSettings.language;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // For System Prompts content editing
+  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
+  const [editingPromptContent, setEditingPromptContent] = useState('');
+
   // Initialize local state
   useEffect(() => {
     if (isOpen) {
       setLocalKeys(JSON.parse(JSON.stringify(apiKeys))); 
       setLocalSettings(JSON.parse(JSON.stringify(settings)));
+      // Reset prompt editing state
+      setEditingPromptId(null);
+      setEditingPromptContent('');
     }
   }, [isOpen, apiKeys, settings]);
 
@@ -118,8 +125,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   // --- Handlers for API Keys ---
-  const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
-
   const handleAddKey = () => {
     setLocalKeys([
       ...localKeys, 
@@ -146,6 +151,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   // --- Handlers for System Prompts ---
+  const startEditingPromptContent = (prompt: SystemPrompt) => {
+    setEditingPromptId(prompt.id);
+    setEditingPromptContent(prompt.content);
+  };
+
+  const savePromptContent = (promptId: string) => {
+    handleUpdatePrompt(promptId, { content: editingPromptContent });
+    setEditingPromptId(null);
+    setEditingPromptContent('');
+  };
+
+  const cancelPromptContentEdit = () => {
+    setEditingPromptId(null);
+    setEditingPromptContent('');
+  };
+
   const handleAddPrompt = () => {
     const newId = uuidv4();
     const newPrompt: SystemPrompt = {
@@ -154,11 +175,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       content: '',
       isActive: true
     };
+    const updatedPrompts = [...localSettings.systemPrompts, newPrompt];
     setLocalSettings({
       ...localSettings,
-      systemPrompts: [...localSettings.systemPrompts, newPrompt]
+      systemPrompts: updatedPrompts
     });
-    setEditingPromptId(newId);
+    // Immediately start editing the content of the new prompt
+    startEditingPromptContent(newPrompt);
   };
 
   const handleUpdatePrompt = (id: string, updates: Partial<SystemPrompt>) => {
@@ -175,7 +198,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       ...localSettings,
       systemPrompts: localSettings.systemPrompts.filter(p => p.id !== id)
     });
-    if (editingPromptId === id) setEditingPromptId(null);
+    if (editingPromptId === id) {
+      setEditingPromptId(null);
+      setEditingPromptContent('');
+    }
   };
 
   // --- Main Save ---
@@ -345,7 +371,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <div>
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">{t('settings.bubble_transparency', lang)}</span>
-                                <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">{localSettings.bubbleTransparency}%</span>
+                                <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">{localSettings.bubbleTransparency}%)</span>
                             </div>
                             <input 
                                 type="range" min="0" max="100" step="5"
@@ -380,7 +406,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                             </span>
-                            <span className="text-xs text-gray-500 font-medium">
+                            <span className="text-xs text-gray-500 font-medium whitespace-nowrap">
                                 {localKeys.filter(k => k.isActive).length} {t('status.active', lang)}
                             </span>
                         </div>
@@ -516,24 +542,54 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                    <button 
                                       onClick={() => handleUpdatePrompt(prompt.id, {isActive: !prompt.isActive})}
                                       className={`p-1.5 rounded-lg transition-colors ${prompt.isActive ? 'bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400' : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'}`}
+                                      title={prompt.isActive ? t('action.deactivate', lang) : t('action.activate', lang)}
                                    >
                                        <CheckCircle className="w-4 h-4"/>
                                    </button>
+                                   {editingPromptId !== prompt.id && (
+                                    <button 
+                                        onClick={() => startEditingPromptContent(prompt)}
+                                        className="p-1.5 rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors"
+                                        title={t('action.edit', lang)}
+                                    >
+                                        <Edit2 className="w-4 h-4"/>
+                                    </button>
+                                   )}
                                    <button 
                                       onClick={() => handleRemovePrompt(prompt.id)}
                                       className="p-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/30 transition-colors"
+                                      title={t('action.delete', lang)}
                                    >
                                        <Trash2 className="w-4 h-4"/>
                                    </button>
                                </div>
                            </div>
-                           <textarea 
-                             className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[80px] md:h-auto h-[50vh] outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all"
-                             rows={3}
-                             value={prompt.content}
-                             onChange={e => handleUpdatePrompt(prompt.id, {content: e.target.value})}
-                             placeholder={t('input.instruction_placeholder', lang)}
-                           />
+                           {editingPromptId === prompt.id && ( // Only render textarea and buttons if editing
+                               <>
+                                <textarea 
+                                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[80px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2"
+                                  rows={3}
+                                  value={editingPromptContent}
+                                  onChange={e => setEditingPromptContent(e.target.value)}
+                                  placeholder={t('input.instruction_placeholder', lang)}
+                                  autoFocus
+                                />
+                                <div className="flex justify-end gap-2 mt-2">
+                                    <button 
+                                        onClick={cancelPromptContentEdit} 
+                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                    >
+                                        <X className="w-4 h-4 mr-1"/>{t('action.cancel', lang)}
+                                    </button>
+                                    <button 
+                                        onClick={() => savePromptContent(prompt.id)} 
+                                        className="px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                                    >
+                                        <Save className="w-4 h-4"/>{t('action.confirm', lang)}
+                                    </button>
+                                </div>
+                               </>
+                           )}
                         </div>
                     ))}
                     <button onClick={handleAddPrompt} className="w-full py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 border border-dashed border-primary-300 dark:border-primary-700 rounded-xl transition-colors">
@@ -551,7 +607,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <span className="font-medium text-gray-900 dark:text-white">{t('settings.security', lang)}</span>
                     <button 
                         onClick={() => setLocalSettings({...localSettings, security: {...localSettings.security, enabled: !localSettings.security.enabled}})}
-                        className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${localSettings.security.enabled ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}
+                        className="w-12 h-6 rounded-full p-1 transition-colors duration-300 flex-shrink-0"
                     >
                         <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${localSettings.security.enabled ? 'translate-x-6' : ''}`} />
                     </button>
@@ -581,7 +637,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     value={newQuestion.a}
                                     onChange={e => setNewQuestion({...newQuestion, a: e.target.value})}
                                   />
-                                  <button onClick={handleAddSecurityQuestion} className="bg-primary-600 hover:bg-primary-500 text-white p-2.5 rounded-lg shadow-sm transition-colors">
+                                  <button onClick={handleAddSecurityQuestion} className="bg-primary-600 hover:bg-primary-500 text-white p-2.5 rounded-lg shadow-sm transition-colors whitespace-nowrap">
                                     <Plus className="w-5 h-5"/>
                                   </button>
                               </div>
@@ -686,9 +742,9 @@ const KeyConfigCard: React.FC<{
     return (
         <div className={`p-4 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
             <div className="flex flex-col gap-3">
-                {/* Row 1: Provider */}
+                {/* Row 1: Provider & Delete Button */}
                 <div className="flex justify-between items-center">
-                    <div className="relative w-full">
+                    <div className="relative flex-1 mr-2">
                          <select
                             value={config.provider}
                             onChange={(e) => onUpdate({ provider: e.target.value as ModelProvider, baseUrl: e.target.value === 'openai' ? 'https://api.openai.com/v1' : '' })}
@@ -699,6 +755,14 @@ const KeyConfigCard: React.FC<{
                         </select>
                         <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
                     </div>
+                    {/* Delete Button - Moved here */}
+                    <button 
+                        onClick={onRemove} 
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800 whitespace-nowrap"
+                        title={t('action.delete_key', lang)}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
                 </div>
 
                 {/* Row 2: API Key Input (Full width) */}
@@ -721,7 +785,7 @@ const KeyConfigCard: React.FC<{
                     )}
                 </div>
 
-                {/* Row 3: Action Buttons (Activation, Delete, Poll, Test) - Moved BELOW Key Input */}
+                {/* Row 3: Action Buttons (Activation, Poll, Test) */}
                 <div className="flex items-center gap-2 flex-wrap">
                     {/* Activation Toggle */}
                     <button 
@@ -749,15 +813,6 @@ const KeyConfigCard: React.FC<{
                         />
                     </div>
                     
-                    {/* Delete Button */}
-                    <button 
-                        onClick={onRemove} 
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800"
-                        title={t('action.delete_key', lang)}
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-
                     {/* Test Button */}
                      <button 
                         onClick={handleTest}
