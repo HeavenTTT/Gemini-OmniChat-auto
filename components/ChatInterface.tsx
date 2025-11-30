@@ -35,6 +35,7 @@ const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, 
   const handleCopy = () => {
     navigator.clipboard.writeText(textRef.current);
     setCopied(true);
+    // Fix: `setCopied` expects a boolean, not a number. Set it to false after delay.
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -101,8 +102,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  // Fix: Changed NodeJS.Timeout to number for browser compatibility
-  const deleteTimerRef = useRef<number | null>(null);
+  // Fix: Use ReturnType<typeof setTimeout> for broader compatibility across browser/Node.js environments
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(() => { scrollToBottom(); }, [messages, isLoading]);
@@ -319,11 +320,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
                       <button onClick={() => handleRegenerateClick(msg.id)} className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" title={msg.role === Role.USER ? t('action.edit', language) : t('action.regenerate', language)}><RefreshCw className="w-5 h-5 md:w-3 md:h-3" /></button>
                       <button 
                         onClick={() => handleDeleteClick(msg.id)} 
-                        className={`p-4 md:p-1 rounded transition-colors flex items-center gap-1 ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
+                        className={`p-4 md:p-1 rounded transition-colors flex items-center justify-center ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
                         title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
                       >
                         <Trash2 className="w-5 h-5 md:w-3 md:h-3" />
-                        {isConfirmingDelete && <span className="text-xs">{t('action.confirm', language)}</span>}
+                        {/* Removed text for delete confirmation per user request */}
                       </button>
                     </div>
                   )}

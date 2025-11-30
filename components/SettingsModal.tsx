@@ -607,8 +607,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            {editingPromptId === prompt.id && ( // Only render textarea and buttons if editing
                                <>
                                 <textarea 
-                                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[80px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2"
-                                  rows={3}
+                                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[120px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2"
+                                  rows={6} /* Increased default rows for better editing experience */
                                   value={editingPromptContent}
                                   onChange={e => setEditingPromptContent(e.target.value)}
                                   placeholder={t('input.instruction_placeholder', lang)}
@@ -617,9 +617,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button 
                                         onClick={cancelPromptContentEdit} 
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        className="p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        title={t('action.cancel', lang)}
                                     >
-                                        <X className="w-4 h-4 mr-1"/>{t('action.cancel', lang)}
+                                        <X className="w-4 h-4"/> {/* Removed text, kept icon */}
                                     </button>
                                     <button 
                                         onClick={() => savePromptContent(prompt.id)} 
@@ -736,9 +737,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button 
                                         onClick={cancelEditingSecurity} 
-                                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        className="p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        title={t('action.cancel', lang)}
                                     >
-                                        <X className="w-4 h-4 mr-1"/>{t('action.cancel', lang)}
+                                        <X className="w-4 h-4"/> {/* Removed text, kept icon */}
                                     </button>
                                     <button 
                                         onClick={saveSecurityConfig} 
