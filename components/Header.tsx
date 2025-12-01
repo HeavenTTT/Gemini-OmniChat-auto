@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useRef } from 'react';
@@ -163,3 +162,6 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
         </div>
       </header>
+    </>
+  );
+};
