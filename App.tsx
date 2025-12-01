@@ -402,13 +402,8 @@ const App: React.FC = () => {
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
         const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
-        
-        // Use active system prompts for summarization context
-        const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
-
-        // Pass empty history to treat prompt as independent context, but with system instructions
-        const { text } = await geminiService.streamChatResponse('', [], prompt, combinedSystemInstruction, settings.generation);
-        
+        // Pass empty history to treat prompt as independent context
+        const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
         if (newTitle) setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
     } catch (error) {
