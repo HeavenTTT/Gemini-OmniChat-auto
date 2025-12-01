@@ -9,7 +9,7 @@ import SettingsModal from './components/SettingsModal';
 import SecurityLock from './components/SecurityLock';
 import Sidebar from './components/Sidebar';
 import MobileMenu from './components/MobileMenu';
-import Header from './components/Header';
+import { Header } from './components/Header';
 import ChatInput from './components/ChatInput';
 import { t } from './utils/i18n';
 

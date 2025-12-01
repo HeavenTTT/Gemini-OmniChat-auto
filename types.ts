@@ -1,4 +1,5 @@
 
+
 export enum Role {
   USER = 'user',
   MODEL = 'model'
@@ -50,7 +51,7 @@ export interface SystemPrompt {
   isActive: boolean;
 }
 
-export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink';
+export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'rainbow';
 export type Language = 'en' | 'zh';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -80,7 +81,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-gray-100 dark:bg-gray-950 flex flex-col items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] bg-gray-100 dark:bg-gray-950 flex flex-col items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="security-lock-title">
       <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-800 animate-fade-in-up">
         <div className="flex justify-center mb-6">
             <div className="w-24 h-24">
@@ -88,7 +89,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
             </div>
         </div>
         
-        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+        <h2 id="security-lock-title" className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
             {t('app.title', lang)} {t('settings.security', lang)}
         </h2>
         <p className="text-center text-gray-500 dark:text-gray-400 mb-8 text-sm">
@@ -110,12 +111,14 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-900 dark:text-white"
-                    placeholder={mode === 'password' ? 'Password' : 'Your Answer'}
+                    placeholder={mode === 'password' ? t('input.password', lang) : t('input.your_answer', lang)}
                     autoFocus
+                    aria-label={mode === 'password' ? t('input.password_to_unlock', lang) : t('input.answer_to_unlock', lang)}
                 />
                 <button 
                     type="submit"
                     className="absolute right-2 top-2 bottom-2 bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-colors"
+                    aria-label={t('action.unlock_app', lang)}
                 >
                     <ArrowRight className="w-5 h-5" />
                 </button>
@@ -131,6 +134,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
                 <button 
                     onClick={switchMode}
                     className="text-sm text-gray-500 hover:text-blue-500 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-2 transition-colors"
+                    aria-label={mode === 'password' ? t('action.switch_to_question_mode', lang) : t('action.switch_to_password_mode', lang)}
                 >
                     {mode === 'password' ? <HelpCircle className="w-4 h-4" /> : <KeyRound className="w-4 h-4" />}
                     {mode === 'password' ? t('msg.answer_question', lang) : t('msg.enter_password', lang)}
