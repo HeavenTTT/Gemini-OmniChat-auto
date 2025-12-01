@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Settings, Download, Upload, Sliders, RotateCw, Shield } from 'lucide-react';
-import { AppSettings, KeyConfig, Language } from '../types';
+import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle } from 'lucide-react';
+import { AppSettings, KeyConfig, Language, APP_VERSION } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
 import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';
@@ -209,6 +210,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         <input type="file" ref={fileInputRef} onChange={handleImportFile} accept=".json" className="hidden" aria-label={t('action.select_config_file', lang)} />
                     </div>
                 </CollapsibleSection>
+
+                {/* About & Open Source */}
+                <CollapsibleSection id="about" title={t('settings.about', lang)} lang={lang}>
+                  <div className="flex flex-col gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="flex justify-between items-center">
+                        <span className="font-medium">{t('settings.version', lang)}</span>
+                        <span className="font-mono bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs">{APP_VERSION}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="font-medium">{t('settings.source_code', lang)}</span>
+                        <a href="https://github.com/HeavenTTT/Gemini-OmniChat-auto" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-primary-600 hover:underline bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded transition-colors">
+                            <Github className="w-4 h-4" />
+                            GitHub
+                        </a>
+                    </div>
+                    <div className="text-xs italic opacity-70 mt-2 border-t border-gray-200 dark:border-gray-700 pt-3 text-center">
+                        {t('msg.ai_generated_disclaimer', lang)}
+                    </div>
+                  </div>
+                </CollapsibleSection>
             </div>
           )}
 
@@ -264,8 +285,5 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
-
-// Internal Import for icon usage (CheckCircle)
-import { CheckCircle } from 'lucide-react';
 
 export default SettingsModal;

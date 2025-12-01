@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
-import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider } from './types';
+import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION } from './types';
 import ChatInterface from './components/ChatInterface';
 import SettingsModal from './components/SettingsModal';
 import SecurityLock from './components/SecurityLock';
@@ -488,17 +489,22 @@ const App: React.FC = () => {
             </div>
           </div>
 
-          <ChatInput 
-             input={input}
-             setInput={setInput}
-             onSend={handleSendMessage}
-             onStop={handleStopGeneration}
-             isLoading={isLoading}
-             isDisabled={activeKeysCount === 0}
-             fontSize={settings.fontSize}
-             language={settings.language}
-             activeKeysCount={activeKeysCount}
-          />
+          <div className="flex-shrink-0">
+             <ChatInput 
+                input={input}
+                setInput={setInput}
+                onSend={handleSendMessage}
+                onStop={handleStopGeneration}
+                isLoading={isLoading}
+                isDisabled={activeKeysCount === 0}
+                fontSize={settings.fontSize}
+                language={settings.language}
+                activeKeysCount={activeKeysCount}
+             />
+             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-2 select-none">
+                AI Generated • OmniChat v{APP_VERSION}
+             </div>
+          </div>
         </main>
 
         <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} apiKeys={apiKeys} onUpdateKeys={setApiKeys} settings={settings} onUpdateSettings={setSettings} geminiService={geminiService} />
