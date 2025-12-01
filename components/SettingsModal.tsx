@@ -1,8 +1,7 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders, ExternalLink, Globe, Zap, Network, Server, Link, Settings, Activity, Power } from 'lucide-react';
+import { X, Plus, Trash2, Key, Save, Eye, EyeOff, RotateCw, RefreshCw, CheckCircle, AlertCircle, Edit2, ChevronUp, ChevronDown, Download, Upload, Shield, Sliders, ExternalLink, Globe, Zap, Network, Server, Link, Settings, Activity, Power, Copy } from 'lucide-react';
 import { GeminiModel, AppSettings, KeyConfig, SystemPrompt, Language, Theme, TextWrappingMode, ModelProvider, SecurityConfig } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from '../services/geminiService';
@@ -118,7 +117,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     if (!isOpen) return;
     const root = document.documentElement;
     // Remove all possible theme classes
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
     
     // Add the currently selected local theme (Preview)
     root.classList.add(`theme-${localSettings.theme}`);
@@ -130,7 +129,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleCloseOrCancel = () => {
     // Revert to original settings theme on cancel
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
     
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) {
@@ -163,6 +162,26 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleUpdateKey = (id: string, updates: Partial<KeyConfig>) => {
     setLocalKeys(localKeys.map(k => k.id === id ? { ...k, ...updates } : k));
+  };
+
+  const handleSyncModel = (sourceId: string) => {
+    const sourceKey = localKeys.find(k => k.id === sourceId);
+    if (!sourceKey || !sourceKey.model) return;
+    
+    const count = localKeys.filter(k => k.id !== sourceId && k.provider === sourceKey.provider).length;
+    if (count === 0) {
+         alert(t('msg.sync_no_targets', lang));
+         return;
+    }
+    
+    if (confirm(t('msg.confirm_sync_model', lang).replace('{model}', sourceKey.model).replace('{count}', count.toString()))) {
+         setLocalKeys(localKeys.map(k => {
+             if (k.id !== sourceId && k.provider === sourceKey.provider) {
+                 return { ...k, model: sourceKey.model };
+             }
+             return k;
+         }));
+    }
   };
 
   // --- Handlers for System Prompts ---
@@ -323,10 +342,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const hasPassword = !!localSettings.security.password;
   const hasQuestions = localSettings.security.questions.length > 0;
+  
+  // Theme helpers for conditional styling
+  const isRainbow = localSettings.theme === 'rainbow';
+  const rainbowBorderClass = isRainbow ? 'border-animated-rainbow' : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4 p-0 animate-fade-in-up">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 md:rounded-2xl rounded-none w-full md:max-w-3xl h-full md:h-auto md:max-h-[90vh] shadow-2xl flex flex-col">
+      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 md:rounded-2xl rounded-none w-full md:max-w-3xl h-full md:h-auto md:max-h-[90vh] shadow-2xl flex flex-col ${rainbowBorderClass}`}>
         
         {/* Header */}
         <div className="flex items-center justify-between md:p-5 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 bg-gray-50/50 dark:bg-gray-900/50 rounded-t-2xl">
@@ -369,7 +392,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <select 
                                 value={localSettings.language}
                                 onChange={(e) => setLocalSettings({...localSettings, language: e.target.value as Language})}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${rainbowBorderClass}`}
                             >
                                 <option value="en">English</option>
                                 <option value="zh">中文</option>
@@ -380,13 +403,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <select 
                                 value={localSettings.theme}
                                 onChange={(e) => setLocalSettings({...localSettings, theme: e.target.value as Theme})}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${rainbowBorderClass}`}
                             >
                                 <option value="light">{t('theme.light', lang)}</option>
                                 <option value="dark">{t('theme.dark', lang)}</option>
                                 <option value="twilight">{t('theme.twilight', lang)}</option>
                                 <option value="sky">{t('theme.sky', lang)}</option>
                                 <option value="pink">{t('theme.pink', lang)}</option>
+                                <option value="rainbow">Rainbow</option>
                             </select>
                         </div>
                     </div>
@@ -404,7 +428,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="12" max="24" step="1"
                                 value={localSettings.fontSize}
                                 onChange={(e) => setLocalSettings({...localSettings, fontSize: parseInt(e.target.value)})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600"
+                                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600 ${rainbowBorderClass}`}
                             />
                         </div>
                         
@@ -417,7 +441,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="0" max="100" step="5"
                                 value={localSettings.bubbleTransparency}
                                 onChange={(e) => setLocalSettings({...localSettings, bubbleTransparency: parseInt(e.target.value)})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600"
+                                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600 ${rainbowBorderClass}`}
                             />
                         </div>
 
@@ -426,7 +450,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                             <select 
                                 value={localSettings.textWrapping}
                                 onChange={(e) => setLocalSettings({...localSettings, textWrapping: e.target.value as TextWrappingMode})}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${rainbowBorderClass}`}
                             >
                                 <option value="default">{t('wrap.default', lang)}</option>
                                 <option value="forced">{t('wrap.forced', lang)}</option>
@@ -471,14 +495,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 config={keyConfig} 
                                 onUpdate={(updates) => handleUpdateKey(keyConfig.id, updates)}
                                 onRemove={() => handleRemoveKey(keyConfig.id)}
+                                onSyncModel={() => handleSyncModel(keyConfig.id)}
                                 lang={lang}
                                 geminiService={geminiService}
+                                isRainbow={isRainbow}
                             />
                         ))}
                         
                         <button 
                             onClick={handleAddKey}
-                            className="w-full py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-primary-600 dark:text-primary-400 rounded-xl border border-dashed border-primary-300 dark:border-primary-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow"
+                            className={`w-full py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-primary-600 dark:text-primary-400 rounded-xl border border-dashed border-primary-300 dark:border-primary-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow ${rainbowBorderClass}`}
                         >
                             <Plus className="w-5 h-5" />
                             {t('settings.add_key_placeholder', lang)}
@@ -489,10 +515,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Config Management */}
                 <CollapsibleSection title={t('settings.manage', lang)}>
                     <div className="grid grid-cols-2 gap-3">
-                        <button onClick={handleExportSettings} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm">
+                        <button onClick={handleExportSettings} className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm ${rainbowBorderClass}`}>
                             <Download className="w-4 h-4" />{t('action.export_settings', lang)}
                         </button>
-                        <button onClick={handleImportTrigger} className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm">
+                        <button onClick={handleImportTrigger} className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm ${rainbowBorderClass}`}>
                             <Upload className="w-4 h-4" />{t('action.import_settings', lang)}
                         </button>
                         <input type="file" ref={fileInputRef} onChange={handleImportFile} accept=".json" className="hidden" />
@@ -512,6 +538,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
                 <CollapsibleSection title={t('settings.ai_parameters', lang)} defaultOpen={true}>
                     <div className="space-y-6">
+                        {/* Stream Toggle */}
+                        <div className="flex items-center justify-between">
+                            <label className="text-gray-700 dark:text-gray-300 font-medium text-sm">{t('param.stream', lang)}</label>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    className="sr-only peer"
+                                    checked={localSettings.generation.stream}
+                                    onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, stream: e.target.checked}})}
+                                />
+                                <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600 ${rainbowBorderClass}`}></div>
+                            </label>
+                        </div>
+                        
                         <div>
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="text-gray-700 dark:text-gray-300 font-medium">{t('param.temperature', lang)}</span>
@@ -521,7 +561,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="0" max="2" step="0.1"
                                 value={localSettings.generation.temperature}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, temperature: parseFloat(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600"
+                                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600 ${rainbowBorderClass}`}
                             />
                         </div>
 
@@ -534,7 +574,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="0" max="1" step="0.05"
                                 value={localSettings.generation.topP}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, topP: parseFloat(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600"
+                                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600 ${rainbowBorderClass}`}
                             />
                         </div>
 
@@ -547,7 +587,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="range" min="1" max="100" step="1"
                                 value={localSettings.generation.topK}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, topK: parseInt(e.target.value)}})}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600"
+                                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600 ${rainbowBorderClass}`}
                             />
                         </div>
 
@@ -560,7 +600,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 type="number" 
                                 value={localSettings.generation.maxOutputTokens}
                                 onChange={(e) => setLocalSettings({...localSettings, generation: {...localSettings.generation, maxOutputTokens: parseInt(e.target.value)}})}
-                                className="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+                                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 ${rainbowBorderClass}`}
                             />
                         </div>
                     </div>
@@ -607,7 +647,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            {editingPromptId === prompt.id && ( // Only render textarea and buttons if editing
                                <>
                                 <textarea 
-                                  className="w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[120px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2"
+                                  className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[120px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2 ${rainbowBorderClass}`}
                                   rows={6} /* Increased default rows for better editing experience */
                                   value={editingPromptContent}
                                   onChange={e => setEditingPromptContent(e.target.value)}
@@ -617,14 +657,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button 
                                         onClick={cancelPromptContentEdit} 
-                                        className="p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        className={`p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm ${rainbowBorderClass}`}
                                         title={t('action.cancel', lang)}
                                     >
                                         <X className="w-4 h-4"/> {/* Removed text, kept icon */}
                                     </button>
                                     <button 
                                         onClick={() => savePromptContent(prompt.id)} 
-                                        className="px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                                        className={`px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1 ${rainbowBorderClass}`}
                                     >
                                         <Save className="w-4 h-4"/>{t('action.confirm', lang)}
                                     </button>
@@ -633,7 +673,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                            )}
                         </div>
                     ))}
-                    <button onClick={handleAddPrompt} className="w-full py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 border border-dashed border-primary-300 dark:border-primary-700 rounded-xl transition-colors">
+                    <button onClick={handleAddPrompt} className={`w-full py-2.5 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/10 hover:bg-primary-100 dark:hover:bg-primary-900/20 border border-dashed border-primary-300 dark:border-primary-700 rounded-xl transition-colors ${rainbowBorderClass}`}>
                         {t('action.add_prompt', lang)}
                     </button>
                     </div>
@@ -644,7 +684,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Security Tab */}
           {activeTab === 'security' && (
               <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700">
+                  <div className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700 ${rainbowBorderClass}`}>
                     <span className="font-medium text-gray-900 dark:text-white">{t('settings.security', lang)}</span>
                     <label htmlFor="security-toggle" className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -679,7 +719,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <input 
                                     type="password"
                                     placeholder={t('input.password_placeholder', lang)}
-                                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                                    className={`w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all ${rainbowBorderClass}`}
                                     value={localSettings.security.password || ''}
                                     onChange={e => setLocalSettings(prev => ({...prev, security: {...prev.security, password: e.target.value}}))}
                                 />
@@ -693,7 +733,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                         min="60" // sensible minimum, 1 minute
                                         step="60" // step in minutes (60 seconds)
                                         placeholder="86400" // 24 hours
-                                        className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900 dark:text-white"
+                                        className={`w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900 dark:text-white ${rainbowBorderClass}`}
                                         value={localSettings.security.lockoutDurationSeconds || ''}
                                         onChange={e => setLocalSettings(prev => ({...prev, security: {...prev.security, lockoutDurationSeconds: parseInt(e.target.value) || undefined}}))}
                                     />
@@ -702,22 +742,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                     </p>
                                 </div>
 
-                                <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/30">
+                                <div className={`bg-primary-50 dark:bg-primary-900/10 p-4 rounded-xl border border-primary-100 dark:border-primary-800/30 ${rainbowBorderClass}`}>
                                     <h4 className="text-xs font-semibold text-primary-800 dark:text-primary-300 uppercase mb-3">{t('action.add_question', lang)}</h4>
                                     <div className="flex flex-col md:flex-row gap-3">
                                         <input 
-                                            className="flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500"
+                                            className={`flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500 ${rainbowBorderClass}`}
                                             placeholder={t('input.question', lang)}
                                             value={newQuestion.q}
                                             onChange={e => setNewQuestion({...newQuestion, q: e.target.value})}
                                         />
                                         <input 
-                                            className="flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500"
+                                            className={`flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500 ${rainbowBorderClass}`}
                                             placeholder={t('input.answer', lang)}
                                             value={newQuestion.a}
                                             onChange={e => setNewQuestion({...newQuestion, a: e.target.value})}
                                         />
-                                        <button onClick={handleAddSecurityQuestion} className="bg-primary-600 hover:bg-primary-500 text-white p-2.5 rounded-lg shadow-sm transition-colors whitespace-nowrap">
+                                        <button onClick={handleAddSecurityQuestion} className={`bg-primary-600 hover:bg-primary-500 text-white p-2.5 rounded-lg shadow-sm transition-colors whitespace-nowrap ${rainbowBorderClass}`}>
                                             <Plus className="w-5 h-5"/>
                                         </button>
                                     </div>
@@ -737,14 +777,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex justify-end gap-2 mt-2">
                                     <button 
                                         onClick={cancelEditingSecurity} 
-                                        className="p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm"
+                                        className={`p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm ${rainbowBorderClass}`}
                                         title={t('action.cancel', lang)}
                                     >
                                         <X className="w-4 h-4"/> {/* Removed text, kept icon */}
                                     </button>
                                     <button 
                                         onClick={saveSecurityConfig} 
-                                        className="px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1"
+                                        className={`px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1 ${rainbowBorderClass}`}
                                     >
                                         <Save className="w-4 h-4"/>{t('action.confirm', lang)}
                                     </button>
@@ -767,10 +807,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Footer */}
         <div className="md:p-5 px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-b-2xl flex justify-end gap-3 flex-shrink-0">
-          <button onClick={handleCloseOrCancel} className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm">
+          <button onClick={handleCloseOrCancel} className={`px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm ${rainbowBorderClass}`}>
             {t('action.cancel', lang)}
           </button>
-          <button onClick={handleSave} className="px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+          <button onClick={handleSave} className={`px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${rainbowBorderClass}`}>
             <CheckCircle className="w-4 h-4" />
             {t('action.confirm', lang)}
           </button>
@@ -785,9 +825,11 @@ const KeyConfigCard: React.FC<{
   config: KeyConfig;
   onUpdate: (updates: Partial<KeyConfig>) => void;
   onRemove: () => void;
+  onSyncModel: () => void;
   lang: Language;
   geminiService: GeminiService | null;
-}> = ({ config, onUpdate, onRemove, lang, geminiService }) => {
+  isRainbow: boolean;
+}> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService, isRainbow }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
@@ -844,8 +886,10 @@ const KeyConfigCard: React.FC<{
         return `${key.substring(0, 4)}...${key.substring(key.length - 4)}`;
     };
 
+    const rainbowBorderClass = isRainbow ? 'border-animated-rainbow' : '';
+
     return (
-        <div className={`p-4 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
+        <div className={`p-4 rounded-xl border transition-all duration-300 ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'} ${rainbowBorderClass}`}>
             <div className="flex flex-col gap-3">
                 {/* Row 1: Provider & Delete Button */}
                 <div className="flex justify-between items-center">
@@ -853,7 +897,7 @@ const KeyConfigCard: React.FC<{
                          <select
                             value={config.provider}
                             onChange={(e) => onUpdate({ provider: e.target.value as ModelProvider, baseUrl: e.target.value === 'openai' ? 'https://api.openai.com/v1' : '' })}
-                            className="appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20"
+                            className={`appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20 ${rainbowBorderClass}`}
                         >
                             <option value="google">Google Gemini</option>
                             <option value="openai">OpenAI Compatible</option>
@@ -871,7 +915,7 @@ const KeyConfigCard: React.FC<{
                 </div>
 
                 {/* Row 2: API Key Input (Full width) */}
-                <div className="flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors cursor-text" onClick={() => setIsEditingKey(true)}>
+                <div className={`flex items-center gap-2 bg-gray-50 dark:bg-black/20 p-2.5 rounded-lg border border-gray-200 dark:border-gray-800 focus-within:border-primary-400 dark:focus-within:border-primary-600 transition-colors cursor-text ${rainbowBorderClass}`} onClick={() => setIsEditingKey(true)}>
                     <Key className="w-4 h-4 text-gray-400 flex-shrink-0" />
                     {isEditingKey ? (
                             <input 
@@ -899,7 +943,7 @@ const KeyConfigCard: React.FC<{
                             config.isActive 
                                 ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
                                 : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                        }`}
+                        } ${rainbowBorderClass}`}
                         title={config.isActive ? t('action.deactivate', lang) : t('action.activate', lang)}
                     >
                         {config.isActive ? <Power className="w-3.5 h-3.5" /> : <Power className="w-3.5 h-3.5 opacity-50" />}
@@ -907,7 +951,7 @@ const KeyConfigCard: React.FC<{
                     </button>
 
                      {/* Polling Count */}
-                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg px-2 py-1.5 border border-gray-200 dark:border-gray-700" title={t('settings.poll_count', lang)}>
+                     <div className={`flex items-center gap-2 bg-gray-100 dark:bg-gray-900 rounded-lg px-2 py-1.5 border border-gray-200 dark:border-gray-700 ${rainbowBorderClass}`} title={t('settings.poll_count', lang)}>
                         <Activity className="w-3.5 h-3.5 text-gray-500" />
                         <span className="text-[10px] font-semibold text-gray-500 uppercase whitespace-nowrap">{t('label.poll_count', lang)}:</span>
                         <input 
@@ -926,7 +970,7 @@ const KeyConfigCard: React.FC<{
                             testResult === true ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400' :
                             testResult === false ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' :
                             'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
+                        } ${rainbowBorderClass}`}
                         title={t('action.test_key', lang)}
                     >
                         {isTesting ? <RotateCw className="w-3 h-3 animate-spin"/> : <Network className="w-3 h-3"/>}
@@ -937,13 +981,13 @@ const KeyConfigCard: React.FC<{
                 {/* Row 4: Base URL (Conditional) */}
                 {config.provider === 'openai' && (
                     <div className="flex items-center gap-2 group">
-                        <div className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md">
+                        <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md ${rainbowBorderClass}`}>
                             <Server className="w-3.5 h-3.5 text-gray-500" />
                         </div>
                         <input 
                             type="text" 
                             placeholder={t('input.base_url_placeholder', lang)}
-                            className="flex-1 bg-transparent border-b border-gray-200 dark:border-gray-700 text-xs py-1.5 outline-none font-mono text-gray-600 dark:text-gray-400 focus:border-primary-500 transition-colors"
+                            className={`flex-1 bg-transparent border-b border-gray-200 dark:border-gray-700 text-xs py-1.5 outline-none font-mono text-gray-600 dark:text-gray-400 focus:border-primary-500 transition-colors ${rainbowBorderClass}`}
                             value={config.baseUrl || ''}
                             onChange={(e) => onUpdate({ baseUrl: e.target.value })}
                         />
@@ -952,7 +996,7 @@ const KeyConfigCard: React.FC<{
 
                 {/* Row 5: Model Selector */}
                 <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all">
+                    <div className={`flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all ${rainbowBorderClass}`}>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label.model', lang)}</span>
                         <input 
                            type="text"
@@ -967,10 +1011,20 @@ const KeyConfigCard: React.FC<{
                         </datalist>
                     </div>
                     
+                    {/* Sync Model Button */}
+                    <button 
+                        onClick={onSyncModel}
+                        disabled={!config.model}
+                        className={`px-2 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 text-xs transition-all shadow-sm flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed ${rainbowBorderClass}`}
+                        title={t('action.sync_model', lang)}
+                    >
+                        <Copy className="w-3.5 h-3.5" />
+                    </button>
+
                      <button 
                         onClick={handleFetchModels}
                         disabled={isFetching || !config.key}
-                        className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                        className={`px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap ${rainbowBorderClass}`}
                         title={t('action.fetch_models', lang)}
                     >
                        <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -57,7 +56,7 @@ const App: React.FC = () => {
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
-        stream: true
+        stream: false // Default to false (closed)
     }
   });
 
@@ -111,6 +110,10 @@ const App: React.FC = () => {
       // Ensure lockoutDurationSeconds is set, even if loaded from older schema
       if (loadedSettings.security && loadedSettings.security.lockoutDurationSeconds === undefined) {
           loadedSettings.security.lockoutDurationSeconds = 86400; // Default to 24 hours
+      }
+      // Ensure stream setting exists if loading from older schema
+      if (loadedSettings.generation && loadedSettings.generation.stream === undefined) {
+          loadedSettings.generation.stream = false;
       }
     } 
     setSettings(loadedSettings);
@@ -176,7 +179,7 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);
