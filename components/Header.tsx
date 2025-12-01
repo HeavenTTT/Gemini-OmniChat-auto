@@ -17,7 +17,7 @@ interface HeaderProps {
   onNewChat: () => void;
   onOpenSettings: () => void;
   onSaveChat: () => void;
-  onLoadSession: (messages: any[]) => void;
+  onLoadSession: (messages: any[], title?: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
       try {
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.messages && Array.isArray(parsed.messages)) {
-          onLoadSession(parsed.messages);
+          onLoadSession(parsed.messages, parsed.title);
         } else {
           alert("Invalid chat file format.");
         }

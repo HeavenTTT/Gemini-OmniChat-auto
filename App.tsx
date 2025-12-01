@@ -391,10 +391,13 @@ const App: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleLoadSession = (loadedMessages: any[]) => {
+  const handleLoadSession = (loadedMessages: any[], title?: string) => {
       handleStopGeneration();
       setMessages(loadedMessages);
       setInput('');
+      if (title) {
+          setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: title } : s));
+      }
   };
 
   const handleSummarize = async () => {

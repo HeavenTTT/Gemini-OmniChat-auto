@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, GripVertical, ExternalLink, Network } from 'lucide-react';
+import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, ExternalLink, Network } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -76,8 +76,6 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', index.toString());
-    
-    // Create a ghost image for dragging if needed, but default is usually fine
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -137,7 +135,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={(e) => handleDrop(e, index)}
-                        className={`transition-all duration-200 ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+                        className="transition-all duration-200"
                     >
                         <KeyConfigCard 
                             config={keyConfig} 
@@ -146,7 +144,6 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             onSyncModel={() => handleSyncModel(keyConfig.id)}
                             lang={lang}
                             geminiService={geminiService}
-                            dragHandleProps={{ className: "cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 p-1" }}
                         />
                     </div>
                 ))}
@@ -173,10 +170,9 @@ interface KeyConfigCardProps {
   onSyncModel: () => void;
   lang: Language;
   geminiService: GeminiService | null;
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
-const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService, dragHandleProps }) => {
+const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
@@ -231,12 +227,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
 
     return (
         <div className={`p-4 rounded-xl border transition-all duration-300 relative ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
-            {/* Drag Handle - Absolute left */}
-            <div className="absolute left-1 top-1/2 -translate-y-1/2" {...dragHandleProps} title={t('action.drag_to_reorder', lang)}>
-                <GripVertical className="w-4 h-4 text-gray-300 dark:text-gray-600" />
-            </div>
-
-            <div className="flex flex-col gap-3 pl-4"> 
+            <div className="flex flex-col gap-3"> 
                 {/* Row 1: Provider & Delete Button */}
                 <div className="flex justify-between items-center">
                     <div className="relative flex-1 mr-2">

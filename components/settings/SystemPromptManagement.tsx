@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { CheckCircle, Edit2, Trash2, X, Save, GripVertical } from 'lucide-react';
+import { CheckCircle, Edit2, Trash2, X, Save } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { SystemPrompt, Language, AppSettings } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -105,18 +105,13 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
         {settings.systemPrompts.map((prompt, index) => (
             <div 
                 key={prompt.id} 
-                className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm transition-all duration-200 relative ${draggedIndex === index ? 'opacity-50' : 'opacity-100'}`}
+                className={`bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm transition-all duration-200 relative`}
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDrop={(e) => handleDrop(e, index)}
             >
-               {/* Drag Handle */}
-               <div className="absolute left-1 top-4 cursor-grab active:cursor-grabbing text-gray-300 dark:text-gray-600 p-1" title={t('action.drag_to_reorder', lang)}>
-                  <GripVertical className="w-4 h-4" />
-               </div>
-
-               <div className="pl-4">
+               <div className="">
                    <div className="flex justify-between items-center mb-3">
                        <input 
                          className="bg-transparent font-semibold text-sm outline-none text-gray-900 dark:text-white placeholder-gray-400 flex-1"
