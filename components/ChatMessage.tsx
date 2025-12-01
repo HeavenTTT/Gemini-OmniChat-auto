@@ -1,20 +1,32 @@
 
 "use client";
 
-import React, { useRef, useEffect, useState, useLayoutEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2 } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode } from '../types';
-import { User, AlertCircle, Copy, Check, Edit2, Trash2, RefreshCw, X, Save } from 'lucide-react';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
-interface CodeBlockProps {
-  children?: React.ReactNode;
-  className?: string;
-  lang: Language;
+interface ChatMessageProps {
+  msg: Message;
+  isEditing: boolean;
+  isConfirmingDelete: boolean;
+  isLoading: boolean;
+  bubbleTransparency: number;
+  textWrapping: TextWrappingMode;
+  fontSize: number;
+  language: Language;
+  onEditMessage: (id: string, newText: string) => void;
+  onDeleteMessage: (id: string) => void;
+  onRegenerate: (id: string) => void;
+  setEditingId: (id: string | null) => void;
+  setConfirmDeleteId: (id: string | null) => void;
+  startEditing: (msg: Message) => void;
+  deleteTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
 
-const CodeBlock: React.FC<CodeBlockProps> = ({ children, className, lang }) => {
+const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, className?: string, lang: Language }) => {
   const [copied, setCopied] = React.useState(false);
   const textRef = useRef<string>("");
 
@@ -55,31 +67,26 @@ const CodeBlock: React.FC<CodeBlockProps> = ({ children, className, lang }) => {
   );
 };
 
-interface AutoResizeTextareaProps {
-  value: string; 
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void; 
-  onKeyDown: (e: React.KeyboardEvent) => void; 
-  fontSize: number;
-  autoFocus?: boolean;
-  lang: Language;
-}
-
-// Helper component for auto-resizing textarea
-const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({ 
+const AutoResizeTextarea = ({ 
   value, 
   onChange, 
   onKeyDown, 
   fontSize, 
   autoFocus,
   lang 
+}: { 
+  value: string, 
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void, 
+  onKeyDown: (e: React.KeyboardEvent) => void, 
+  fontSize: number,
+  autoFocus?: boolean,
+  lang: Language
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useLayoutEffect(() => {
     if (textareaRef.current) {
-      // Reset height to auto to correctly calculate scrollHeight for shrinking content
       textareaRef.current.style.height = 'auto';
-      // Set height to scrollHeight to fit content
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [value]);
@@ -99,66 +106,42 @@ const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({
   );
 };
 
-interface ChatMessageProps {
-  msg: Message;
-  isEditing: boolean;
-  isConfirmingDelete: boolean;
-  isLoading: boolean;
-  language: Language;
-  fontSize: number;
-  textWrapping: TextWrappingMode;
-  bubbleTransparency: number;
-  editText: string;
-  deleteTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
-  setEditingId: React.Dispatch<React.SetStateAction<string | null>>;
-  setEditText: React.Dispatch<React.SetStateAction<string>>;
-  setConfirmDeleteId: React.Dispatch<React.SetStateAction<string | null>>;
-  onEditMessage: (id: string, newText: string) => void;
-  onDeleteMessage: (id: string) => void;
-  onRegenerate: (id: string) => void;
-}
-
-const ChatMessage: React.FC<ChatMessageProps> = ({
+export const ChatMessage: React.FC<ChatMessageProps> = ({
   msg,
   isEditing,
   isConfirmingDelete,
   isLoading,
-  language,
-  fontSize,
-  textWrapping,
   bubbleTransparency,
-  editText,
-  deleteTimerRef,
-  setEditingId,
-  setEditText,
-  setConfirmDeleteId,
+  textWrapping,
+  fontSize,
+  language,
   onEditMessage,
   onDeleteMessage,
   onRegenerate,
+  setEditingId,
+  setConfirmDeleteId,
+  startEditing,
+  deleteTimerRef
 }) => {
-  const clearDeleteConfirmation = () => {
-    setConfirmDeleteId(null);
-    if (deleteTimerRef.current) {
-      clearTimeout(deleteTimerRef.current);
-      deleteTimerRef.current = null;
-    }
-  };
+  const [editText, setEditText] = useState(msg.text);
 
-  const startEditing = () => { 
-    setEditingId(msg.id); 
-    setEditText(msg.text); 
-    clearDeleteConfirmation(); // Clear any pending delete confirmation
-  };
+  // Sync edit text when starting to edit
+  useEffect(() => {
+    if (isEditing) setEditText(msg.text);
+  }, [isEditing, msg.text]);
+
   const cancelEditing = () => { 
     setEditingId(null); 
     setEditText(''); 
-    clearDeleteConfirmation(); // Clear any pending delete confirmation
+    setConfirmDeleteId(null);
   };
+
   const saveEdit = () => { 
     if (editText.trim() !== msg.text) onEditMessage(msg.id, editText); 
     setEditingId(null); 
-    clearDeleteConfirmation(); // Clear any pending delete confirmation
+    setConfirmDeleteId(null);
   };
+
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === 'Enter' && !e.shiftKey) { 
       e.preventDefault(); 
@@ -168,27 +151,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const handleDeleteClick = () => {
-    setEditingId(null); // Clear any editing state first
+    setEditingId(null);
     if (isConfirmingDelete) {
-      // Second click, confirm deletion
       onDeleteMessage(msg.id);
-      clearDeleteConfirmation();
+      setConfirmDeleteId(null);
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
     } else {
-      // First click, prompt for confirmation
       setConfirmDeleteId(msg.id);
-      if (deleteTimerRef.current) {
-        clearTimeout(deleteTimerRef.current);
-      }
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
       deleteTimerRef.current = setTimeout(() => {
         setConfirmDeleteId(null);
         deleteTimerRef.current = null;
-      }, 3000); // 3 seconds to confirm
+      }, 3000);
     }
   };
 
   const handleRegenerateClick = () => {
     onRegenerate(msg.id);
-    clearDeleteConfirmation(); // Clear any pending delete confirmation
+    setConfirmDeleteId(null);
   }
 
   const getWrappingClass = () => {
@@ -198,11 +178,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       case 'default': default: return 'whitespace-pre-wrap break-words';
     }
   };
-  
-  // Dynamic opacity: If editing, force 100% opacity, otherwise use setting
+
+  // Dynamic opacity
   const effectiveTransparency = isEditing ? 100 : bubbleTransparency;
-  
-  // Calculate styles based on effectiveTransparency
   const borderAlpha = 0.5 + (effectiveTransparency / 100) * 0.5;
   const shadowAlpha = (100 - effectiveTransparency) / 100;
   
@@ -210,65 +188,52 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     ? `0 1px 2px rgba(var(--color-theme-primary-rgb), ${shadowAlpha})` 
     : 'none';
 
-  // Background color calculation
   let backgroundColor;
   if (msg.role === Role.USER) {
-        backgroundColor = `rgba(var(--color-theme-primary-rgb), ${effectiveTransparency / 100})`;
+       backgroundColor = `rgba(var(--color-theme-primary-rgb), ${effectiveTransparency / 100})`;
   } else if (msg.role === Role.MODEL && !msg.isError) {
-        // For bot, standard tint is 15%. If opaque (100% setting), it stays 15% tint. 
-        // Logic: (Setting/100) * 0.15. 
-        backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
+       backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
   }
 
   return (
-    <div key={msg.id} className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
-      {/* 
-        Bubble Container 
-        - Constrain max width to 95% (mobile) or 85% (desktop) by default
-        - If editing, expand to w-full max-w-full to fill parent container
-      */}
-      <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
-        
-        {/* Avatar */}
-        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
-          {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
-        </div>
+    <div className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
+        <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
+            
+            {/* Avatar */}
+            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
+            {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
+            </div>
 
-        {/* Message Content Wrapper */}
-        <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
-          <div 
-              className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full ${ // Always w-full and max-w-full here, parent container controls overall width.
-                msg.role === Role.USER 
-                  ? 'text-white rounded-tr-sm border' 
-                  : msg.isError 
-                    ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-sm' 
-                    : 'border text-gray-800 dark:text-gray-100 rounded-tl-sm'
-              }`}
-              style={
-                !msg.isError ? { 
-                    backgroundColor,
-                    borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`,
-                    textShadow: textShadowStyle
-                  } : {}
-              }
-          >
-            {isEditing ? (
-              <div className="w-full min-w-[200px]">
-                <AutoResizeTextarea 
-                  value={editText} 
-                  onChange={(e) => setEditText(e.target.value)} 
-                  onKeyDown={handleKeyDown} 
-                  fontSize={fontSize}
-                  autoFocus
-                  lang={language}
-                />
-                <div className="flex justify-end gap-2 mt-2">
-                    {/* 
-                      Edit Action Buttons
-                      - User: White transparent (matches User Bubble style)
-                      - Bot: Primary solid (matches User Bubble style, provides theme consistency)
-                    */}
-                    <button 
+            {/* Message Content Wrapper */}
+            <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
+            <div 
+                className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full ${
+                    msg.role === Role.USER 
+                    ? 'text-white rounded-tr-sm border' 
+                    : msg.isError 
+                        ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-sm' 
+                        : 'border text-gray-800 dark:text-gray-100 rounded-tl-sm'
+                }`}
+                style={
+                    !msg.isError ? { 
+                        backgroundColor,
+                        borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`,
+                        textShadow: textShadowStyle
+                    } : {}
+                }
+            >
+                {isEditing ? (
+                <div className="w-full min-w-[200px]">
+                    <AutoResizeTextarea 
+                        value={editText} 
+                        onChange={(e) => setEditText(e.target.value)} 
+                        onKeyDown={handleKeyDown} 
+                        fontSize={fontSize}
+                        autoFocus
+                        lang={language}
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                        <button 
                         onClick={cancelEditing} 
                         className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
                             msg.role === Role.USER 
@@ -278,9 +243,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         title={t('action.cancel', language)}
                         aria-label={t('action.cancel_edit', language)}
                     >
-                        <X className="w-5 h-5 md:w-4 md:h-4"/>
-                    </button>
-                    <button 
+                            <X className="w-5 h-5 md:w-4 md:h-4"/>
+                        </button>
+                        <button 
                         onClick={saveEdit} 
                         className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
                             msg.role === Role.USER 
@@ -290,69 +255,67 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         title={t('action.confirm', language)}
                         aria-label={t('action.save_edit', language)}
                     >
-                        <Save className="w-5 h-5 md:w-4 md:h-4"/>
+                            <Save className="w-5 h-5 md:w-4 md:h-4"/>
+                        </button>
+                    </div>
+                </div>
+                ) : (
+                <>
+                    {msg.isError ? (
+                    <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
+                    ) : (
+                    <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
+                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
+                    </div>
+                    )}
+                </>
+                )}
+            </div>
+                
+            {/* Meta Info & Actions */}
+            <div className="flex items-center gap-2 mt-1 px-1 h-8">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                {msg.role === Role.MODEL && !msg.isError && (
+                <div className="flex items-center gap-1">
+                    {msg.keyIndex && (
+                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
+                    )}
+                    {msg.model && (
+                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
+                    )}
+                </div>
+                )}
+                {!isLoading && !isEditing && (
+                <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    <button 
+                    onClick={() => startEditing(msg)} 
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
+                    title={t('action.edit', language)}
+                    aria-label={t('action.edit_message', language)}
+                    >
+                    <Edit2 className="w-5 h-5 md:w-3 md:h-3" />
+                    </button>
+                    <button 
+                    onClick={handleRegenerateClick} 
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
+                    title={msg.role === Role.USER ? t('action.regenerate_from_this_message', language) : t('action.regenerate', language)}
+                    aria-label={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                    >
+                    <RefreshCw className="w-5 h-5 md:w-3 md:h-3" />
+                    </button>
+                    <button 
+                    onClick={handleDeleteClick} 
+                    className={`p-4 md:p-1 rounded transition-colors flex items-center justify-center ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
+                    title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
+                    aria-label={isConfirmingDelete ? t('action.confirm_delete_message', language) : t('action.delete_message', language)}
+                    >
+                    <Trash2 className="w-5 h-5 md:w-3 h-3" />
                     </button>
                 </div>
-              </div>
-            ) : (
-              <>
-                {msg.isError ? (
-                  <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
-                ) : (
-                  <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
-                    <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
-                  </div>
                 )}
-              </>
-            )}
-          </div>
-            
-          {/* Meta Info & Actions */}
-          <div className="flex items-center gap-2 mt-1 px-1 h-8">
-            <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            {msg.role === Role.MODEL && !msg.isError && (
-              <div className="flex items-center gap-1">
-                  {msg.keyIndex && (
-                    <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
-                  )}
-                  {msg.model && (
-                    <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
-                  )}
-              </div>
-            )}
-            {!isLoading && !isEditing && (
-              <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                <button 
-                  onClick={startEditing} 
-                  className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
-                  title={t('action.edit', language)}
-                  aria-label={t('action.edit_message', language)}
-                >
-                  <Edit2 className="w-5 h-5 md:w-3 md:h-3" />
-                </button>
-                <button 
-                  onClick={handleRegenerateClick} 
-                  className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
-                  title={msg.role === Role.USER ? t('action.regenerate_from_this_message', language) : t('action.regenerate', language)}
-                  aria-label={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
-                >
-                  <RefreshCw className="w-5 h-5 md:w-3 md:h-3" />
-                </button>
-                <button 
-                  onClick={handleDeleteClick} 
-                  className={`p-4 md:p-1 rounded transition-colors flex items-center justify-center ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
-                  title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
-                  aria-label={isConfirmingDelete ? t('action.confirm_delete_message', language) : t('action.delete_message', language)}
-                >
-                  <Trash2 className="w-5 h-5 md:w-3 h-3" />
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+            </div>
         </div>
-      </div>
     </div>
   );
 };
-
-export default ChatMessage;

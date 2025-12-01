@@ -12,31 +12,24 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
   rightElement?: React.ReactNode;
   count?: React.ReactNode;
-  id: string; // Add an ID prop for accessibility
-  lang: Language; // Added lang prop
-  isRainbow?: boolean;
+  id: string;
+  lang: Language;
 }
 
-/**
- * CollapsibleSection Component
- * Renders a collapsible section with a title and content.
- */
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
+export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
   title, 
   children, 
   defaultOpen = false, 
   rightElement = null,
   count = null,
-  id, // Add an ID prop for accessibility
-  lang, // Added lang prop
-  isRainbow = false
+  id,
+  lang 
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  const contentId = `${id}-content`; // Unique ID for the collapsible content
-  const rainbowBorderClass = isRainbow ? 'border-animated-rainbow' : '';
+  const contentId = `${id}-content`;
 
   return (
-    <div className={`border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden mb-4 shadow-sm transition-all hover:border-gray-300 dark:hover:border-gray-600 ${rainbowBorderClass}`}>
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden mb-4 shadow-sm transition-all hover:border-gray-300 dark:hover:border-gray-600">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
@@ -64,5 +57,3 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
     </div>
   );
 };
-
-export default CollapsibleSection;

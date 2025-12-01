@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -179,7 +180,7 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);

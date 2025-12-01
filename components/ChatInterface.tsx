@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Message, Role, Language, TextWrappingMode } from '../types';
+import { Message, Language, TextWrappingMode } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
-import ChatMessage from './ChatMessage'; // Import the new ChatMessage component
+import { ChatMessage } from './ChatMessage';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -23,7 +22,6 @@ interface ChatInterfaceProps {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEditMessage, onDeleteMessage, onRegenerate, language, fontSize, textWrapping, bubbleTransparency }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -37,7 +35,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
         clearTimeout(deleteTimerRef.current);
       }
     };
-  }, [messages]); // Dependency on messages to reset timer if messages change (e.g., new chat, delete)
+  }, [messages]);
+
+  const startEditing = (msg: Message) => { 
+    setEditingId(msg.id); 
+    setConfirmDeleteId(null);
+  };
 
   if (messages.length === 0) {
     return (
@@ -53,23 +56,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
     <div className="flex flex-col space-y-4 pb-4">
       {messages.map((msg) => (
         <ChatMessage
-          key={msg.id}
-          msg={msg}
-          isEditing={editingId === msg.id}
-          isConfirmingDelete={confirmDeleteId === msg.id}
-          isLoading={isLoading}
-          language={language}
-          fontSize={fontSize}
-          textWrapping={textWrapping}
-          bubbleTransparency={bubbleTransparency}
-          editText={editText}
-          deleteTimerRef={deleteTimerRef}
-          setEditingId={setEditingId}
-          setEditText={setEditText}
-          setConfirmDeleteId={setConfirmDeleteId}
-          onEditMessage={onEditMessage}
-          onDeleteMessage={onDeleteMessage}
-          onRegenerate={onRegenerate}
+            key={msg.id}
+            msg={msg}
+            isEditing={editingId === msg.id}
+            isConfirmingDelete={confirmDeleteId === msg.id}
+            isLoading={isLoading}
+            bubbleTransparency={bubbleTransparency}
+            textWrapping={textWrapping}
+            fontSize={fontSize}
+            language={language}
+            onEditMessage={onEditMessage}
+            onDeleteMessage={onDeleteMessage}
+            onRegenerate={onRegenerate}
+            setEditingId={setEditingId}
+            setConfirmDeleteId={setConfirmDeleteId}
+            startEditing={startEditing}
+            deleteTimerRef={deleteTimerRef}
         />
       ))}
       {isLoading && (

@@ -2,18 +2,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Download, Upload, Settings, CheckCircle, Sliders, RotateCw, Shield } from 'lucide-react';
+import { X, Settings, Download, Upload, Sliders, RotateCw, Shield } from 'lucide-react';
 import { AppSettings, KeyConfig, Language } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
-
-// Import extracted components
-import CollapsibleSection from './settings/CollapsibleSection';
-import GeneralAppearanceSettings from './settings/GeneralAppearanceSettings';
-import ModelParameterSettings from './settings/ModelParameterSettings';
-import ApiKeyManagement from './settings/ApiKeyManagement';
-import SystemPromptManagement from './settings/SystemPromptManagement';
-import SecuritySettings from './settings/SecuritySettings';
+import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';
+import { ModelParameterSettings } from './settings/ModelParameterSettings';
+import { ApiKeyManagement } from './settings/ApiKeyManagement';
+import { SystemPromptManagement } from './settings/SystemPromptManagement';
+import { SecuritySettings } from './settings/SecuritySettings';
+import { CollapsibleSection } from './settings/CollapsibleSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -25,10 +23,6 @@ interface SettingsModalProps {
   geminiService: GeminiService | null;
 }
 
-/**
- * SettingsModal Component
- * Manages application settings including API keys, model parameters, and security.
- */
 const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
@@ -56,10 +50,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const root = document.documentElement;
-    // Remove all possible theme classes
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
     
-    // Add the currently selected local theme (Preview)
     root.classList.add(`theme-${localSettings.theme}`);
     if (['dark', 'twilight'].includes(localSettings.theme)) {
         root.classList.add('dark');
@@ -67,9 +59,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   }, [localSettings.theme, isOpen]);
 
   const handleCloseOrCancel = () => {
-    // Revert to original settings theme on cancel
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-rainbow');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
     
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) {
@@ -78,11 +69,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     onClose();
   };
 
-  // --- Main Save ---
   const handleSave = () => {
     onUpdateKeys(localKeys);
     onUpdateSettings(localSettings);
-    // Note: No need to revert theme here, as App.tsx will pick up the new settings
     onClose();
   };
 
@@ -134,22 +123,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     };
     reader.readAsText(file);
   };
-  
+
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'general', label: t('settings.general', lang) },
-    { id: 'model', label: t('settings.ai_parameters', lang) },
-    { id: 'security', label: t('settings.security', lang) }
+    { id: 'general', icon: <Sliders className="w-4 h-4"/>, label: t('settings.title', lang) },
+    { id: 'model', icon: <RotateCw className="w-4 h-4"/>, label: t('settings.ai_parameters', lang) },
+    { id: 'security', icon: <Shield className="w-4 h-4"/>, label: t('settings.security', lang) }
   ];
-  
-  // Theme helpers for conditional styling
-  const isRainbow = localSettings.theme === 'rainbow';
-  const rainbowBorderClass = isRainbow ? 'border-animated-rainbow' : '';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm md:p-4 p-0 animate-fade-in-up" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
-      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 md:rounded-2xl rounded-none w-full md:max-w-3xl h-full md:h-auto md:max-h-[90vh] shadow-2xl flex flex-col ${rainbowBorderClass}`}>
+      <div className={`bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 md:rounded-2xl rounded-none w-full md:max-w-3xl h-full md:h-auto md:max-h-[90vh] shadow-2xl flex flex-col`}>
         
         {/* Header */}
         <div className="flex items-center justify-between md:p-5 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0 bg-gray-50/50 dark:bg-gray-900/50 rounded-t-2xl">
@@ -177,11 +162,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     aria-label={tab.label}
                 >
-                    {/* Icon can be passed as prop if needed, currently hardcoded in sub-components for context */}
-                    {/* Fix: Add missing Lucide React icon components */}
-                    {tab.id === 'general' && <Sliders className="w-4 h-4"/>}
-                    {tab.id === 'model' && <RotateCw className="w-4 h-4"/>}
-                    {tab.id === 'security' && <Shield className="w-4 h-4"/>}
+                    {tab.icon}
                     {tab.label}
                 </button>
             ))}
@@ -193,22 +174,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* General Tab */}
           {activeTab === 'general' && (
             <div role="tabpanel" id="panel-general" aria-labelledby="tab-general" className="space-y-4">
-                <GeneralAppearanceSettings localSettings={localSettings} setLocalSettings={setLocalSettings} lang={lang} isRainbow={isRainbow} />
-                <ApiKeyManagement localKeys={localKeys} setLocalKeys={setLocalKeys} lang={lang} geminiService={geminiService} isRainbow={isRainbow} />
+                
+                <GeneralAppearanceSettings 
+                    settings={localSettings} 
+                    onUpdateSettings={setLocalSettings} 
+                    lang={lang} 
+                />
+
+                <ApiKeyManagement 
+                    keys={localKeys} 
+                    onUpdateKeys={setLocalKeys} 
+                    lang={lang} 
+                    defaultModel={localSettings.defaultModel}
+                    geminiService={geminiService}
+                />
 
                 {/* Config Management */}
-                <CollapsibleSection id="config-management" title={t('settings.manage', lang)} lang={lang} isRainbow={isRainbow}>
+                <CollapsibleSection id="config-management" title={t('settings.manage', lang)} lang={lang}>
                     <div className="grid grid-cols-2 gap-3">
                         <button 
                             onClick={handleExportSettings} 
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm ${rainbowBorderClass}`}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm`}
                             aria-label={t('action.export_app_settings', lang)}
                         >
                             <Download className="w-4 h-4" />{t('action.export_settings', lang)}
                         </button>
                         <button 
                             onClick={handleImportTrigger} 
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm ${rainbowBorderClass}`}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm`}
                             aria-label={t('action.import_app_settings', lang)}
                         >
                             <Upload className="w-4 h-4" />{t('action.import_settings', lang)}
@@ -222,15 +215,29 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* Model Params Tab */}
           {activeTab === 'model' && (
              <div role="tabpanel" id="panel-model" aria-labelledby="tab-model" className="space-y-4">
-                 <ModelParameterSettings localSettings={localSettings} setLocalSettings={setLocalSettings} lang={lang} isRainbow={isRainbow} />
-                 <SystemPromptManagement localSettings={localSettings} setLocalSettings={setLocalSettings} lang={lang} isRainbow={isRainbow} />
+                
+                <ModelParameterSettings 
+                    settings={localSettings} 
+                    onUpdateSettings={setLocalSettings} 
+                    lang={lang}
+                />
+
+                <SystemPromptManagement 
+                    settings={localSettings} 
+                    onUpdateSettings={setLocalSettings} 
+                    lang={lang}
+                />
              </div>
           )}
 
           {/* Security Tab */}
           {activeTab === 'security' && (
               <div role="tabpanel" id="panel-security" aria-labelledby="tab-security" className="space-y-4">
-                  <SecuritySettings localSettings={localSettings} setLocalSettings={setLocalSettings} lang={lang} isRainbow={isRainbow} />
+                  <SecuritySettings 
+                    settings={localSettings} 
+                    onUpdateSettings={setLocalSettings} 
+                    lang={lang}
+                  />
               </div>
           )}
         </div>
@@ -239,14 +246,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="md:p-5 px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-b-2xl flex justify-end gap-3 flex-shrink-0">
           <button 
             onClick={handleCloseOrCancel} 
-            className={`px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm ${rainbowBorderClass}`}
+            className={`px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm`}
             aria-label={t('action.cancel_changes', lang)}
           >
             {t('action.cancel', lang)}
           </button>
           <button 
             onClick={handleSave} 
-            className={`px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 ${rainbowBorderClass}`}
+            className={`px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2`}
             aria-label={t('action.save_all_settings', lang)}
           >
             <CheckCircle className="w-4 h-4" />
@@ -257,5 +264,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     </div>
   );
 };
+
+// Internal Import for icon usage (CheckCircle)
+import { CheckCircle } from 'lucide-react';
 
 export default SettingsModal;
