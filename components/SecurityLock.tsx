@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -31,19 +29,12 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang, the
 
   // Initialize state based on configuration
   useEffect(() => {
-    if (hasPassword && hasQuestions) {
-        // Randomly choose between password and question
-        if (Math.random() < 0.5) {
-            setMode('password');
-        } else {
-            setMode('question');
-            setQuestionIndex(Math.floor(Math.random() * config.questions.length));
-        }
-    } else if (hasPassword) {
-        setMode('password');
-    } else if (hasQuestions) {
+    // Priority: Questions -> Password
+    if (hasQuestions) {
         setMode('question');
         setQuestionIndex(Math.floor(Math.random() * config.questions.length));
+    } else if (hasPassword) {
+        setMode('password');
     } else {
         // Should not happen if security is enabled, but as a fallback
         onUnlock();
@@ -77,6 +68,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang, the
       setMode(mode === 'password' ? 'question' : 'password');
       setInput('');
       setError('');
+      // If switching to question mode, pick a random one
       if (mode === 'password' && config.questions.length > 0) {
           setQuestionIndex(Math.floor(Math.random() * config.questions.length));
       }
