@@ -1,4 +1,5 @@
 
+
 <div align="center">
 
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
@@ -9,8 +10,7 @@
 <p>A high-performance chat interface for Google Gemini API.</p>
 
 <p>
-  <a href="./README_zh.md">🇨🇳 中文说明</a> | 
-  <span>🇺🇸 English</span>
+  <strong>🇺🇸 English</strong> ｜ <a href="./README_zh.md">🇨🇳 简体中文</a>
 </p>
 
 <!-- Watermark / Disclaimer -->
@@ -35,6 +35,7 @@
 *   **Themes**: Day, Night, Twilight, Sky, Pink.
 *   **Security**: Optional password/question lock.
 *   **Models**: Auto-fetch available models.
+*   **Script Filters (Middleware)**: Upload JS/TS files to intercept and modify messages.
 
 ## 🛠 Getting Started
 
@@ -42,6 +43,43 @@
 2.  **Install:** `npm install`
 3.  **Run:** `npm run dev`
 4.  **Open:** [http://localhost:3000](http://localhost:3000)
+
+## 🧩 Script Filters (Middleware)
+
+OmniChat allows you to upload custom JavaScript middleware to intercept and modify messages. This is powerful for redacting sensitive data, enforcing formatting, or adding custom logging.
+
+**📥 Download Examples:**
+You can download robust, fully commented example scripts (`example_input_filter.js` and `example_output_filter.js`) directly within the app:
+1. Go to **Settings** -> **General Settings**.
+2. Scroll to **Script Filters (Middleware)**.
+3. Click the **Download Example** button.
+
+### Quick Logic Preview
+
+**Input Filter (User -> AI):**
+Executes before the message is sent.
+```javascript
+// Example: Redact sensitive words
+const sensitiveWords = ['secret', 'password'];
+let modified = input;
+
+sensitiveWords.forEach(word => {
+    const regex = new RegExp(word, 'gi');
+    modified = modified.replace(regex, '******');
+});
+
+return modified;
+```
+
+**Output Filter (AI -> User):**
+Executes before the response is displayed (works on streams too).
+```javascript
+// Example: Add a disclaimer
+if (!input.includes('AI Generated')) {
+    return input + "\n\n> *Processed by local filter*";
+}
+return input;
+```
 
 ## 📦 Deployment
 

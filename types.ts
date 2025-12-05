@@ -79,6 +79,15 @@ export interface GenerationConfig {
   stream: boolean;
 }
 
+export interface ScriptConfig {
+  inputFilterEnabled: boolean;
+  inputFilterCode: string; // The content of the js/ts file
+  inputFileName?: string;
+  outputFilterEnabled: boolean;
+  outputFilterCode: string; // The content of the js/ts file
+  outputFileName?: string;
+}
+
 export interface AppSettings {
   // Removed global 'model' and 'openAIBaseUrl' as they are now per-key or defaults for new keys
   defaultModel: string; // Default model for new keys
@@ -92,6 +101,7 @@ export interface AppSettings {
   bubbleTransparency: number; // 0-100
   security: SecurityConfig;
   generation: GenerationConfig;
+  scripts: ScriptConfig; // New: Script settings
   
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }

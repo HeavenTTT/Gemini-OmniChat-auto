@@ -12,6 +12,7 @@ import { ApiKeyManagement } from './settings/ApiKeyManagement';
 import { SystemPromptManagement } from './settings/SystemPromptManagement';
 import { SecuritySettings } from './settings/SecuritySettings';
 import { CollapsibleSection } from './settings/CollapsibleSection';
+import { ScriptFilterSettings } from './settings/ScriptFilterSettings';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -82,7 +83,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   // --- Config Export/Import ---
   const handleExportSettings = () => {
     const data = {
-      version: 3,
+      version: 4,
       type: 'omnichat_settings',
       timestamp: new Date().toISOString(),
       keys: localKeys,
@@ -194,6 +195,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     geminiService={geminiService}
                     onShowToast={onShowToast}
                     onShowDialog={onShowDialog}
+                />
+
+                {/* Script Filters */}
+                <ScriptFilterSettings 
+                    settings={localSettings}
+                    onUpdateSettings={setLocalSettings}
+                    lang={lang}
+                    onShowToast={onShowToast}
                 />
 
                 {/* Config Management */}

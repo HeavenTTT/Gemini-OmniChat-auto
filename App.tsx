@@ -15,6 +15,7 @@ import ChatInput from './components/ChatInput';
 import { t } from './utils/i18n';
 import { ToastContainer } from './components/ui/Toast';
 import { CustomDialog } from './components/ui/CustomDialog';
+import { executeFilterScript } from './utils/scriptExecutor';
 
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
@@ -60,6 +61,12 @@ const App: React.FC = () => {
         topK: 40,
         maxOutputTokens: 8192,
         stream: false // Default to false (closed)
+    },
+    scripts: {
+        inputFilterEnabled: false,
+        inputFilterCode: '',
+        outputFilterEnabled: false,
+        outputFilterCode: ''
     }
   });
 
@@ -152,6 +159,15 @@ const App: React.FC = () => {
       // Ensure stream setting exists if loading from older schema
       if (loadedSettings.generation && loadedSettings.generation.stream === undefined) {
           loadedSettings.generation.stream = false;
+      }
+      // Ensure scripts setting exists
+      if (!loadedSettings.scripts) {
+          loadedSettings.scripts = {
+              inputFilterEnabled: false,
+              inputFilterCode: '',
+              outputFilterEnabled: false,
+              outputFilterCode: ''
+          };
       }
     } 
     setSettings(loadedSettings);
@@ -269,16 +285,35 @@ const App: React.FC = () => {
         combinedSystemInstruction,
         settings.generation,
         (chunkText) => {
-           setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: chunkText } : msg));
+           // Apply Output Filter (Streaming)
+           let processedChunk = chunkText;
+           if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
+               processedChunk = executeFilterScript(
+                   settings.scripts.outputFilterCode,
+                   chunkText,
+                   { role: 'model', history }
+               );
+           }
+           setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
         },
         controller.signal
       );
       
+      // Apply Output Filter (Final) - ensures consistent state at end
+      let processedFinalText = fullText;
+      if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
+          processedFinalText = executeFilterScript(
+              settings.scripts.outputFilterCode,
+              fullText,
+              { role: 'model', history }
+          );
+      }
+
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempBotId ? { 
               ...msg, 
-              text: fullText, 
+              text: processedFinalText, 
               keyIndex: usedKeyIndex, 
               provider: provider,
               model: usedModel 
@@ -324,10 +359,21 @@ const App: React.FC = () => {
       setIsSettingsOpen(true);
       return;
     }
+
+    // Apply Input Filter
+    let processedInput = input.trim();
+    if (settings.scripts?.inputFilterEnabled && settings.scripts.inputFilterCode) {
+        processedInput = executeFilterScript(
+            settings.scripts.inputFilterCode, 
+            processedInput, 
+            { role: 'user', history: messages }
+        );
+    }
+
     const newMessage: Message = {
       id: uuidv4(),
       role: Role.USER,
-      text: input.trim(),
+      text: processedInput,
       timestamp: Date.now()
     };
     const newHistory = [...messages, newMessage];
