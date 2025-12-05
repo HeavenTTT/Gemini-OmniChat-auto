@@ -29,10 +29,10 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   const contentId = `${id}-content`;
 
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 overflow-hidden mb-4 shadow-sm transition-all hover:border-gray-300 dark:hover:border-gray-600">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-900 mb-4 shadow-sm transition-all hover:border-gray-300 dark:hover:border-gray-600">
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+        className="w-full flex items-center justify-between p-4 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left rounded-t-xl"
         aria-expanded={isOpen}
         aria-controls={contentId}
         aria-label={t('action.toggle_section', lang).replace('{section}', title)}
@@ -50,7 +50,7 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
       </button>
       
       {isOpen && (
-        <div id={contentId} role="region" aria-labelledby={id} className="p-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in-up">
+        <div id={contentId} role="region" aria-labelledby={id} className="p-4 border-t border-gray-200 dark:border-gray-700 animate-fade-in-up rounded-b-xl">
             {children}
         </div>
       )}

@@ -4,6 +4,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2024-05-24
+### Added
+- **Custom Model Selector**: Replaced the native browser dropdown with a custom, styled component for selecting models in API Key settings.
+- **Enhanced UI**: The model selector now matches the application's design language, theme, and parent container width.
+
+### Changed
+- **Model List Behavior**: The dropdown now displays all available cached models regardless of the current text input, improving discoverability.
+- **Token Usage Display**: Improved layout and integration with the new model fetching logic.
+
 ## [1.3.2] - 2024-05-24
 ### Added
 - **New Themes**: Added 'Sunrise' (Orange/Warm) and 'Lime' (Green) themes.

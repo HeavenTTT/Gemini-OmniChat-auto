@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -9,6 +8,7 @@ import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSetti
 import { CollapsibleSection } from './CollapsibleSection';
 import { GeminiService } from '../../services/geminiService';
 import { t } from '../../utils/i18n';
+import { ModelSelect } from '../ui/ModelSelect';
 
 interface ApiKeyManagementProps {
   keys: KeyConfig[];
@@ -375,20 +375,16 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 )}
 
                 <div className="flex items-center gap-2 mt-1">
-                    <div className={`flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all`}>
+                    <div className={`relative flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all z-10`}>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label.model', lang)}</span>
-                        <input 
-                           type="text"
-                           list={`models-${config.id}`}
-                           className="flex-1 bg-transparent text-xs outline-none font-medium text-gray-700 dark:text-gray-200 min-w-0"
-                           placeholder={t('input.model_placeholder', lang)}
+                        
+                        <ModelSelect 
                            value={config.model || ''}
-                           onChange={(e) => onUpdate({ model: e.target.value })}
-                           aria-label={t('input.model_field', lang)}
+                           onChange={(val) => onUpdate({ model: val })}
+                           options={availableModels}
+                           placeholder={t('input.model_placeholder', lang)}
+                           className="static flex-1"
                         />
-                        <datalist id={`models-${config.id}`}>
-                            {availableModels.map(m => <option key={m} value={m} />)}
-                        </datalist>
                     </div>
                     
                     <button 

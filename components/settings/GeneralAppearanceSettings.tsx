@@ -80,7 +80,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
           <div>
             <div className="flex justify-between text-sm mb-2">
               <label htmlFor="bubble-transparency-slider" className="text-gray-700 dark:text-gray-300 font-medium">{t('settings.bubble_transparency', lang)}</label>
-              <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">{settings.bubbleTransparency}%)</span>
+              <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">{settings.bubbleTransparency}%</span>
             </div>
             <input 
               id="bubble-transparency-slider"

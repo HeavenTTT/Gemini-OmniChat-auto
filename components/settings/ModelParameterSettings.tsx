@@ -7,6 +7,7 @@ import { AlertCircle } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
+import { ModelList } from './ModelList';
 
 interface ModelParameterSettingsProps {
   settings: AppSettings;
@@ -26,6 +27,11 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p>{t('msg.model_url_moved', lang)}</p>
          </div>
+
+        {/* Available Models List */}
+        <CollapsibleSection id="available-models" title={t('settings.model_list', lang)} lang={lang}>
+            <ModelList models={settings.knownModels || []} lang={lang} />
+        </CollapsibleSection>
 
         <CollapsibleSection id="ai-parameters" title={t('settings.ai_parameters', lang)} defaultOpen={true} lang={lang}>
             <div className="space-y-6">
