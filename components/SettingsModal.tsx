@@ -56,7 +56,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
     
     root.classList.add(`theme-${localSettings.theme}`);
     if (['dark', 'twilight'].includes(localSettings.theme)) {
@@ -66,7 +66,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleCloseOrCancel = () => {
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
     
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) {

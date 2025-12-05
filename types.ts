@@ -53,7 +53,7 @@ export interface SystemPrompt {
   isActive: boolean;
 }
 
-export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime';
+export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda';
 export type Language = 'en' | 'zh' | 'ja';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 

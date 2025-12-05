@@ -53,6 +53,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
               <option value="pink">{t('theme.pink', lang)}</option>
               <option value="sunrise">{t('theme.sunrise', lang)}</option>
               <option value="lime">{t('theme.lime', lang)}</option>
+              <option value="panda">{t('theme.panda', lang)}</option>
             </select>
           </div>
         </div>

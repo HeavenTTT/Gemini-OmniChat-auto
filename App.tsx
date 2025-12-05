@@ -244,7 +244,7 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);

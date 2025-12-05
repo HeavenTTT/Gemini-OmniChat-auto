@@ -66,6 +66,15 @@
   --box-shadow-rgba: 80, 160, 50, 0.2;
 }
 
+/* Panda Theme (Black & White) */
+.theme-panda {
+  --color-foreground-rgb: 10, 10, 10;
+  --color-background-start-rgb: 255, 255, 255;
+  --color-background-end-rgb: 240, 240, 240;
+  --color-theme-primary-rgb: 30, 30, 30; /* Dark Gray */
+  --box-shadow-rgba: 0, 0, 0, 0.2;
+}
+
 body {
   color: rgb(var(--color-foreground-rgb));
   background: linear-gradient(
