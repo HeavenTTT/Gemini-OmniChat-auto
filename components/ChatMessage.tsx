@@ -24,9 +24,10 @@ interface ChatMessageProps {
   setConfirmDeleteId: (id: string | null) => void;
   startEditing: (msg: Message) => void;
   deleteTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, className?: string, lang: Language }) => {
+const CodeBlock = ({ children, className, lang, onShowToast }: { children?: React.ReactNode, className?: string, lang: Language, onShowToast: (msg: string, type: 'success') => void }) => {
   const [copied, setCopied] = React.useState(false);
   const textRef = useRef<string>("");
 
@@ -41,6 +42,7 @@ const CodeBlock = ({ children, className, lang }: { children?: React.ReactNode, 
   const handleCopy = () => {
     navigator.clipboard.writeText(textRef.current);
     setCopied(true);
+    onShowToast(t('action.copied_code', lang), 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -121,7 +123,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   setEditingId,
   setConfirmDeleteId,
   startEditing,
-  deleteTimerRef
+  deleteTimerRef,
+  onShowToast
 }) => {
   const [editText, setEditText] = useState(msg.text);
 
@@ -265,7 +268,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
                     ) : (
                     <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
-                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
+                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language} onShowToast={onShowToast}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
                     </div>
                     )}
                 </>
@@ -309,7 +312,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
                     aria-label={isConfirmingDelete ? t('action.confirm_delete_message', language) : t('action.delete_message', language)}
                     >
-                    <Trash2 className="w-5 h-5 md:w-3 h-3" />
+                    <Trash2 className="w-5 h-5 md:w-3 md:h-3" />
                     </button>
                 </div>
                 )}

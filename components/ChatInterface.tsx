@@ -17,9 +17,21 @@ interface ChatInterfaceProps {
   fontSize: number;
   textWrapping: TextWrappingMode;
   bubbleTransparency: number;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEditMessage, onDeleteMessage, onRegenerate, language, fontSize, textWrapping, bubbleTransparency }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+    messages, 
+    isLoading, 
+    onEditMessage, 
+    onDeleteMessage, 
+    onRegenerate, 
+    language, 
+    fontSize, 
+    textWrapping, 
+    bubbleTransparency,
+    onShowToast
+}) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -72,6 +84,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ messages, isLoading, onEd
             setConfirmDeleteId={setConfirmDeleteId}
             startEditing={startEditing}
             deleteTimerRef={deleteTimerRef}
+            onShowToast={onShowToast}
         />
       ))}
       {isLoading && (

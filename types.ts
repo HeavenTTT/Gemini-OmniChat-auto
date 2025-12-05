@@ -1,6 +1,6 @@
 
 
-export const APP_VERSION = '1.3.0';
+export const APP_VERSION = '1.3.1';
 
 export enum Role {
   USER = 'user',
@@ -94,4 +94,21 @@ export interface AppSettings {
   generation: GenerationConfig;
   
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
+}
+
+export interface ToastMessage {
+  id: string;
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+export interface DialogConfig {
+  isOpen: boolean;
+  type: 'alert' | 'confirm' | 'input';
+  title: string;
+  message?: string;
+  inputValue?: string;
+  inputPlaceholder?: string;
+  onConfirm: (value?: string) => void;
+  onCancel?: () => void;
 }

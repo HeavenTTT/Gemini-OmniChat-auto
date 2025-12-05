@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, ExternalLink, Network } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { KeyConfig, Language, ModelProvider, GeminiModel } from '../../types';
+import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { GeminiService } from '../../services/geminiService';
 import { t } from '../../utils/i18n';
@@ -16,6 +15,8 @@ interface ApiKeyManagementProps {
   lang: Language;
   defaultModel: string;
   geminiService: GeminiService | null;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
 }
 
 export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
@@ -23,7 +24,9 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   onUpdateKeys,
   lang,
   defaultModel,
-  geminiService
+  geminiService,
+  onShowToast,
+  onShowDialog
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -58,18 +61,24 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     
     const count = keys.filter(k => k.id !== sourceId && k.provider === sourceKey.provider).length;
     if (count === 0) {
-         alert(t('msg.sync_no_targets', lang));
+         onShowToast(t('msg.sync_no_targets', lang), 'info');
          return;
     }
     
-    if (confirm(t('msg.confirm_sync_model', lang).replace('{model}', sourceKey.model).replace('{count}', count.toString()))) {
-         onUpdateKeys(keys.map(k => {
-             if (k.id !== sourceId && k.provider === sourceKey.provider) {
-                 return { ...k, model: sourceKey.model };
-             }
-             return k;
-         }));
-    }
+    onShowDialog({
+        type: 'confirm',
+        title: t('action.sync_model', lang),
+        message: t('msg.confirm_sync_model', lang).replace('{model}', sourceKey.model).replace('{count}', count.toString()),
+        onConfirm: () => {
+             onUpdateKeys(keys.map(k => {
+                 if (k.id !== sourceId && k.provider === sourceKey.provider) {
+                     return { ...k, model: sourceKey.model };
+                 }
+                 return k;
+             }));
+             onShowToast("Model synced successfully.", 'success');
+        }
+    });
   };
 
   // --- Drag and Drop Logic ---
@@ -94,6 +103,10 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     
     onUpdateKeys(newKeys);
     setDraggedIndex(null);
+  };
+  
+  const handleDragEnd = () => {
+      setDraggedIndex(null);
   };
 
   return (
@@ -136,6 +149,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDrop={(e) => handleDrop(e, index)}
+                        onDragEnd={handleDragEnd}
                         className="transition-all duration-200"
                     >
                         <KeyConfigCard 
@@ -145,6 +159,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             onSyncModel={() => handleSyncModel(keyConfig.id)}
                             lang={lang}
                             geminiService={geminiService}
+                            onShowToast={onShowToast}
                         />
                     </div>
                 ))}
@@ -171,9 +186,10 @@ interface KeyConfigCardProps {
   onSyncModel: () => void;
   lang: Language;
   geminiService: GeminiService | null;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService }) => {
+const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService, onShowToast }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
@@ -210,12 +226,12 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 setAvailableModels(models);
                 localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(models));
                 if (!config.model) onUpdate({ model: models[0] });
-                alert(`${models.length} ${t('msg.fetch_success', lang)}`);
+                onShowToast(`${models.length} ${t('msg.fetch_success', lang)}`, 'success');
             } else {
-                alert(t('msg.fetch_no_models', lang));
+                onShowToast(t('msg.fetch_no_models', lang), 'info');
             }
         } catch (e) {
-            alert(t('msg.fetch_error', lang));
+            onShowToast(t('msg.fetch_error', lang), 'error');
         } finally {
             setIsFetching(false);
         }

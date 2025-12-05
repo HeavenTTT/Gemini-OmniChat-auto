@@ -18,6 +18,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onSaveChat: () => void;
   onLoadSession: (messages: any[], title?: string) => void;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -31,7 +32,8 @@ export const Header: React.FC<HeaderProps> = ({
   onNewChat,
   onOpenSettings,
   onSaveChat,
-  onLoadSession
+  onLoadSession,
+  onShowToast
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -49,10 +51,10 @@ export const Header: React.FC<HeaderProps> = ({
         if (parsed.messages && Array.isArray(parsed.messages)) {
           onLoadSession(parsed.messages, parsed.title);
         } else {
-          alert("Invalid chat file format.");
+          onShowToast("Invalid chat file format.", 'error');
         }
       } catch (err) {
-        alert(t('error.load_file', language));
+        onShowToast(t('error.load_file', language), 'error');
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
     };

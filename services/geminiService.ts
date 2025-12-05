@@ -255,17 +255,40 @@ export class GeminiService {
       if (config.stream) {
         const resultStream = await client.sendMessageStream({ message: newMessage });
         let fullText = '';
+        let stopReason = '';
+
         for await (const chunk of resultStream) {
           if (abortSignal?.aborted) break;
-          const chunkText = (chunk as GenerateContentResponse).text;
+          
+          const response = chunk as GenerateContentResponse;
+          const chunkText = response.text;
+
           if (chunkText) {
             fullText += chunkText;
             if (onChunk) onChunk(fullText);
+          } else {
+            // If text is undefined/empty, check candidates for finishReason
+            const candidate = response.candidates?.[0];
+            if (candidate?.finishReason) {
+                stopReason = candidate.finishReason;
+            }
           }
         }
+        
+        // If we have no text but a stop reason (e.g., SAFETY, RECITATION), display it
+        if (!fullText && stopReason) {
+             const reasonMessage = `[Response blocked. Reason: ${stopReason}]`;
+             if (onChunk) onChunk(reasonMessage);
+             return reasonMessage;
+        }
+
         return fullText;
       } else {
         const result = await client.sendMessage({ message: newMessage });
+        // Handling non-streaming empty response
+        if (!result.text && result.candidates?.[0]?.finishReason) {
+             return `[Response blocked. Reason: ${result.candidates[0].finishReason}]`;
+        }
         return result.text || '';
       }
   }

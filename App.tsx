@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
-import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION } from './types';
+import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig } from './types';
 import ChatInterface from './components/ChatInterface';
 import SettingsModal from './components/SettingsModal';
 import SecurityLock from './components/SecurityLock';
@@ -14,6 +13,8 @@ import MobileMenu from './components/MobileMenu';
 import { Header } from './components/Header';
 import ChatInput from './components/ChatInput';
 import { t } from './utils/i18n';
+import { ToastContainer } from './components/ui/Toast';
+import { CustomDialog } from './components/ui/CustomDialog';
 
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
@@ -62,8 +63,43 @@ const App: React.FC = () => {
     }
   });
 
+  // UI State
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [dialog, setDialog] = useState<DialogConfig>({
+      isOpen: false,
+      type: 'alert',
+      title: '',
+      onConfirm: () => {}
+  });
+
   const [geminiService, setGeminiService] = useState<GeminiService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // --- Helpers for UI ---
+  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+      setToasts(prev => [...prev, { id: uuidv4(), message, type }]);
+  };
+  
+  const removeToast = (id: string) => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+  };
+
+  const showDialog = (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => {
+      setDialog({
+          isOpen: true,
+          type: config.type || 'alert',
+          title: config.title,
+          message: config.message,
+          inputValue: config.inputValue,
+          inputPlaceholder: config.inputPlaceholder,
+          onConfirm: config.onConfirm,
+          onCancel: config.onCancel
+      });
+  };
+
+  const closeDialog = () => {
+      setDialog(prev => ({ ...prev, isOpen: false }));
+  };
 
   // --- Initialization ---
   useEffect(() => {
@@ -399,6 +435,7 @@ const App: React.FC = () => {
       if (title) {
           setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: title } : s));
       }
+      addToast(t('success.import', settings.language), 'success');
   };
 
   const handleSummarize = async () => {
@@ -410,9 +447,12 @@ const App: React.FC = () => {
         // Pass empty history to treat prompt as independent context
         const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
-        if (newTitle) setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
+        if (newTitle) {
+            setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
+            addToast(t('action.ok', settings.language), 'success');
+        }
     } catch (error) {
-        alert(t('msg.summarize_error', settings.language));
+        addToast(t('msg.summarize_error', settings.language), 'error');
     } finally {
         setIsSummarizing(false);
     }
@@ -421,10 +461,17 @@ const App: React.FC = () => {
   const handleRenameSession = () => {
     const currentSession = sessions.find(s => s.id === activeSessionId);
     const currentTitle = currentSession?.title || t('app.title', settings.language);
-    const newTitle = prompt(t('msg.rename_chat', settings.language), currentTitle); 
-    if (newTitle && newTitle.trim()) {
-        setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
-    }
+    
+    showDialog({
+        type: 'input',
+        title: t('msg.rename_chat', settings.language),
+        inputValue: currentTitle,
+        onConfirm: (newTitle) => {
+            if (newTitle && newTitle.trim()) {
+                setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
+            }
+        }
+    });
   };
 
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
@@ -434,6 +481,9 @@ const App: React.FC = () => {
 
   return (
     <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <CustomDialog config={dialog} onClose={closeDialog} lang={settings.language} />
+
       <div className="flex w-full h-full bg-transparent text-gray-900 dark:text-gray-100 transition-colors duration-300">
         <Sidebar 
             sessions={sessions}
@@ -471,6 +521,7 @@ const App: React.FC = () => {
              onOpenSettings={() => setIsSettingsOpen(true)}
              onSaveChat={handleSaveChat}
              onLoadSession={handleLoadSession}
+             onShowToast={addToast}
           />
 
           <div className="flex-1 overflow-y-auto scroll-smooth p-2 md:p-4">
@@ -485,6 +536,7 @@ const App: React.FC = () => {
                  fontSize={settings.fontSize} 
                  textWrapping={settings.textWrapping}
                  bubbleTransparency={settings.bubbleTransparency}
+                 onShowToast={addToast}
               />
             </div>
           </div>
@@ -507,7 +559,17 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} apiKeys={apiKeys} onUpdateKeys={setApiKeys} settings={settings} onUpdateSettings={setSettings} geminiService={geminiService} />
+        <SettingsModal 
+            isOpen={isSettingsOpen} 
+            onClose={() => setIsSettingsOpen(false)} 
+            apiKeys={apiKeys} 
+            onUpdateKeys={setApiKeys} 
+            settings={settings} 
+            onUpdateSettings={setSettings} 
+            geminiService={geminiService}
+            onShowToast={addToast}
+            onShowDialog={showDialog}
+        />
       </div>
     </div>
   );

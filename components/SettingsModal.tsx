@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle } from 'lucide-react';
-import { AppSettings, KeyConfig, Language, APP_VERSION } from '../types';
+import { AppSettings, KeyConfig, Language, APP_VERSION, DialogConfig } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
 import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';
@@ -22,6 +21,8 @@ interface SettingsModalProps {
   settings: AppSettings;
   onUpdateSettings: (settings: AppSettings) => void;
   geminiService: GeminiService | null;
+  onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -31,7 +32,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateKeys,
   settings,
   onUpdateSettings,
-  geminiService
+  geminiService,
+  onShowToast,
+  onShowDialog
 }) => {
   const [localKeys, setLocalKeys] = useState<KeyConfig[]>([]);
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
@@ -94,6 +97,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    onShowToast("Configuration exported.", 'success');
   };
 
   const handleImportTrigger = () => {
@@ -112,13 +116,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         if (parsed.type === 'omnichat_settings') {
            if (parsed.keys && Array.isArray(parsed.keys)) setLocalKeys(parsed.keys);
            if (parsed.settings) setLocalSettings({ ...localSettings, ...parsed.settings });
-           alert(t('success.import', lang));
+           onShowToast(t('success.import', lang), 'success');
         } else {
-           alert("Invalid format.");
+           onShowToast("Invalid format.", 'error');
         }
       } catch (err) {
         console.error(err);
-        alert(t('error.load_file', lang));
+        onShowToast(t('error.load_file', lang), 'error');
       }
       if (fileInputRef.current) fileInputRef.current.value = '';
     };
@@ -188,6 +192,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     lang={lang} 
                     defaultModel={localSettings.defaultModel}
                     geminiService={geminiService}
+                    onShowToast={onShowToast}
+                    onShowDialog={onShowDialog}
                 />
 
                 {/* Config Management */}
