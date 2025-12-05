@@ -27,7 +27,7 @@ const themeColors: Record<string, { body: string, feet: string, blush: string }>
   pink: { body: '#f472b6', feet: '#be185d', blush: '#fbcfe8' }, // Pink 400, 700, 200
   sunrise: { body: '#fb923c', feet: '#c2410c', blush: '#fdba74' }, // Orange 400, 700, 300
   lime: { body: '#a3e635', feet: '#3f6212', blush: '#bef264' }, // Lime 400, 800, 300
-  panda: { body: '#171717', feet: '#525252', blush: '#404040' }, // Neutral Grays
+  panda: { body: '#d0d0d0', feet: '#606060', blush: '#808080' }, // Neutral Grays
 };
 
 const defaultColors = {

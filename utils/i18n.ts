@@ -78,6 +78,7 @@ const translations: Translations = {
     'settings.bubble_transparency': 'Bubble Transparency',
     'settings.show_model_name': 'Show Model Name',
     'settings.kirby_theme_color': 'Adaptive Icon Color',
+    'settings.show_token_usage': 'Show Token Usage',
     'settings.provider': 'Provider',
     'settings.ai_parameters': 'AI Parameters',
     'settings.security': 'Security Lock',
@@ -147,6 +148,10 @@ const translations: Translations = {
     'param.topP': 'Top P',
     'param.topK': 'Top K',
     'param.maxTokens': 'Max Output Tokens',
+    'param.thinkingBudget': 'Thinking Budget',
+    'param.thinkingBudget_desc': 'For Gemini 2.5 series. Higher budget = more reasoning. 0 to disable.',
+    'param.historyContextLimit': 'Context Limit (Messages)',
+    'param.historyContextLimit_desc': 'Max number of past messages to send. 0 = Unlimited.',
     'param.stream': 'Stream Response',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI Compatible',
@@ -207,6 +212,8 @@ const translations: Translations = {
     'param.top_p_slider': 'Adjust Top P parameter',
     'param.top_k_slider': 'Adjust Top K parameter',
     'param.max_output_tokens_input': 'Set maximum output tokens',
+    'param.thinking_budget_input': 'Set thinking budget (tokens)',
+    'param.history_context_limit_input': 'Set context message limit',
     'input.password_to_unlock': 'Enter password to unlock',
     'input.answer_to_unlock': 'Enter answer to unlock',
     'input.password': 'Password',
@@ -228,7 +235,9 @@ const translations: Translations = {
     'action.select_chat_file': 'Select a chat session JSON file',
     'input.prompt_title_field': 'System prompt title input',
     'input.instruction_field': 'System prompt instruction content input',
-    'action.drag_to_reorder': 'Drag to reorder'
+    'action.drag_to_reorder': 'Drag to reorder',
+    'label.token_usage': 'Tokens',
+    'label.approx': 'approx.'
   },
   zh: {
     'app.title': '全能聊天',
@@ -299,6 +308,7 @@ const translations: Translations = {
     'settings.bubble_transparency': '气泡透明度',
     'settings.show_model_name': '显示模型名称',
     'settings.kirby_theme_color': '自适应图标颜色',
+    'settings.show_token_usage': '显示 Token 用量',
     'settings.provider': '服务提供商',
     'settings.ai_parameters': 'AI 参数',
     'settings.security': '安全锁',
@@ -368,6 +378,10 @@ const translations: Translations = {
     'param.topP': '核采样 (Top P)',
     'param.topK': 'Top K',
     'param.maxTokens': '最大输出长度',
+    'param.thinkingBudget': '思考预算 (Thinking Budget)',
+    'param.thinkingBudget_desc': '仅适用于 Gemini 2.5 系列。预算越高推理越强。设为0禁用。',
+    'param.historyContextLimit': '历史上下文限制 (条)',
+    'param.historyContextLimit_desc': '发送给模型的最大历史消息数量。0 = 无限制。',
     'param.stream': '流式传输',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI 兼容模式',
@@ -428,6 +442,8 @@ const translations: Translations = {
     'param.top_p_slider': '调整Top P参数',
     'param.top_k_slider': '调整Top K参数',
     'param.max_output_tokens_input': '设置最大输出长度',
+    'param.thinking_budget_input': '设置思考预算 (Tokens)',
+    'param.history_context_limit_input': '设置上下文消息限制',
     'input.password_to_unlock': '输入密码解锁',
     'input.answer_to_unlock': '输入答案解锁',
     'input.password': '密码',
@@ -449,7 +465,9 @@ const translations: Translations = {
     'action.select_chat_file': '选择一个聊天会话JSON文件',
     'input.prompt_title_field': '系统提示词标题输入',
     'input.instruction_field': '系统提示词内容输入',
-    'action.drag_to_reorder': '拖动以重新排序'
+    'action.drag_to_reorder': '拖动以重新排序',
+    'label.token_usage': 'Token 用量',
+    'label.approx': '约'
   },
   ja: {
     'app.title': 'OmniChat',
@@ -520,6 +538,7 @@ const translations: Translations = {
     'settings.bubble_transparency': '吹き出しの透明度',
     'settings.show_model_name': 'モデル名を表示',
     'settings.kirby_theme_color': 'アイコン色をテーマに適応',
+    'settings.show_token_usage': 'トークン使用量を表示',
     'settings.provider': 'プロバイダー',
     'settings.ai_parameters': 'AIパラメータ',
     'settings.security': 'セキュリティロック',
@@ -589,6 +608,10 @@ const translations: Translations = {
     'param.topP': 'トップP (Top P)',
     'param.topK': 'トップK (Top K)',
     'param.maxTokens': '最大出力トークン',
+    'param.thinkingBudget': '思考予算 (Thinking Budget)',
+    'param.thinkingBudget_desc': 'Gemini 2.5シリーズ用。予算が高いほど推論が強化されます。0で無効。',
+    'param.historyContextLimit': 'コンテキスト制限 (メッセージ数)',
+    'param.historyContextLimit_desc': '送信する過去のメッセージの最大数。0 = 無制限。',
     'param.stream': 'ストリーム応答',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI 互換',
@@ -648,6 +671,8 @@ const translations: Translations = {
     'param.top_p_slider': 'トップP (Top P) を調整',
     'param.top_k_slider': 'トップK (Top K) を調整',
     'param.max_output_tokens_input': '最大出力トークン数を設定',
+    'param.thinking_budget_input': '思考予算 (Tokens) を設定',
+    'param.history_context_limit_input': 'コンテキストメッセージ制限を設定',
     'input.password_to_unlock': 'パスワードを入力してロック解除',
     'input.answer_to_unlock': '回答を入力してロック解除',
     'input.password': 'パスワード',
@@ -669,7 +694,9 @@ const translations: Translations = {
     'action.select_chat_file': 'チャットJSONファイルを選択',
     'input.prompt_title_field': 'システムプロンプトのタイトル',
     'input.instruction_field': 'システムプロンプトの内容',
-    'action.drag_to_reorder': 'ドラッグして並べ替え'
+    'action.drag_to_reorder': 'ドラッグして並べ替え',
+    'label.token_usage': 'トークン使用量',
+    'label.approx': '約'
   }
 };
 

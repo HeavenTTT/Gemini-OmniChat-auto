@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -87,6 +88,48 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                         className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
                         aria-label={t('param.top_k_slider', lang)}
                     />
+                </div>
+
+                {/* Thinking Budget (Gemini 2.5) */}
+                <div>
+                    <div className="flex justify-between text-sm mb-2">
+                        <label htmlFor="thinking-budget-input" className="text-gray-700 dark:text-gray-300 font-medium">{t('param.thinkingBudget', lang)}</label>
+                        <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">
+                            {settings.generation.thinkingBudget || 0}
+                        </span>
+                    </div>
+                    <input 
+                        id="thinking-budget-input"
+                        type="range" min="0" max="32768" step="1024"
+                        value={settings.generation.thinkingBudget || 0}
+                        onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, thinkingBudget: parseInt(e.target.value)}})}
+                        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
+                        aria-label={t('param.thinking_budget_input', lang)}
+                    />
+                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {t('param.thinkingBudget_desc', lang)}
+                    </p>
+                </div>
+
+                {/* Context Limit */}
+                <div>
+                    <div className="flex justify-between text-sm mb-2">
+                        <label htmlFor="context-limit-input" className="text-gray-700 dark:text-gray-300 font-medium">{t('param.historyContextLimit', lang)}</label>
+                        <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">
+                            {settings.historyContextLimit === 0 ? 'Unlimited' : settings.historyContextLimit}
+                        </span>
+                    </div>
+                    <input 
+                        id="context-limit-input"
+                        type="range" min="0" max="50" step="2"
+                        value={settings.historyContextLimit || 0}
+                        onChange={(e) => onUpdateSettings({...settings, historyContextLimit: parseInt(e.target.value)})}
+                        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
+                        aria-label={t('param.history_context_limit_input', lang)}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {t('param.historyContextLimit_desc', lang)}
+                    </p>
                 </div>
 
                 <div>

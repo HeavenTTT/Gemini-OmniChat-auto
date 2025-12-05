@@ -1,5 +1,6 @@
 
-import { Message, Role, GenerationConfig } from "../types";
+
+import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 
 /**
  * Service to handle OpenAI-compatible API interactions.
@@ -22,7 +23,7 @@ export class OpenAIService {
   /**
    * Fetches available models from the OpenAI-compatible endpoint.
    */
-  public async listModels(apiKey: string, baseUrl: string): Promise<string[]> {
+  public async listModels(apiKey: string, baseUrl: string): Promise<ModelInfo[]> {
     const cleanUrl = baseUrl.replace(/\/$/, '');
     try {
       const response = await fetch(`${cleanUrl}/models`, {
@@ -37,7 +38,13 @@ export class OpenAIService {
       
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
-        return data.data.map((m: any) => m.id).sort();
+        return data.data.map((m: any) => ({
+            name: m.id,
+            displayName: m.id,
+            // OpenAI doesn't standardly expose limits in list models
+            inputTokenLimit: 128000, 
+            outputTokenLimit: 4096
+        })).sort((a: ModelInfo, b: ModelInfo) => a.name.localeCompare(b.name));
       }
       return [];
     } catch (error) {

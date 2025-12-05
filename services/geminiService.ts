@@ -1,6 +1,7 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { Message, Role, KeyConfig, GenerationConfig, ModelProvider } from "../types";
+import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
 import { OpenAIService } from "./openaiService";
 
 // Helper to wait/sleep
@@ -38,7 +39,7 @@ export class GeminiService {
    * Lists available models for a specific key configuration.
    * Supports both Google GenAI and OpenAI compatible endpoints.
    */
-  public async listModels(keyConfig: KeyConfig): Promise<string[]> {
+  public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     if (keyConfig.provider === 'openai') {
         if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
         return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
@@ -46,22 +47,39 @@ export class GeminiService {
         // Google Implementation
         const ai = new GoogleGenAI({ apiKey: keyConfig.key });
         const response = await ai.models.list();
-        const models: string[] = [];
+        const models: ModelInfo[] = [];
         try {
+            // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
             for await (const model of response) {
                 const m = model as any;
-                if (m.name) models.push(m.name.replace('models/', ''));
+                if (m.name) {
+                    const name = m.name.replace('models/', '');
+                    models.push({
+                        name: name,
+                        displayName: m.displayName || name,
+                        inputTokenLimit: m.inputTokenLimit,
+                        outputTokenLimit: m.outputTokenLimit
+                    });
+                }
             }
         } catch (e) {
              const raw = response as any;
              if (Array.isArray(raw.models)) {
                  raw.models.forEach((m: any) => {
-                     if (m.name) models.push(m.name.replace('models/', ''));
+                     if (m.name) {
+                         const name = m.name.replace('models/', '');
+                         models.push({
+                             name: name,
+                             displayName: m.displayName || name,
+                             inputTokenLimit: m.inputTokenLimit,
+                             outputTokenLimit: m.outputTokenLimit
+                         });
+                     }
                  });
              }
         }
         return models.filter(m => 
-            m.includes('gemini') || m.includes('flash') || m.includes('pro') || m.includes('thinking')
+            m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
         );
     }
   }
@@ -238,13 +256,18 @@ export class GeminiService {
         parts: [{ text: msg.text }]
       }));
 
-      const commonConfig = {
+      const commonConfig: any = {
         systemInstruction: systemInstruction,
         temperature: config.temperature,
         topP: config.topP,
         topK: config.topK,
         maxOutputTokens: config.maxOutputTokens
       };
+
+      // Apply thinking budget if set and > 0
+      if (config.thinkingBudget && config.thinkingBudget > 0) {
+          commonConfig.thinkingConfig = { thinkingBudget: config.thinkingBudget };
+      }
 
       const client = ai.chats.create({
         model: modelId,
@@ -290,6 +313,55 @@ export class GeminiService {
              return `[Response blocked. Reason: ${result.candidates[0].finishReason}]`;
         }
         return result.text || '';
+      }
+  }
+
+  /**
+   * Counts tokens for a given context using the Gemini API.
+   * Returns -1 if provider is not Google or error occurs.
+   */
+  public async countTokens(
+      keyConfig: KeyConfig,
+      history: Message[],
+      newMessage: string,
+      systemInstruction: string | undefined
+  ): Promise<number> {
+      if (keyConfig.provider !== 'google') return -1;
+
+      const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+      const googleHistory = history.map(msg => ({
+          role: msg.role === Role.USER ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+      }));
+
+      // Prepare contents list
+      const contents = [...googleHistory];
+
+      // Workaround: countTokens API might not support systemInstruction in config yet.
+      // We append it as text content to estimate tokens to avoid the API error.
+      if (systemInstruction) {
+          contents.unshift({
+              role: 'user',
+              parts: [{ text: systemInstruction }]
+          });
+      }
+
+      // Add the new message
+      contents.push({
+          role: 'user',
+          parts: [{ text: newMessage }]
+      });
+
+      try {
+          const response = await ai.models.countTokens({
+              model: keyConfig.model || 'gemini-2.5-flash',
+              contents: contents,
+              // Note: Do not pass systemInstruction in config here as it may cause 'parameter not supported' errors on countTokens endpoint
+          });
+          return response.totalTokens || 0;
+      } catch (error) {
+          console.error("Count tokens failed", error);
+          return -1;
       }
   }
 }

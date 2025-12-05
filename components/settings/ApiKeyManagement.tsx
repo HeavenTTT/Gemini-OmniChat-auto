@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, ExternalLink, Network } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig } from '../../types';
+import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { GeminiService } from '../../services/geminiService';
 import { t } from '../../utils/i18n';
@@ -12,6 +13,8 @@ import { t } from '../../utils/i18n';
 interface ApiKeyManagementProps {
   keys: KeyConfig[];
   onUpdateKeys: (keys: KeyConfig[]) => void;
+  settings: AppSettings;
+  onUpdateSettings: (settings: AppSettings) => void;
   lang: Language;
   defaultModel: string;
   geminiService: GeminiService | null;
@@ -22,6 +25,8 @@ interface ApiKeyManagementProps {
 export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   keys,
   onUpdateKeys,
+  settings,
+  onUpdateSettings,
   lang,
   defaultModel,
   geminiService,
@@ -157,6 +162,17 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             onUpdate={(updates) => handleUpdateKey(keyConfig.id, updates)}
                             onRemove={() => handleRemoveKey(keyConfig.id)}
                             onSyncModel={() => handleSyncModel(keyConfig.id)}
+                            onUpdateKnownModels={(newModels) => {
+                                // Merge new models with existing, preferring new info
+                                const existing = settings.knownModels || [];
+                                const merged = [...existing];
+                                newModels.forEach(nm => {
+                                    const idx = merged.findIndex(em => em.name === nm.name);
+                                    if (idx !== -1) merged[idx] = nm;
+                                    else merged.push(nm);
+                                });
+                                onUpdateSettings({ ...settings, knownModels: merged });
+                            }}
                             lang={lang}
                             geminiService={geminiService}
                             onShowToast={onShowToast}
@@ -184,12 +200,13 @@ interface KeyConfigCardProps {
   onUpdate: (updates: Partial<KeyConfig>) => void;
   onRemove: () => void;
   onSyncModel: () => void;
+  onUpdateKnownModels: (models: ModelInfo[]) => void;
   lang: Language;
   geminiService: GeminiService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
-const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, lang, geminiService, onShowToast }) => {
+const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemove, onSyncModel, onUpdateKnownModels, lang, geminiService, onShowToast }) => {
     const [isTesting, setIsTesting] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [testResult, setTestResult] = useState<boolean | null>(null);
@@ -221,16 +238,23 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
         if (!geminiService || !config.key) return;
         setIsFetching(true);
         try {
-            const models = await geminiService.listModels(config);
-            if (models.length > 0) {
-                setAvailableModels(models);
-                localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(models));
-                if (!config.model) onUpdate({ model: models[0] });
-                onShowToast(`${models.length} ${t('msg.fetch_success', lang)}`, 'success');
+            const modelsInfo = await geminiService.listModels(config);
+            const modelNames = modelsInfo.map(m => m.name);
+            
+            if (modelNames.length > 0) {
+                setAvailableModels(modelNames);
+                localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(modelNames));
+                
+                // Update global known models with limits
+                onUpdateKnownModels(modelsInfo);
+
+                if (!config.model) onUpdate({ model: modelNames[0] });
+                onShowToast(`${modelNames.length} ${t('msg.fetch_success', lang)}`, 'success');
             } else {
                 onShowToast(t('msg.fetch_no_models', lang), 'info');
             }
         } catch (e) {
+            console.error(e);
             onShowToast(t('msg.fetch_error', lang), 'error');
         } finally {
             setIsFetching(false);

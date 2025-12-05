@@ -46,6 +46,13 @@ export enum GeminiModel {
   FLASH_THINKING = 'gemini-2.5-flash-thinking-preview-01-21'
 }
 
+export interface ModelInfo {
+  name: string;
+  displayName?: string;
+  inputTokenLimit?: number;
+  outputTokenLimit?: number;
+}
+
 export interface SystemPrompt {
   id: string;
   title: string;
@@ -77,6 +84,7 @@ export interface GenerationConfig {
   topK: number;
   maxOutputTokens: number;
   stream: boolean;
+  thinkingBudget?: number; // New: For Gemini 2.5 thinking models
 }
 
 export interface ScriptConfig {
@@ -101,10 +109,13 @@ export interface AppSettings {
   bubbleTransparency: number; // 0-100
   showModelName: boolean; // New: Toggle model name visibility
   kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation
+  showTokenUsage: boolean; // New: Toggle token usage estimation
+  historyContextLimit: number; // New: Limit number of past messages sent (0 = unlimited)
   security: SecurityConfig;
   generation: GenerationConfig;
   scripts: ScriptConfig; // New: Script settings
   
+  knownModels: ModelInfo[]; // New: Cache known models and their limits
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }
 

@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
-import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig } from './types';
+import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo } from './types';
 import ChatInterface from './components/ChatInterface';
 import SettingsModal from './components/SettingsModal';
 import SecurityLock from './components/SecurityLock';
@@ -26,6 +26,12 @@ const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 
 const ENV_KEY = process.env.API_KEY || '';
+
+const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
+    { name: 'gemini-2.5-flash', inputTokenLimit: 1048576, outputTokenLimit: 8192 },
+    { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 },
+    { name: 'gemini-2.5-flash-thinking-preview-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 }
+];
 
 const App: React.FC = () => {
   // --- State ---
@@ -52,6 +58,8 @@ const App: React.FC = () => {
     bubbleTransparency: 100, // Default to 100% opacity
     showModelName: true, // Default to true
     kirbyThemeColor: false, // Default to false
+    showTokenUsage: false, // Default to false
+    historyContextLimit: 0, // Default to 0 (unlimited)
     security: {
         enabled: false,
         questions: [],
@@ -63,14 +71,16 @@ const App: React.FC = () => {
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
-        stream: false // Default to false (closed)
+        stream: false, // Default to false (closed)
+        thinkingBudget: 0 // Default 0
     },
     scripts: {
         inputFilterEnabled: false,
         inputFilterCode: '',
         outputFilterEnabled: false,
         outputFilterCode: ''
-    }
+    },
+    knownModels: DEFAULT_KNOWN_MODELS
   });
 
   // UI State
@@ -170,6 +180,22 @@ const App: React.FC = () => {
       // Ensure kirbyThemeColor setting exists
       if (loadedSettings.kirbyThemeColor === undefined) {
           loadedSettings.kirbyThemeColor = false;
+      }
+       // Ensure showTokenUsage setting exists
+       if (loadedSettings.showTokenUsage === undefined) {
+          loadedSettings.showTokenUsage = false;
+      }
+      // Ensure historyContextLimit setting exists
+      if (loadedSettings.historyContextLimit === undefined) {
+          loadedSettings.historyContextLimit = 0;
+      }
+      // Ensure thinkingBudget exists
+      if (loadedSettings.generation && loadedSettings.generation.thinkingBudget === undefined) {
+          loadedSettings.generation.thinkingBudget = 0;
+      }
+      // Ensure knownModels exists
+      if (!loadedSettings.knownModels) {
+          loadedSettings.knownModels = DEFAULT_KNOWN_MODELS;
       }
       // Ensure scripts setting exists
       if (!loadedSettings.scripts) {
@@ -289,9 +315,18 @@ const App: React.FC = () => {
     try {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
+      // Apply History Context Limit (Truncate history sent to model)
+      // If historyContextLimit > 0, take the last N messages from history
+      // Note: We always want to keep the conversation coherent, so usually we slice from end.
+      // 'history' passed here includes the user's latest message at the end.
+      let contextToSend = history;
+      if (settings.historyContextLimit > 0 && history.length > settings.historyContextLimit) {
+          contextToSend = history.slice(-settings.historyContextLimit);
+      }
+
       const { text: fullText, usedKeyIndex, provider, usedModel } = await geminiService.streamChatResponse(
         '', // Global model ignored, uses key config
-        history, 
+        contextToSend, 
         promptText,
         combinedSystemInstruction,
         settings.generation,
@@ -391,6 +426,27 @@ const App: React.FC = () => {
     setMessages(newHistory);
     setInput('');
     await triggerBotResponse(newHistory, newMessage.text);
+  };
+
+  const handleGetTokenCount = async (currentInput: string): Promise<number> => {
+      if (!geminiService || apiKeys.length === 0) return 0;
+      
+      const activeKey = apiKeys.find(k => k.isActive);
+      if (!activeKey) return 0;
+
+      let contextToSend = messages;
+      if (settings.historyContextLimit > 0 && messages.length > settings.historyContextLimit) {
+          contextToSend = messages.slice(-settings.historyContextLimit);
+      }
+      
+      const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
+
+      return await geminiService.countTokens(
+          activeKey,
+          contextToSend,
+          currentInput,
+          combinedSystemInstruction
+      );
   };
 
   const handleEditMessage = (id: string, newText: string) => {
@@ -531,8 +587,18 @@ const App: React.FC = () => {
     });
   };
 
+  // Determine current model's token limit
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
+  
+  let currentModelTokenLimit = 0;
+  // Naive strategy: get the model of the first active key.
+  // In rotation, models might change, but this gives a baseline for UI.
+  const activeKey = apiKeys.find(k => k.isActive);
+  if (activeKey && activeKey.model && settings.knownModels) {
+      const info = settings.knownModels.find(m => m.name === activeKey.model);
+      if (info) currentModelTokenLimit = info.inputTokenLimit || 0;
+  }
 
   if (isLocked) return (
     <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
@@ -624,8 +690,13 @@ const App: React.FC = () => {
                 fontSize={settings.fontSize}
                 language={settings.language}
                 activeKeysCount={activeKeysCount}
+                showTokenUsage={settings.showTokenUsage}
+                history={messages}
+                historyLimit={settings.historyContextLimit}
+                modelTokenLimit={currentModelTokenLimit}
+                onGetTokenCount={handleGetTokenCount}
              />
-             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-2 select-none">
+             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
                 AI Generated • OmniChat v{APP_VERSION}
              </div>
           </div>

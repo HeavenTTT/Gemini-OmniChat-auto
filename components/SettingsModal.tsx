@@ -191,6 +191,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 <ApiKeyManagement 
                     keys={localKeys} 
                     onUpdateKeys={setLocalKeys} 
+                    settings={localSettings}
+                    onUpdateSettings={setLocalSettings}
                     lang={lang} 
                     defaultModel={localSettings.defaultModel}
                     geminiService={geminiService}
