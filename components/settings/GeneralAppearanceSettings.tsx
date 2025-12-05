@@ -34,6 +34,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
             >
               <option value="en">English</option>
               <option value="zh">中文</option>
+              <option value="ja">日本語</option>
             </select>
           </div>
           <div>

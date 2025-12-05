@@ -54,7 +54,7 @@ export interface SystemPrompt {
 }
 
 export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime';
-export type Language = 'en' | 'zh';
+export type Language = 'en' | 'zh' | 'ja';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 
 export interface SecurityQuestion {
