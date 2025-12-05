@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -49,6 +50,8 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
               <option value="twilight">{t('theme.twilight', lang)}</option>
               <option value="sky">{t('theme.sky', lang)}</option>
               <option value="pink">{t('theme.pink', lang)}</option>
+              <option value="sunrise">{t('theme.sunrise', lang)}</option>
+              <option value="lime">{t('theme.lime', lang)}</option>
             </select>
           </div>
         </div>
@@ -85,6 +88,34 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
               className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
               aria-label={t('settings.bubble_transparency_slider', lang)}
             />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label htmlFor="show-model-name-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_model_name', lang)}</label>
+            <label htmlFor="show-model-name-toggle" className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    id="show-model-name-toggle"
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings.showModelName}
+                    onChange={(e) => onUpdateSettings({...settings, showModelName: e.target.checked})}
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label htmlFor="kirby-color-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.kirby_theme_color', lang)}</label>
+            <label htmlFor="kirby-color-toggle" className="relative inline-flex items-center cursor-pointer">
+                <input 
+                    id="kirby-color-toggle"
+                    type="checkbox" 
+                    className="sr-only peer"
+                    checked={settings.kirbyThemeColor}
+                    onChange={(e) => onUpdateSettings({...settings, kirbyThemeColor: e.target.checked})}
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            </label>
           </div>
 
           <div>

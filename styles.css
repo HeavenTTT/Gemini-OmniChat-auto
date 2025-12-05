@@ -48,8 +48,23 @@
   --box-shadow-rgba: 200, 100, 150, 0.2;
 }
 
-/* Rainbow Theme */
-/* This theme has been removed */
+/* Sunrise Theme (Orange) */
+.theme-sunrise {
+  --color-foreground-rgb: 90, 40, 20;
+  --color-background-start-rgb: 255, 252, 245;
+  --color-background-end-rgb: 255, 237, 213;
+  --color-theme-primary-rgb: 249, 115, 22; /* Orange 500 */
+  --box-shadow-rgba: 200, 100, 50, 0.2;
+}
+
+/* Lime Theme (Green) */
+.theme-lime {
+  --color-foreground-rgb: 20, 60, 30;
+  --color-background-start-rgb: 250, 255, 245;
+  --color-background-end-rgb: 236, 252, 203;
+  --color-theme-primary-rgb: 101, 163, 13; /* Lime 600 */
+  --box-shadow-rgba: 80, 160, 50, 0.2;
+}
 
 body {
   color: rgb(var(--color-foreground-rgb));
@@ -136,9 +151,6 @@ body {
   }
 }
 
-/* Rainbow Border Animation */
-/* This animation has been removed */
-
 .animate-fade-in-up {
   animation: fade-in-up 0.3s ease-out forwards;
 }
@@ -146,7 +158,3 @@ body {
 .animate-slide-in-left {
   animation: slide-in-left 0.3s ease-out forwards;
 }
-
-/* .border-animated-rainbow { */
-/* This class has been removed */
-/* } */

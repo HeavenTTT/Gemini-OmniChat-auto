@@ -1,6 +1,6 @@
 
 
-export const APP_VERSION = '1.3.1';
+export const APP_VERSION = '1.3.2';
 
 export enum Role {
   USER = 'user',
@@ -53,7 +53,7 @@ export interface SystemPrompt {
   isActive: boolean;
 }
 
-export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink';
+export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime';
 export type Language = 'en' | 'zh';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 
@@ -99,6 +99,8 @@ export interface AppSettings {
   fontSize: number; 
   textWrapping: TextWrappingMode;
   bubbleTransparency: number; // 0-100
+  showModelName: boolean; // New: Toggle model name visibility
+  kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation
   security: SecurityConfig;
   generation: GenerationConfig;
   scripts: ScriptConfig; // New: Script settings

@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useRef } from 'react';
-import { Upload, FileCode, Download, Trash2, FileText, Code } from 'lucide-react';
+import { Upload, FileCode, Download, Trash2, FileText, Code, ExternalLink, BookOpen } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
@@ -166,9 +167,30 @@ export const ScriptFilterSettings: React.FC<ScriptFilterSettingsProps> = ({
   return (
     <CollapsibleSection id="scripts" title={t('settings.scripts', lang)} lang={lang}>
         <div className="space-y-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
-                {t('settings.script_desc', lang)}
-            </p>
+            <div className="text-xs text-gray-500 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/10 p-3 rounded-lg border border-yellow-100 dark:border-yellow-900/30">
+                <p>{t('settings.script_desc', lang)}</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-3">
+                    <a 
+                        href="https://github.com/HeavenTTT/Gemini-OmniChat-auto/blob/main/README.md#script-filters-middleware" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                    >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        {t('action.view_github_examples', lang)}
+                    </a>
+                    <span className="hidden sm:inline text-gray-300">|</span>
+                    <a 
+                        href={`https://github.com/HeavenTTT/Gemini-OmniChat-auto/blob/main/README${lang === 'zh' ? '_zh' : ''}.md#%E8%84%9A%E6%9C%AC%E8%BF%87%E6%BB%A4%E5%99%A8-%E4%B8%AD%E9%97%B4%E4%BB%B6`}
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 hover:underline font-medium"
+                    >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        {t('action.view_script_guide', lang)}
+                    </a>
+                </div>
+            </div>
             <div className="grid md:grid-cols-2 gap-4">
                 {renderSection('input', t('settings.input_filter', lang))}
                 {renderSection('output', t('settings.output_filter', lang))}

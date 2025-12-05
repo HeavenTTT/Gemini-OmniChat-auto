@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -49,6 +50,8 @@ const App: React.FC = () => {
     fontSize: 14,
     textWrapping: 'auto', // Default to Auto
     bubbleTransparency: 100, // Default to 100% opacity
+    showModelName: true, // Default to true
+    kirbyThemeColor: false, // Default to false
     security: {
         enabled: false,
         questions: [],
@@ -160,6 +163,14 @@ const App: React.FC = () => {
       if (loadedSettings.generation && loadedSettings.generation.stream === undefined) {
           loadedSettings.generation.stream = false;
       }
+      // Ensure showModelName setting exists
+      if (loadedSettings.showModelName === undefined) {
+          loadedSettings.showModelName = true;
+      }
+      // Ensure kirbyThemeColor setting exists
+      if (loadedSettings.kirbyThemeColor === undefined) {
+          loadedSettings.kirbyThemeColor = false;
+      }
       // Ensure scripts setting exists
       if (!loadedSettings.scripts) {
           loadedSettings.scripts = {
@@ -233,7 +244,7 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime');
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);
@@ -523,7 +534,17 @@ const App: React.FC = () => {
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
 
-  if (isLocked) return <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}><SecurityLock config={settings.security} onUnlock={handleUnlock} lang={settings.language} /></div>;
+  if (isLocked) return (
+    <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
+        <SecurityLock 
+            config={settings.security} 
+            onUnlock={handleUnlock} 
+            lang={settings.language} 
+            theme={settings.theme}
+            kirbyThemeColor={settings.kirbyThemeColor}
+        />
+    </div>
+  );
 
   return (
     <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
@@ -536,6 +557,8 @@ const App: React.FC = () => {
             activeSessionId={activeSessionId}
             activeKeysCount={activeKeysCount}
             language={settings.language}
+            theme={settings.theme}
+            kirbyThemeColor={settings.kirbyThemeColor}
             onNewChat={handleNewChat}
             onSelectSession={handleSelectSession}
             onDeleteSession={handleDeleteSession}
@@ -582,6 +605,9 @@ const App: React.FC = () => {
                  fontSize={settings.fontSize} 
                  textWrapping={settings.textWrapping}
                  bubbleTransparency={settings.bubbleTransparency}
+                 showModelName={settings.showModelName}
+                 theme={settings.theme}
+                 kirbyThemeColor={settings.kirbyThemeColor}
                  onShowToast={addToast}
               />
             </div>

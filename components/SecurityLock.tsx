@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Lock, KeyRound, HelpCircle, ArrowRight } from 'lucide-react';
-import { SecurityConfig, Language } from '../types';
+import { SecurityConfig, Language, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
@@ -12,13 +12,15 @@ interface SecurityLockProps {
   config: SecurityConfig;
   onUnlock: () => void;
   lang: Language;
+  theme?: Theme;
+  kirbyThemeColor?: boolean;
 }
 
 /**
  * SecurityLock Component
  * Displays a lock screen requiring a password or security question answer to proceed.
  */
-const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) => {
+const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang, theme, kirbyThemeColor }) => {
   const [mode, setMode] = useState<'password' | 'question'>('password');
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
@@ -85,7 +87,7 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang }) =
       <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 border border-gray-200 dark:border-gray-800 animate-fade-in-up">
         <div className="flex justify-center mb-6">
             <div className="w-24 h-24">
-                <KirbyIcon />
+                <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
             </div>
         </div>
         

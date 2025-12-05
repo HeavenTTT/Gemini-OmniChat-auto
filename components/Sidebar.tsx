@@ -4,7 +4,7 @@
 
 import React, { useRef } from 'react';
 import { Plus, MessageSquare, Trash2, Settings } from 'lucide-react';
-import { ChatSession, Language } from '../types';
+import { ChatSession, Language, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
@@ -13,6 +13,8 @@ interface SidebarProps {
   activeSessionId: string;
   activeKeysCount: number;
   language: Language;
+  theme: Theme;
+  kirbyThemeColor: boolean;
   onNewChat: () => void;
   onSelectSession: (id: string) => void;
   onDeleteSession: (e: React.MouseEvent, id: string) => void;
@@ -24,6 +26,8 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeSessionId,
   activeKeysCount,
   language,
+  theme,
+  kirbyThemeColor,
   onNewChat,
   onSelectSession,
   onDeleteSession,
@@ -32,7 +36,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className="hidden md:flex flex-col w-72 bg-white/40 dark:bg-black/40 backdrop-blur-md border-r border-gray-200 dark:border-gray-800 p-4 transition-colors">
       <div className="flex items-center gap-3 px-2 mb-6">
-        <div className="w-10 h-10 overflow-hidden rounded-full drop-shadow-md"><KirbyIcon /></div>
+        <div className="w-10 h-10 overflow-hidden rounded-full drop-shadow-md">
+            <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+        </div>
         <span className="font-bold text-xl tracking-tight dark:text-white">{t('app.title', language)}</span>
       </div>
       

@@ -1,6 +1,20 @@
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.3.2] - 2024-05-24
+### Added
+- **New Themes**: Added 'Sunrise' (Orange/Warm) and 'Lime' (Green) themes.
+- **Adaptive Icon**: Added setting to make the Kirby icon adapt colors based on the selected theme.
+- **Model Name Visibility**: Added a setting toggle to hide/show the model name in chat bubbles.
+- **Documentation**: Added direct links to the GitHub repository for Script Filter examples.
+
+### Changed
+- Refactored `Kirby` component for better maintainability and theming support.
+- Updated `ScriptFilterSettings` UI with clearer documentation links.
+- Cleaned up translation strings.
 
 ## [1.3.1] - 2024-05-23
 ### Added

@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Message, Language, TextWrappingMode } from '../types';
+import { Message, Language, TextWrappingMode, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 import { ChatMessage } from './ChatMessage';
@@ -17,6 +18,9 @@ interface ChatInterfaceProps {
   fontSize: number;
   textWrapping: TextWrappingMode;
   bubbleTransparency: number;
+  showModelName: boolean;
+  theme: Theme;
+  kirbyThemeColor: boolean;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -30,6 +34,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     fontSize, 
     textWrapping, 
     bubbleTransparency,
+    showModelName,
+    theme,
+    kirbyThemeColor,
     onShowToast
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -57,7 +64,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
-        <div className="w-48 h-48 mb-6 animate-fade-in-up"><KirbyIcon /></div>
+        <div className="w-48 h-48 mb-6 animate-fade-in-up">
+            <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{t('app.title', language)}</h1>
         <p className="text-gray-600 dark:text-gray-400 max-w-md">{t('msg.welcome_desc', language)}</p>
       </div>
@@ -76,7 +85,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             bubbleTransparency={bubbleTransparency}
             textWrapping={textWrapping}
             fontSize={fontSize}
+            showModelName={showModelName}
             language={language}
+            theme={theme}
+            kirbyThemeColor={kirbyThemeColor}
             onEditMessage={onEditMessage}
             onDeleteMessage={onDeleteMessage}
             onRegenerate={onRegenerate}
@@ -90,7 +102,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {isLoading && (
         <div className="flex justify-start animate-fade-in-up px-2 md:px-0">
            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden"><div className="w-full h-full scale-150"><KirbyIcon /></div></div>
+              <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                  <div className="w-full h-full scale-150">
+                      <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+                  </div>
+              </div>
               <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm">
                 <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                 <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>

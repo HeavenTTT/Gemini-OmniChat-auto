@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2 } from 'lucide-react';
-import { Message, Role, Language, TextWrappingMode } from '../types';
+import { Message, Role, Language, TextWrappingMode, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
@@ -16,7 +17,10 @@ interface ChatMessageProps {
   bubbleTransparency: number;
   textWrapping: TextWrappingMode;
   fontSize: number;
+  showModelName: boolean;
   language: Language;
+  theme: Theme;
+  kirbyThemeColor: boolean;
   onEditMessage: (id: string, newText: string) => void;
   onDeleteMessage: (id: string) => void;
   onRegenerate: (id: string) => void;
@@ -116,7 +120,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   bubbleTransparency,
   textWrapping,
   fontSize,
+  showModelName,
   language,
+  theme,
+  kirbyThemeColor,
   onEditMessage,
   onDeleteMessage,
   onRegenerate,
@@ -204,7 +211,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             
             {/* Avatar */}
             <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
-            {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon /></div>}
+            {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon theme={theme} isThemed={kirbyThemeColor} /></div>}
             </div>
 
             {/* Message Content Wrapper */}
@@ -283,7 +290,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     {msg.keyIndex && (
                         <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
                     )}
-                    {msg.model && (
+                    {showModelName && msg.model && (
                         <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
                     )}
                 </div>
