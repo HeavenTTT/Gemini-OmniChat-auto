@@ -199,7 +199,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ))}
         
         {isLoading && (
-            <div className="flex justify-start animate-fade-in-up px-2 md:px-0" data-role="loading">
+            <div className="flex justify-start w-full max-w-5xl mx-auto animate-fade-in-up px-2 md:px-0" data-role="loading">
             <div className="flex gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                     <div className="w-full h-full scale-150">

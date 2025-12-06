@@ -201,8 +201,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [msg.role, msg.isError, isEditing, smoothAnimation]);
 
   // Scroll Synchronization
-  // Using useLayoutEffect ensures scrolling happens immediately after DOM layout update
-  // but before paint, making it perfectly synchronized with the text growth.
   useLayoutEffect(() => {
       if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing) {
           onScrollToBottom();
@@ -278,7 +276,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
 
   return (
-    <div className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
+    <div className={`flex w-full max-w-5xl mx-auto ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
         <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
             
             {/* Avatar */}
