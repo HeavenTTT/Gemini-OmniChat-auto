@@ -3,11 +3,10 @@
 "use client";
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, RotateCcw } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
-import { ModelList } from './ModelList';
 
 interface ModelParameterSettingsProps {
   settings: AppSettings;
@@ -20,6 +19,21 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
   onUpdateSettings,
   lang
 }) => {
+  const handleReset = () => {
+    onUpdateSettings({
+        ...settings,
+        historyContextLimit: 0,
+        generation: {
+            temperature: 1.0,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 8192,
+            stream: false,
+            thinkingBudget: 0
+        }
+    });
+  };
+
   return (
      <div className="space-y-4">
          {/* Notice about per-key model settings */}
@@ -28,13 +42,19 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             <p>{t('msg.model_url_moved', lang)}</p>
          </div>
 
-        {/* Available Models List */}
-        <CollapsibleSection id="available-models" title={t('settings.model_list', lang)} lang={lang}>
-            <ModelList models={settings.knownModels || []} lang={lang} />
-        </CollapsibleSection>
-
         <CollapsibleSection id="ai-parameters" title={t('settings.ai_parameters', lang)} defaultOpen={true} lang={lang}>
             <div className="space-y-6">
+                <div className="flex justify-end mb-2">
+                    <button 
+                        onClick={handleReset}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
+                        title={t('action.reset_default', lang)}
+                    >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        {t('action.reset_default', lang)}
+                    </button>
+                </div>
+
                 {/* Stream Toggle */}
                 <div className="flex items-center justify-between">
                     <label htmlFor="stream-toggle" className="text-gray-700 dark:text-gray-300 font-medium text-sm">{t('param.stream', lang)}</label>
