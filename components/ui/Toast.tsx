@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect } from 'react';
@@ -9,16 +8,6 @@ interface ToastContainerProps {
   toasts: ToastMessage[];
   removeToast: (id: string) => void;
 }
-
-export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) => {
-  return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-none">
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
-      ))}
-    </div>
-  );
-};
 
 const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ toast, onRemove }) => {
   useEffect(() => {
@@ -51,6 +40,16 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
       <button onClick={onRemove} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
         <X className="w-4 h-4" />
       </button>
+    </div>
+  );
+};
+
+export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeToast }) => {
+  return (
+    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-3 pointer-events-none">
+      {toasts.map((toast) => (
+        <ToastItem key={toast.id} toast={toast} onRemove={() => removeToast(toast.id)} />
+      ))}
     </div>
   );
 };

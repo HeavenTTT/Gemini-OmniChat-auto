@@ -1,10 +1,8 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle } from 'lucide-react';
-import { AppSettings, KeyConfig, Language, APP_VERSION, DialogConfig } from '../types';
+import { AppSettings, KeyConfig, DialogConfig, APP_VERSION } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
 import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';

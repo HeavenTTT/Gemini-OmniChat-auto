@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
@@ -29,6 +28,9 @@ interface ChatMessageProps {
   startEditing: (msg: Message) => void;
   deleteTimerRef: React.MutableRefObject<ReturnType<typeof setTimeout> | null>;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
+  smoothAnimation?: boolean;
+  isLast?: boolean;
+  onScrollToBottom?: () => void;
 }
 
 const CodeBlock = ({ children, className, lang, onShowToast }: { children?: React.ReactNode, className?: string, lang: Language, onShowToast: (msg: string, type: 'success') => void }) => {
@@ -112,7 +114,7 @@ const AutoResizeTextarea = ({
   );
 };
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({
+export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   msg,
   isEditing,
   isConfirmingDelete,
@@ -131,14 +133,81 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   setConfirmDeleteId,
   startEditing,
   deleteTimerRef,
-  onShowToast
+  onShowToast,
+  smoothAnimation = true,
+  isLast = false,
+  onScrollToBottom
 }) => {
   const [editText, setEditText] = useState(msg.text);
+  
+  // Local buffer state for smooth streaming
+  const [displayedText, setDisplayedText] = useState(msg.text);
+  const targetTextRef = useRef(msg.text);
+  const animationRef = useRef<number>(0);
+
+  // Sync target text when prop changes
+  useEffect(() => {
+    targetTextRef.current = msg.text;
+    
+    // If animation is disabled, or not a model message, or editing, sync immediately
+    if (!smoothAnimation || msg.role !== Role.MODEL || isEditing) {
+        setDisplayedText(msg.text);
+    }
+  }, [msg.text, msg.role, isEditing, smoothAnimation]);
 
   // Sync edit text when starting to edit
   useEffect(() => {
     if (isEditing) setEditText(msg.text);
   }, [isEditing, msg.text]);
+
+  // Smooth Text Animation Loop
+  useEffect(() => {
+    if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing) return;
+
+    const animate = () => {
+      setDisplayedText((current) => {
+        const target = targetTextRef.current;
+        
+        // If synchronized, stop updates
+        if (current === target) return current;
+
+        // If current is longer than target (e.g. deletion/rewrite), sync immediately
+        if (current.length > target.length) return target;
+
+        // Determine speed based on buffer size (catch up logic)
+        const diff = target.length - current.length;
+        
+        // Base speed: 2 chars per frame (approx 120 chars/sec at 60fps)
+        // Adaptive speed: If buffer grows large (lag), increase speed significantly
+        let chunk = 2;
+        if (diff > 50) chunk = 5;
+        if (diff > 100) chunk = 15;
+        if (diff > 500) chunk = 50; 
+
+        const nextLen = Math.min(target.length, current.length + chunk);
+        const nextText = target.substring(0, nextLen);
+
+        return nextText;
+      });
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [msg.role, msg.isError, isEditing, smoothAnimation]);
+
+  // Scroll Synchronization
+  // Using useLayoutEffect ensures scrolling happens immediately after DOM layout update
+  // but before paint, making it perfectly synchronized with the text growth.
+  useLayoutEffect(() => {
+      if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing) {
+          onScrollToBottom();
+      }
+  }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing]);
 
   const cancelEditing = () => { 
     setEditingId(null); 
@@ -205,6 +274,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
        backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
   }
 
+  // Animation class only if enabled
+  const animationClass = smoothAnimation ? 'animate-pop-in' : '';
+
   return (
     <div className={`flex w-full ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
         <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
@@ -217,9 +289,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
             {/* Message Content Wrapper */}
             <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
             <div 
-                className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full ${
+                className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full origin-bottom-left ${animationClass} ${
                     msg.role === Role.USER 
-                    ? 'text-white rounded-tr-sm border' 
+                    ? 'text-white rounded-tr-sm border origin-bottom-right' 
                     : msg.isError 
                         ? 'bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-tl-sm' 
                         : 'border text-gray-800 dark:text-gray-100 rounded-tl-sm'
@@ -275,7 +347,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                     <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
                     ) : (
                     <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
-                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language} onShowToast={onShowToast}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>{msg.text}</ReactMarkdown>
+                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language} onShowToast={onShowToast}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>
+                            {/* Use displayedText for smooth rendering, fallback to msg.text if empty (shouldn't happen due to init state) */}
+                            {displayedText}
+                        </ReactMarkdown>
                     </div>
                     )}
                 </>
@@ -299,27 +374,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
                     <button 
                     onClick={() => startEditing(msg)} 
-                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                     title={t('action.edit', language)}
                     aria-label={t('action.edit_message', language)}
                     >
-                    <Edit2 className="w-5 h-5 md:w-3 md:h-3" />
+                    <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button 
                     onClick={handleRegenerateClick} 
-                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 rounded transition-colors" 
-                    title={msg.role === Role.USER ? t('action.regenerate_from_this_message', language) : t('action.regenerate', language)}
-                    aria-label={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                    aria-label={t('action.regenerate', language)}
                     >
-                    <RefreshCw className="w-5 h-5 md:w-3 md:h-3" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                     </button>
                     <button 
                     onClick={handleDeleteClick} 
-                    className={`p-4 md:p-1 rounded transition-colors flex items-center justify-center ${isConfirmingDelete ? 'bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400' : 'text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400'}`} 
+                    className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
                     title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
-                    aria-label={isConfirmingDelete ? t('action.confirm_delete_message', language) : t('action.delete_message', language)}
+                    aria-label={t('action.delete_message', language)}
                     >
-                    <Trash2 className="w-5 h-5 md:w-3 md:h-3" />
+                    <Trash2 className="w-3.5 h-3.5" />
                     </button>
                 </div>
                 )}
@@ -328,4 +403,20 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
     </div>
   );
-};
+}, (prev, next) => {
+  return (
+    prev.msg === next.msg &&
+    prev.isEditing === next.isEditing &&
+    prev.isConfirmingDelete === next.isConfirmingDelete &&
+    prev.isLoading === next.isLoading &&
+    prev.bubbleTransparency === next.bubbleTransparency &&
+    prev.textWrapping === next.textWrapping &&
+    prev.fontSize === next.fontSize &&
+    prev.showModelName === next.showModelName &&
+    prev.language === next.language &&
+    prev.theme === next.theme &&
+    prev.kirbyThemeColor === next.kirbyThemeColor &&
+    prev.smoothAnimation === next.smoothAnimation &&
+    prev.isLast === next.isLast
+  );
+});

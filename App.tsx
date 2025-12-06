@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -59,6 +57,7 @@ const App: React.FC = () => {
     showModelName: true, // Default to true
     kirbyThemeColor: false, // Default to false
     showTokenUsage: false, // Default to false
+    smoothAnimation: true, // Default to true
     historyContextLimit: 0, // Default to 0 (unlimited)
     security: {
         enabled: false,
@@ -165,11 +164,11 @@ const App: React.FC = () => {
 
     if (storedSettings) {
       loadedSettings = { ...settings, ...JSON.parse(storedSettings) };
-      // Ensure lockoutDurationSeconds is set, even if loaded from older schema
+      // Ensure lockoutDurationSeconds is set
       if (loadedSettings.security && loadedSettings.security.lockoutDurationSeconds === undefined) {
           loadedSettings.security.lockoutDurationSeconds = 86400; // Default to 24 hours
       }
-      // Ensure stream setting exists if loading from older schema
+      // Ensure stream setting exists
       if (loadedSettings.generation && loadedSettings.generation.stream === undefined) {
           loadedSettings.generation.stream = false;
       }
@@ -184,6 +183,10 @@ const App: React.FC = () => {
        // Ensure showTokenUsage setting exists
        if (loadedSettings.showTokenUsage === undefined) {
           loadedSettings.showTokenUsage = false;
+      }
+      // Ensure smoothAnimation setting exists
+      if (loadedSettings.smoothAnimation === undefined) {
+          loadedSettings.smoothAnimation = true;
       }
       // Ensure historyContextLimit setting exists
       if (loadedSettings.historyContextLimit === undefined) {
@@ -316,9 +319,6 @@ const App: React.FC = () => {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
       // Apply History Context Limit (Truncate history sent to model)
-      // If historyContextLimit > 0, take the last N messages from history
-      // Note: We always want to keep the conversation coherent, so usually we slice from end.
-      // 'history' passed here includes the user's latest message at the end.
       let contextToSend = history;
       if (settings.historyContextLimit > 0 && history.length > settings.historyContextLimit) {
           contextToSend = history.slice(-settings.historyContextLimit);
@@ -345,7 +345,7 @@ const App: React.FC = () => {
         controller.signal
       );
       
-      // Apply Output Filter (Final) - ensures consistent state at end
+      // Apply Output Filter (Final)
       let processedFinalText = fullText;
       if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
           processedFinalText = executeFilterScript(
@@ -571,7 +571,6 @@ const App: React.FC = () => {
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
         const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
-        // Pass empty history to treat prompt as independent context
         const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
         if (newTitle) {
@@ -601,7 +600,6 @@ const App: React.FC = () => {
     });
   };
 
-  // Determine current model's token limit
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
   
@@ -665,27 +663,24 @@ const App: React.FC = () => {
              onShowToast={addToast}
           />
 
-          <div className="flex-1 overflow-y-auto scroll-smooth p-2 md:p-4">
-            <div className="max-w-5xl mx-auto h-full">
-              <ChatInterface 
-                 messages={messages} 
-                 isLoading={isLoading} 
-                 onEditMessage={handleEditMessage} 
-                 onDeleteMessage={handleDeleteMessage} 
-                 onRegenerate={handleRegenerate} 
-                 language={settings.language} 
-                 fontSize={settings.fontSize} 
-                 textWrapping={settings.textWrapping}
-                 bubbleTransparency={settings.bubbleTransparency}
-                 showModelName={settings.showModelName}
-                 theme={settings.theme}
-                 kirbyThemeColor={settings.kirbyThemeColor}
-                 onShowToast={addToast}
-              />
-            </div>
-          </div>
+          <ChatInterface 
+              messages={messages} 
+              isLoading={isLoading} 
+              onEditMessage={handleEditMessage} 
+              onDeleteMessage={handleDeleteMessage} 
+              onRegenerate={handleRegenerate} 
+              language={settings.language} 
+              fontSize={settings.fontSize} 
+              textWrapping={settings.textWrapping}
+              bubbleTransparency={settings.bubbleTransparency}
+              showModelName={settings.showModelName}
+              theme={settings.theme}
+              kirbyThemeColor={settings.kirbyThemeColor}
+              onShowToast={addToast}
+              smoothAnimation={settings.smoothAnimation}
+          />
 
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 z-20 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-black dark:via-black/90 dark:to-transparent pt-4">
              <ChatInput 
                 input={input}
                 setInput={setInput}
@@ -701,7 +696,7 @@ const App: React.FC = () => {
                 historyLimit={settings.historyContextLimit}
                 onGetTokenCount={handleGetTokenCount}
              />
-             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
+             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-1 select-none">
                 {t('footer.ai_generated', settings.language)}{APP_VERSION}
              </div>
           </div>

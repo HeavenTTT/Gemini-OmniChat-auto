@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
 import { OpenAIService } from "./openaiService";
@@ -329,34 +327,31 @@ export class GeminiService {
       if (keyConfig.provider !== 'google') return -1;
 
       const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-      const googleHistory = history.map(msg => ({
+      
+      // Filter out invalid messages (error or empty) to match generation logic
+      const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+
+      const googleHistory = validHistory.map(msg => ({
           role: msg.role === Role.USER ? 'user' : 'model',
           parts: [{ text: msg.text }]
       }));
 
-      // Prepare contents list
       const contents = [...googleHistory];
 
-      // Workaround: countTokens API might not support systemInstruction in config yet.
-      // We append it as text content to estimate tokens to avoid the API error.
-      if (systemInstruction) {
-          contents.unshift({
+      if (newMessage && newMessage.trim().length > 0) {
+          contents.push({
               role: 'user',
-              parts: [{ text: systemInstruction }]
+              parts: [{ text: newMessage }]
           });
       }
-
-      // Add the new message
-      contents.push({
-          role: 'user',
-          parts: [{ text: newMessage }]
-      });
 
       try {
           const response = await ai.models.countTokens({
               model: keyConfig.model || 'gemini-2.5-flash',
               contents: contents,
-              // Note: Do not pass systemInstruction in config here as it may cause 'parameter not supported' errors on countTokens endpoint
+              config: systemInstruction ? {
+                  systemInstruction: systemInstruction
+              } : undefined
           });
           return response.totalTokens || 0;
       } catch (error) {

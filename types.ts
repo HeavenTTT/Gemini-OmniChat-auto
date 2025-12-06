@@ -1,6 +1,6 @@
 
 
-export const APP_VERSION = '1.3.3';
+export const APP_VERSION = '1.3.4';
 
 export enum Role {
   USER = 'user',
@@ -110,6 +110,7 @@ export interface AppSettings {
   showModelName: boolean; // New: Toggle model name visibility
   kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation
   showTokenUsage: boolean; // New: Toggle token usage estimation
+  smoothAnimation: boolean; // New: Toggle typewriter animation
   historyContextLimit: number; // New: Limit number of past messages sent (0 = unlimited)
   security: SecurityConfig;
   generation: GenerationConfig;

@@ -4,6 +4,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.4] - 2024-05-25
+### Added
+- **Smooth Animation Toggle**: Users can now enable/disable the typewriter text effect in Appearance settings.
+- **Clear Chat Button**: Added a dedicated button with text label to clear conversation history.
+
+### Changed
+- **Scrolling Performance**: Optimized auto-scroll behavior. AI responses now snap to top initially, then track the bottom efficiently.
+- **Token Usage**: Simplified display to show only the current request's token usage (estimated or exact).
+- **Localization**: Fixed various hardcoded strings and improved translation coverage.
+
 ## [1.3.3] - 2024-05-24
 ### Added
 - **Custom Model Selector**: Replaced the native browser dropdown with a custom, styled component for selecting models in API Key settings.
