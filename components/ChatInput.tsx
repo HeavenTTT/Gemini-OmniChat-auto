@@ -43,14 +43,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [exactTokenCount, setExactTokenCount] = useState<number | null>(null);
-  const [tokenPercentage, setTokenPercentage] = useState(0);
 
   // Determine height constraints based on token usage display
-  // When showing token usage, we add pb-8 (32px). 
-  // Base height ~52px (padding + line height). 
-  // With pb-8, we need approx 52 + 20 = ~72px to avoid scrollbar. Safe margin: 76px.
   const minHeight = showTokenUsage ? 76 : 52;
-  const maxHeight = showTokenUsage ? 224 : 192; // Match max-h-56 vs max-h-48
+  const maxHeight = showTokenUsage ? 224 : 192;
 
   // Debounced API call for exact token count
   useEffect(() => {
@@ -71,7 +67,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     return () => clearTimeout(timer);
   }, [input, history, showTokenUsage, onGetTokenCount]);
 
-  // Estimate tokens (local fallback) and calculate percentage
+  // Estimate tokens (local fallback)
   useEffect(() => {
     if (!showTokenUsage) return;
 
@@ -86,17 +82,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const estimate = Math.ceil(totalChars / 4);
     
     setTokenEstimate(estimate);
-
-    // Determine which count to use for percentage
-    const usedCount = exactTokenCount !== null ? exactTokenCount : estimate;
-
-    if (modelTokenLimit > 0) {
-        const pct = Math.round((usedCount / modelTokenLimit) * 100);
-        setTokenPercentage(pct);
-    } else {
-        setTokenPercentage(0);
-    }
-  }, [input, history, showTokenUsage, historyLimit, modelTokenLimit, exactTokenCount]);
+  }, [input, history, showTokenUsage, historyLimit]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -157,26 +143,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           {showTokenUsage && (
-             <div className="absolute left-4 bottom-0.5 pointer-events-none select-none">
+             <div className="absolute left-4 bottom-1.5 pointer-events-none select-none">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono flex items-center gap-1.5 transition-colors">
                    <span className="font-semibold text-gray-500 dark:text-gray-400">{t('label.token_usage', language)}:</span>
-                   <span title={exactTokenCount !== null ? "Exact count from API" : "Estimated count"}>
+                   <span 
+                        title={exactTokenCount !== null ? t('label.exact_count', language) : t('label.estimated_count', language)}
+                        className={`${exactTokenCount !== null ? 'text-primary-600 dark:text-primary-400 font-medium' : ''}`}
+                    >
                        {exactTokenCount === null ? `~${displayCount.toLocaleString()}` : displayCount.toLocaleString()}
                    </span>
-                   
-                   {modelTokenLimit > 0 && (
-                       <>
-                           <span className="text-gray-300 dark:text-gray-600">/</span>
-                           <span>{modelTokenLimit.toLocaleString()}</span>
-                           <span className={`ml-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                               tokenPercentage > 90 ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300' : 
-                               tokenPercentage > 75 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' : 
-                               'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                           }`}>
-                               {tokenPercentage}%
-                           </span>
-                       </>
-                   )}
                 </span>
              </div>
           )}

@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useRef } from 'react';
-import { Menu, Plus, Settings, Loader2, Sparkles, Download, Upload } from 'lucide-react';
+import { Menu, Plus, Settings, Loader2, Sparkles, Download, Upload, Eraser } from 'lucide-react';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 
@@ -15,6 +16,7 @@ interface HeaderProps {
   onSummarize: () => void;
   onOpenMobileMenu: () => void;
   onNewChat: () => void;
+  onClearChat: () => void;
   onOpenSettings: () => void;
   onSaveChat: () => void;
   onLoadSession: (messages: any[], title?: string) => void;
@@ -30,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSummarize,
   onOpenMobileMenu,
   onNewChat,
+  onClearChat,
   onOpenSettings,
   onSaveChat,
   onLoadSession,
@@ -51,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({
         if (parsed.messages && Array.isArray(parsed.messages)) {
           onLoadSession(parsed.messages, parsed.title);
         } else {
-          onShowToast("Invalid chat file format.", 'error');
+          onShowToast(t('error.invalid_chat_file', language), 'error');
         }
       } catch (err) {
         onShowToast(t('error.load_file', language), 'error');
@@ -63,6 +66,15 @@ export const Header: React.FC<HeaderProps> = ({
 
   const ActionButtons = () => (
     <div className="flex items-center gap-1">
+      <button
+          onClick={onClearChat}
+          disabled={!hasMessages}
+          className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
+          title={t('action.clear_chat', language)}
+          aria-label={t('action.clear_chat', language)}
+      >
+          <Eraser className="w-5 h-5" />
+      </button>
       <button 
         onClick={onSaveChat} 
         className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1"

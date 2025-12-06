@@ -99,7 +99,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    onShowToast("Configuration exported.", 'success');
+    onShowToast(t('msg.config_exported', lang), 'success');
   };
 
   const handleImportTrigger = () => {
@@ -120,7 +120,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
            if (parsed.settings) setLocalSettings({ ...localSettings, ...parsed.settings });
            onShowToast(t('success.import', lang), 'success');
         } else {
-           onShowToast("Invalid format.", 'error');
+           onShowToast(t('msg.invalid_format', lang), 'error');
         }
       } catch (err) {
         console.error(err);

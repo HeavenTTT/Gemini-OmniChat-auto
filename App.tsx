@@ -498,6 +498,20 @@ const App: React.FC = () => {
     setIsMobileMenuOpen(false);
   };
 
+  const handleClearChat = () => {
+      if (messages.length === 0) return;
+      showDialog({
+          type: 'confirm',
+          title: t('action.clear_chat', settings.language),
+          message: t('msg.confirm_clear_chat', settings.language),
+          onConfirm: () => {
+              handleStopGeneration();
+              setMessages([]);
+              setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: [] } : s));
+          }
+      });
+  };
+
   const handleSelectSession = (sessionId: string) => {
     if (sessionId === activeSessionId) { setIsMobileMenuOpen(false); return; }
     handleStopGeneration();
@@ -653,6 +667,7 @@ const App: React.FC = () => {
              onSummarize={handleSummarize}
              onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
              onNewChat={handleNewChat}
+             onClearChat={handleClearChat}
              onOpenSettings={() => setIsSettingsOpen(true)}
              onSaveChat={handleSaveChat}
              onLoadSession={handleLoadSession}
@@ -697,7 +712,7 @@ const App: React.FC = () => {
                 onGetTokenCount={handleGetTokenCount}
              />
              <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
-                AI Generated • OmniChat v{APP_VERSION}
+                {t('footer.ai_generated', settings.language)}{APP_VERSION}
              </div>
           </div>
         </main>

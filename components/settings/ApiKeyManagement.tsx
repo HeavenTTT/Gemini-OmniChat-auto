@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -81,7 +82,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                  }
                  return k;
              }));
-             onShowToast("Model synced successfully.", 'success');
+             onShowToast(t('msg.sync_success', lang), 'success');
         }
     });
   };
