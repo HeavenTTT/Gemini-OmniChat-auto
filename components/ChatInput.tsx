@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Square } from 'lucide-react';
+import { Send, Square, Zap } from 'lucide-react';
 import { Language, Message } from '../types';
 import { t } from '../utils/i18n';
 
@@ -20,7 +20,6 @@ interface ChatInputProps {
   showTokenUsage?: boolean;
   history?: Message[];
   historyLimit?: number;
-  modelTokenLimit?: number;
   onGetTokenCount?: (text: string) => Promise<number>;
 }
 
@@ -37,7 +36,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   showTokenUsage = false,
   history = [],
   historyLimit = 0,
-  modelTokenLimit = 0,
   onGetTokenCount
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -143,15 +141,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           {showTokenUsage && (
-             <div className="absolute left-4 bottom-1.5 pointer-events-none select-none">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-mono flex items-center gap-1.5 transition-colors">
-                   <span className="font-semibold text-gray-500 dark:text-gray-400">{t('label.token_usage', language)}:</span>
-                   <span 
-                        title={exactTokenCount !== null ? t('label.exact_count', language) : t('label.estimated_count', language)}
-                        className={`${exactTokenCount !== null ? 'text-primary-600 dark:text-primary-400 font-medium' : ''}`}
-                    >
-                       {exactTokenCount === null ? `~${displayCount.toLocaleString()}` : displayCount.toLocaleString()}
-                   </span>
+             <div className="absolute left-4 bottom-2 pointer-events-none select-none">
+                <span 
+                    className={`text-[11px] font-mono flex items-center gap-1 transition-colors ${exactTokenCount !== null ? 'text-primary-600 dark:text-primary-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}
+                    title={exactTokenCount !== null ? t('label.exact_count', language) : t('label.estimated_count', language)}
+                >
+                   <Zap className="w-3 h-3" />
+                   {exactTokenCount === null ? `~${displayCount.toLocaleString()}` : displayCount.toLocaleString()}
                 </span>
              </div>
           )}

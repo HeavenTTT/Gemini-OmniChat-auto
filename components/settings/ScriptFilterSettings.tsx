@@ -133,7 +133,7 @@ export const ScriptFilterSettings: React.FC<ScriptFilterSettingsProps> = ({
             </div>
         ) : (
             <div className="text-xs text-gray-400 italic text-center py-2 bg-gray-50/50 dark:bg-gray-900/30 rounded border border-dashed border-gray-200 dark:border-gray-700">
-                No script loaded
+                {t('msg.no_script_loaded', lang)}
             </div>
         )}
 

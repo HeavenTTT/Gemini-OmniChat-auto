@@ -74,6 +74,7 @@ export const Header: React.FC<HeaderProps> = ({
           aria-label={t('action.clear_chat', language)}
       >
           <Eraser className="w-5 h-5" />
+          <span className="hidden md:inline">{t('action.clear', language)}</span>
       </button>
       <button 
         onClick={onSaveChat} 

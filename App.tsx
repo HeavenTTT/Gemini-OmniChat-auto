@@ -605,15 +605,6 @@ const App: React.FC = () => {
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
   
-  let currentModelTokenLimit = 0;
-  // Naive strategy: get the model of the first active key.
-  // In rotation, models might change, but this gives a baseline for UI.
-  const activeKey = apiKeys.find(k => k.isActive);
-  if (activeKey && activeKey.model && settings.knownModels) {
-      const info = settings.knownModels.find(m => m.name === activeKey.model);
-      if (info) currentModelTokenLimit = info.inputTokenLimit || 0;
-  }
-
   if (isLocked) return (
     <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
         <SecurityLock 
@@ -708,7 +699,6 @@ const App: React.FC = () => {
                 showTokenUsage={settings.showTokenUsage}
                 history={messages}
                 historyLimit={settings.historyContextLimit}
-                modelTokenLimit={currentModelTokenLimit}
                 onGetTokenCount={handleGetTokenCount}
              />
              <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">

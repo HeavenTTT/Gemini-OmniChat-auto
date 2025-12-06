@@ -250,7 +250,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 onUpdateKnownModels(modelsInfo);
 
                 if (!config.model) onUpdate({ model: modelNames[0] });
-                onShowToast(`${modelNames.length} ${t('msg.fetch_success', lang)}`, 'success');
+                onShowToast(t('msg.fetch_success_count', lang).replace('{count}', modelNames.length.toString()), 'success');
             } else {
                 onShowToast(t('msg.fetch_no_models', lang), 'info');
             }
@@ -385,6 +385,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                            options={availableModels}
                            placeholder={t('input.model_placeholder', lang)}
                            className="static flex-1"
+                           emptyMessage={t('msg.fetch_models_hint', lang)}
                         />
                     </div>
                     

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -11,6 +12,7 @@ interface ModelSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  emptyMessage?: string;
 }
 
 export const ModelSelect: React.FC<ModelSelectProps> = ({
@@ -19,7 +21,8 @@ export const ModelSelect: React.FC<ModelSelectProps> = ({
   options,
   placeholder,
   disabled,
-  className
+  className,
+  emptyMessage = "No models available"
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -82,7 +85,7 @@ export const ModelSelect: React.FC<ModelSelectProps> = ({
                 </div>
             ) : (
                  <div className="px-3 py-2 text-xs text-gray-400 italic">
-                    Fetch models to see list
+                    {emptyMessage}
                 </div>
             )}
         </div>
