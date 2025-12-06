@@ -53,15 +53,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // --- Scroll Logic ---
 
   // 1. Check if user is near bottom to enable/disable sticky mode
-  // Updated: Removed isLoading check to correctly handle animation tail phase
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     
-    // If we are within 50px of the bottom, we consider it "at bottom"
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    // Threshold to consider "at bottom". 
+    // Small threshold (20px) ensures that if user scrolls up slightly, we respect it immediately (stop auto-scroll).
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 20;
     
-    // If we are NOT at bottom, user must have scrolled up (or content grew up)
     // We strictly track this state to allow reading history while generating
     isUserScrolledUp.current = !isAtBottom;
   };
@@ -75,9 +74,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
      }
   }, []);
 
-  // 3. Initial Snap to Top on New Generation
+  // 3. Reset scroll lock when new messages are added (User sent one, or History loaded)
   useLayoutEffect(() => {
-    // Detect edge: isLoading goes false -> true
+      isUserScrolledUp.current = false;
+  }, [messages.length]);
+
+  // 4. Initial Snap to Top on New Generation
+  useLayoutEffect(() => {
+    // Detect edge: isLoading goes false -> true (Start of generation)
     if (!lastIsLoading.current && isLoading) {
         // Reset user scroll lock
         isUserScrolledUp.current = false;
@@ -101,7 +105,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }, [isLoading]);
 
 
-  // 4. The Sticky Loop (Bottom Tracking during loading)
+  // 5. The Sticky Loop (Bottom Tracking during loading)
   // This runs continuously while isLoading is true for network phase
   useEffect(() => {
     if (!isLoading) {
@@ -116,8 +120,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
         // Sticky logic: If content pushes down, follow it, but allow the "Snap to Top" gap
-        // We only force scroll if the bottom is obscured
-        if (distanceFromBottom > 10) {
+        // We only force scroll if the bottom is obscured by more than threshold
+        if (distanceFromBottom > 20) {
             container.scrollTop = scrollHeight - clientHeight;
         }
       }
@@ -131,7 +135,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   }, [isLoading]);
 
-  // 5. Fallback: Handle new messages appearing (Non-streaming additions or load)
+  // 6. Fallback: Handle non-streaming loads
   useLayoutEffect(() => {
     if (!isLoading && scrollContainerRef.current && !isUserScrolledUp.current) {
        scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
