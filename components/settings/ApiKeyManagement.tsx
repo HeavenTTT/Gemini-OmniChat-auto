@@ -50,7 +50,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         key: '',
         provider: 'google',
         isActive: true,
-        usageLimit: 1,
+        usageLimit: 5,
         isRateLimited: false,
         lastUsed: 0,
         model: defaultModel || GeminiModel.FLASH,
@@ -68,7 +68,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
           key: k,
           provider: 'google', // Default to Google for batch import
           isActive: true,
-          usageLimit: 1,
+          usageLimit: 5,
           isRateLimited: false,
           lastUsed: 0,
           model: defaultModel || GeminiModel.FLASH,
@@ -98,7 +98,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         key: k,
         provider: 'google' as ModelProvider, // Default to Google for batch import testing
         isActive: true,
-        usageLimit: 1,
+        usageLimit: 5,
         isRateLimited: false,
         lastUsed: 0,
         model: defaultModel || GeminiModel.FLASH,

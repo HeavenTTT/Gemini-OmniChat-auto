@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -213,7 +214,9 @@ const App: React.FC = () => {
     setSettings(loadedSettings);
     
     // Init Service
-    setGeminiService(new GeminiService(initialKeys));
+    setGeminiService(new GeminiService(initialKeys, (id) => {
+        setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false } : k));
+    }));
 
     // Security
     if (loadedSettings.security.enabled) {
@@ -265,7 +268,9 @@ const App: React.FC = () => {
     if (geminiService) {
       geminiService.updateKeys(apiKeys);
     } else {
-       setGeminiService(new GeminiService(apiKeys));
+       setGeminiService(new GeminiService(apiKeys, (id) => {
+           setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false } : k));
+       }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
   }, [apiKeys, geminiService]);
@@ -361,7 +366,7 @@ const App: React.FC = () => {
               ...msg, 
               text: processedFinalText, 
               keyIndex: usedKeyIndex, 
-              provider: provider,
+              provider: provider, 
               model: usedModel 
           } : msg
         )

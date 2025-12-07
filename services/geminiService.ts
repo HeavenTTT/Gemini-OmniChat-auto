@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
 import { OpenAIService } from "./openaiService";
@@ -15,10 +16,12 @@ export class GeminiService {
   private keyUsageCount: number = 0;
   
   private openAIService: OpenAIService;
+  private onKeyError?: (id: string) => void;
 
-  constructor(initialKeys: KeyConfig[]) {
+  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
+    this.onKeyError = onKeyError;
   }
 
   /**
@@ -242,7 +245,19 @@ export class GeminiService {
                 await delay(500);
                 continue;
             }
-            throw error;
+
+            // Auto-deactivate key on other errors (4xx, 5xx) to weed out bad keys
+            if (this.onKeyError) {
+                this.onKeyError(keyConfig.id);
+            }
+            
+            // Mark inactive locally to avoid reusing in this loop immediately 
+            // before the React update cycle propagates back to updateKeys
+            const localKey = this.keys.find(k => k.id === keyConfig.id);
+            if (localKey) localKey.isActive = false;
+
+            attempts++;
+            continue;
         }
     }
     throw new Error("All active keys failed.");
