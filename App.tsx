@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -151,7 +152,7 @@ const App: React.FC = () => {
         key: k,
         provider: 'google' as ModelProvider,
         isActive: true,
-        usageLimit: 1,
+        usageLimit: 5, // Updated default from 1 to 5
         isRateLimited: false,
         lastUsed: 0,
         model: DEFAULT_MODEL
