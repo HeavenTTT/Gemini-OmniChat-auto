@@ -1,4 +1,5 @@
 
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
 import { OpenAIService } from "./openaiService";
@@ -16,9 +17,9 @@ export class GeminiService {
   private keyUsageCount: number = 0;
   
   private openAIService: OpenAIService;
-  private onKeyError?: (id: string) => void;
+  private onKeyError?: (id: string, errorCode?: string) => void;
 
-  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string) => void) {
+  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
     this.onKeyError = onKeyError;
@@ -238,23 +239,29 @@ export class GeminiService {
             
             console.error(`API Call failed (${keyConfig.provider})`, error);
             
-            const isRateLimit = error.message?.includes('429') || error.status === 429;
-            if (isRateLimit) {
-                this.markKeyRateLimited(keyConfig.id);
-                attempts++;
-                await delay(500);
-                continue;
+            // Extract Error Code
+            let errorCode = 'Error';
+            if (error.status) {
+                errorCode = error.status.toString();
+            } else if (error.statusCode) {
+                errorCode = error.statusCode.toString();
+            } else {
+                 const match = error.message?.match(/\b\d{3}\b/);
+                 if (match) errorCode = match[0];
+                 else if (error.message?.includes("429")) errorCode = "429";
             }
 
-            // Auto-deactivate key on other errors (4xx, 5xx) to weed out bad keys
+            // Auto-deactivate key on error if callback provided
             if (this.onKeyError) {
-                this.onKeyError(keyConfig.id);
+                this.onKeyError(keyConfig.id, errorCode);
             }
             
-            // Mark inactive locally to avoid reusing in this loop immediately 
-            // before the React update cycle propagates back to updateKeys
+            // Mark inactive locally to avoid reusing in this loop
             const localKey = this.keys.find(k => k.id === keyConfig.id);
-            if (localKey) localKey.isActive = false;
+            if (localKey) {
+                localKey.isActive = false;
+                localKey.lastErrorCode = errorCode;
+            }
 
             attempts++;
             continue;
@@ -374,12 +381,11 @@ export class GeminiService {
       }
 
       try {
+          // Note: systemInstruction parameter is often not supported in countTokens for certain models/SDK versions 
+          // or needs to be part of contents. Removing it from config to avoid API errors.
           const response = await ai.models.countTokens({
               model: keyConfig.model || 'gemini-2.5-flash',
               contents: contents,
-              config: systemInstruction ? {
-                  systemInstruction: systemInstruction
-              } : undefined
           });
           return response.totalTokens || 0;
       } catch (error) {

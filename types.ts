@@ -38,6 +38,7 @@ export interface KeyConfig {
   lastUsed: number;
   baseUrl?: string; // Specific Base URL for this key (OpenAI)
   model?: string;   // Specific Model for this key
+  lastErrorCode?: string; // Code of the last error encountered
 }
 
 export enum GeminiModel {

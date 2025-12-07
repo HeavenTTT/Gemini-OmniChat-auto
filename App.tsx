@@ -152,7 +152,7 @@ const App: React.FC = () => {
         key: k,
         provider: 'google' as ModelProvider,
         isActive: true,
-        usageLimit: 5, // Updated default from 1 to 5
+        usageLimit: 5, // Default usage limit set to 5
         isRateLimited: false,
         lastUsed: 0,
         model: DEFAULT_MODEL
@@ -215,8 +215,8 @@ const App: React.FC = () => {
     setSettings(loadedSettings);
     
     // Init Service
-    setGeminiService(new GeminiService(initialKeys, (id) => {
-        setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false } : k));
+    setGeminiService(new GeminiService(initialKeys, (id, errorCode) => {
+        setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
     }));
 
     // Security
@@ -269,8 +269,8 @@ const App: React.FC = () => {
     if (geminiService) {
       geminiService.updateKeys(apiKeys);
     } else {
-       setGeminiService(new GeminiService(apiKeys, (id) => {
-           setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false } : k));
+       setGeminiService(new GeminiService(apiKeys, (id, errorCode) => {
+           setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
        }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));

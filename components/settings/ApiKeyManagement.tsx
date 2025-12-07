@@ -68,7 +68,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
           key: k,
           provider: 'google', // Default to Google for batch import
           isActive: true,
-          usageLimit: 5,
+          usageLimit: 5, // Default usage limit for batch import
           isRateLimited: false,
           lastUsed: 0,
           model: defaultModel || GeminiModel.FLASH,
@@ -98,7 +98,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         key: k,
         provider: 'google' as ModelProvider, // Default to Google for batch import testing
         isActive: true,
-        usageLimit: 5,
+        usageLimit: 5, // Default usage limit for batch import
         isRateLimited: false,
         lastUsed: 0,
         model: defaultModel || GeminiModel.FLASH,
@@ -441,10 +441,17 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 </div>
             </div>
 
+             {/* Error Code Badge - Displayed when inactive due to error */}
+             {config.lastErrorCode && !config.isActive && (
+                 <span className="text-[10px] font-bold text-red-500 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800 mr-2" title="Last Error Code">
+                     {config.lastErrorCode}
+                 </span>
+             )}
+
              {/* Controls */}
              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                 <button 
-                    onClick={() => onUpdate({ isActive: !config.isActive })}
+                    onClick={() => onUpdate({ isActive: !config.isActive, lastErrorCode: undefined })} // Clear error code on toggle
                     className={`relative w-8 h-4 rounded-full transition-colors duration-200 ${config.isActive ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
                     aria-label={config.isActive ? t('action.deactivate_key', lang) : t('action.activate_key', lang)}
                 >
