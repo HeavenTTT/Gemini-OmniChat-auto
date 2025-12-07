@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -174,7 +173,7 @@ const App: React.FC = () => {
         try {
             loadedKnownModels = JSON.parse(storedKnownModels);
         } catch (e) {
-            console.error("Failed to parse known models from storage", e);
+            // console.error("Failed to parse known models from storage", e);
         }
     }
 
@@ -336,7 +335,10 @@ const App: React.FC = () => {
   }, [activeSessionId]);
 
   // --- Core Logic ---
-  const triggerBotResponse = async (history: Message[], promptText: string) => {
+  
+  // REFACTORED: Now accepts historyBefore (context) and userMessage (new prompt) separately
+  // This avoids ambiguity and prevents duplicate messages in the context.
+  const triggerBotResponse = async (historyBefore: Message[], userMessage: Message) => {
     if (!geminiService) return;
     setIsLoading(true);
     
@@ -351,17 +353,17 @@ const App: React.FC = () => {
       text: '',
       timestamp: Date.now()
     };
-    setMessages([...history, botMessage]);
+    
+    // Optimistic UI update: Previous History + New User Msg + Empty Bot Msg
+    setMessages([...historyBefore, userMessage, botMessage]);
 
     const startTime = Date.now();
 
     try {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
-      // FIXED: Exclude the last message (current user prompt) from the history sent to the API,
-      // because the service methods (callGoogle/OpenAI) accept the prompt separately and append it.
-      // Failing to do this causes the prompt to appear twice in the context.
-      const historyForApi = history.slice(0, -1);
+      // API Context: Use ONLY historyBefore (excludes the new message, as it is passed as promptText)
+      const historyForApi = historyBefore;
 
       // Apply History Context Limit (Truncate history sent to model)
       let contextToSend = historyForApi;
@@ -372,7 +374,7 @@ const App: React.FC = () => {
       const { text: fullText, usedKeyIndex, provider, usedModel } = await geminiService.streamChatResponse(
         '', // Global model ignored, uses key config
         contextToSend, 
-        promptText,
+        userMessage.text, // Explicit prompt text
         combinedSystemInstruction,
         settings.generation,
         (chunkText) => {
@@ -382,7 +384,7 @@ const App: React.FC = () => {
                processedChunk = executeFilterScript(
                    settings.scripts.outputFilterCode,
                    chunkText,
-                   { role: 'model', history }
+                   { role: 'model', history: [...historyBefore, userMessage] }
                );
            }
            setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
@@ -399,7 +401,7 @@ const App: React.FC = () => {
           processedFinalText = executeFilterScript(
               settings.scripts.outputFilterCode,
               fullText,
-              { role: 'model', history }
+              { role: 'model', history: [...historyBefore, userMessage] }
           );
       }
 
@@ -417,11 +419,11 @@ const App: React.FC = () => {
       );
     } catch (error: any) {
       if (error.message !== "Aborted by user") {
-          console.error(error);
+          // Replaced console.error with toast or inline message
           const errorMessage: Message = {
             id: uuidv4(),
             role: Role.MODEL,
-            text: `Error: ${error.message || 'Something went wrong.'}`,
+            text: `Error: ${error.message || t('error.unexpected_error', settings.language)}`,
             timestamp: Date.now(),
             isError: true,
             executionTime: Date.now() - startTime
@@ -476,12 +478,14 @@ const App: React.FC = () => {
       text: processedInput,
       timestamp: Date.now()
     };
-    const newHistory = [...messages, newMessage];
-    setMessages(newHistory);
+    
+    // Update UI immediately (Optimistic)
+    setMessages(prev => [...prev, newMessage]);
     setInput('');
     
     try {
-        await triggerBotResponse(newHistory, newMessage.text);
+        // Pass the CURRENT messages (history before new message) and the NEW message object
+        await triggerBotResponse(messages, newMessage);
     } finally {
         isProcessingRef.current = false; // Unlock
     }
@@ -523,10 +527,11 @@ const App: React.FC = () => {
     const targetMsg = messages[index];
     
     if (targetMsg.role === Role.USER) {
-       const newHistory = messages.slice(0, index + 1);
-       setMessages(newHistory);
-       await triggerBotResponse(newHistory, targetMsg.text);
+       // Regenerate from User Message
+       const historyBefore = messages.slice(0, index);
+       await triggerBotResponse(historyBefore, targetMsg);
     } else {
+      // Regenerate Model Response
       let userMsgIndex = index - 1;
       while (userMsgIndex >= 0 && messages[userMsgIndex].role !== Role.USER) {
         userMsgIndex--;
@@ -535,9 +540,9 @@ const App: React.FC = () => {
         handleDeleteMessage(id);
         return;
       }
-      const newHistory = messages.slice(0, userMsgIndex + 1);
-      setMessages(newHistory);
-      await triggerBotResponse(newHistory, messages[userMsgIndex].text);
+      const historyBefore = messages.slice(0, userMsgIndex);
+      const userMsg = messages[userMsgIndex];
+      await triggerBotResponse(historyBefore, userMsg);
     }
   };
 

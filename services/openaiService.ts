@@ -15,7 +15,7 @@ export class OpenAIService {
       const models = await this.listModels(apiKey, baseUrl);
       return Array.isArray(models);
     } catch (e) {
-      console.error("Connection test failed", e);
+      // Removed console.error
       return false;
     }
   }
@@ -40,7 +40,7 @@ export class OpenAIService {
       });
       return response.ok;
     } catch (e) {
-      console.error("Chat test failed (network/CORS)", e);
+      // Removed console.error
       return false;
     }
   }
@@ -76,7 +76,7 @@ export class OpenAIService {
       }
       return [];
     } catch (error: any) {
-      console.error("Failed to list OpenAI models", error);
+      // Removed console.error
       if (error instanceof TypeError) { // Network error, CORS, etc.
           throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
       }
@@ -183,7 +183,7 @@ export class OpenAIService {
           return data.choices?.[0]?.message?.content || "";
         }
     } catch (error: any) {
-        console.error("OpenAI API Call failed (network/CORS)", error);
+        // Removed console.error
         if (error instanceof TypeError) { // Network error, CORS, etc.
             throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
         }

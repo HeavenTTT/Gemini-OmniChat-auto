@@ -75,13 +75,11 @@ export class GeminiService {
                     m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
                 );
             } catch (e: any) {
-                console.error("List models failed", e);
                 // If list models fails (e.g. 403), we return empty to handle gracefully
+                // Removed console.error as per request
                 if (e.status === 403 || (e.message && e.message.includes("403"))) {
                     return [];
                 }
-                // For other errors, return empty as well to avoid breaking the UI flow, 
-                // but log it.
                 return [];
             }
         }
@@ -121,7 +119,7 @@ export class GeminiService {
                   return true;
               }
           } catch (e) {
-              console.error("Test connection failed", e);
+              // Removed console.error
               return false;
           }
       } finally {
@@ -225,7 +223,7 @@ export class GeminiService {
             try {
                 let text = "";
                 if (keyConfig.provider === 'openai') {
-                    if (!keyConfig.baseUrl) throw new Error("Base URL missing for OpenAI key");
+                    if (!keyConfig.baseUrl) throw new Error(t('error.base_url_required', lang));
                     text = await this.openAIService.streamChat(
                         keyConfig.key,
                         keyConfig.baseUrl,
@@ -261,7 +259,7 @@ export class GeminiService {
             } catch (error: any) {
                 if (abortSignal?.aborted) throw new Error("Aborted by user");
                 
-                console.error(`API Call failed (${keyConfig.provider})`, error);
+                // Removed console.error
                 
                 // Extract Error Code
                 let errorCode = 'Error';
@@ -420,7 +418,7 @@ export class GeminiService {
               });
               return response.totalTokens || 0;
           } catch (error) {
-              console.error("Count tokens failed", error);
+              // Removed console.error
               return -1;
           }
       } finally {

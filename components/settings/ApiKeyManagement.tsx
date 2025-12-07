@@ -404,7 +404,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 onShowToast(t('msg.fetch_no_models', lang), 'info');
             }
         } catch (e) {
-            console.error(e);
+            // Removed console.error
             onShowToast(t('msg.fetch_error', lang), 'error');
         } finally {
             setIsFetching(false);
