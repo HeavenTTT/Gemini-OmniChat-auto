@@ -15,7 +15,6 @@ export class OpenAIService {
       const models = await this.listModels(apiKey, baseUrl);
       return Array.isArray(models);
     } catch (e) {
-      // Removed console.error
       return false;
     }
   }
@@ -40,7 +39,6 @@ export class OpenAIService {
       });
       return response.ok;
     } catch (e) {
-      // Removed console.error
       return false;
     }
   }
@@ -76,7 +74,6 @@ export class OpenAIService {
       }
       return [];
     } catch (error: any) {
-      // Removed console.error
       if (error instanceof TypeError) { // Network error, CORS, etc.
           throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
       }
@@ -183,7 +180,6 @@ export class OpenAIService {
           return data.choices?.[0]?.message?.content || "";
         }
     } catch (error: any) {
-        // Removed console.error
         if (error instanceof TypeError) { // Network error, CORS, etc.
             throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
         }

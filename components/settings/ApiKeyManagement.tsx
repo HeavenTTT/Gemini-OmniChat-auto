@@ -108,24 +108,34 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         baseUrl: ''
     }));
 
-    const results = await Promise.all(tempConfigs.map(async (config) => {
-        try {
-            const passed = await geminiService.testConnection(config);
-            return { config, passed };
-        } catch (e) {
-            return { config, passed: false };
+    try {
+        // Run tests strictly sequentially to avoid "Call in progress" lock errors
+        for (const config of tempConfigs) {
+            try {
+                const passed = await geminiService.testConnection(config);
+                if (passed) {
+                    validKeys.push(config);
+                    successCount++;
+                } else {
+                    failedLines.push(config.key);
+                    failCount++;
+                }
+            } catch (e: any) {
+                if (e.message === 'error.call_in_progress') {
+                     onShowToast(t('error.call_in_progress', lang), 'error');
+                     // If locked, we stop processing rest to avoid cascading errors or just mark as failed?
+                     // Mark as failed and continue might be safer, but user should wait.
+                     failedLines.push(config.key);
+                     failCount++;
+                } else {
+                    failedLines.push(config.key);
+                    failCount++;
+                }
+            }
         }
-    }));
-
-    results.forEach(res => {
-        if (res.passed) {
-            validKeys.push(res.config);
-            successCount++;
-        } else {
-            failedLines.push(res.config.key);
-            failCount++;
-        }
-    });
+    } catch (e) {
+        console.error("Batch test unexpected error", e);
+    }
 
     if (successCount > 0) {
         onUpdateKeys([...keys, ...validKeys]);
@@ -375,10 +385,18 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
         if (!geminiService || !config.key) return;
         setIsTesting(true);
         setTestResult(null);
-        const success = await geminiService.testConnection(config);
-        setTestResult(success);
-        setIsTesting(false);
-        setTimeout(() => setTestResult(null), 3000);
+        try {
+            const success = await geminiService.testConnection(config);
+            setTestResult(success);
+        } catch (e: any) {
+            if (e.message === 'error.call_in_progress') {
+                onShowToast(t('error.call_in_progress', lang), 'error');
+            }
+            setTestResult(false);
+        } finally {
+            setIsTesting(false);
+            setTimeout(() => setTestResult(null), 3000);
+        }
     };
 
     const handleFetchModels = async () => {
@@ -403,9 +421,12 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
             } else {
                 onShowToast(t('msg.fetch_no_models', lang), 'info');
             }
-        } catch (e) {
-            // Removed console.error
-            onShowToast(t('msg.fetch_error', lang), 'error');
+        } catch (e: any) {
+            if (e.message === 'error.call_in_progress') {
+                onShowToast(t('error.call_in_progress', lang), 'error');
+            } else {
+                onShowToast(t('msg.fetch_error', lang), 'error');
+            }
         } finally {
             setIsFetching(false);
         }

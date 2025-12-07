@@ -44,13 +44,13 @@ export class GeminiService {
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     if (this._isCallInProgress) {
-        throw new Error(t('error.call_in_progress', 'en')); // 'en' as fallback, UI will catch and re-translate
+        throw new Error("error.call_in_progress"); // UI will translate this key
     }
     this._isCallInProgress = true;
     try {
         if (keyConfig.provider === 'openai') {
             if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
-            return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+            return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
         } else {
             // Google Implementation
             try {
@@ -76,7 +76,6 @@ export class GeminiService {
                 );
             } catch (e: any) {
                 // If list models fails (e.g. 403), we return empty to handle gracefully
-                // Removed console.error as per request
                 if (e.status === 403 || (e.message && e.message.includes("403"))) {
                     return [];
                 }
@@ -94,7 +93,7 @@ export class GeminiService {
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
       if (this._isCallInProgress) {
-          throw new Error(t('error.call_in_progress', 'en'));
+          throw new Error("error.call_in_progress");
       }
       this._isCallInProgress = true;
       try {
@@ -119,7 +118,6 @@ export class GeminiService {
                   return true;
               }
           } catch (e) {
-              // Removed console.error
               return false;
           }
       } finally {
@@ -201,7 +199,7 @@ export class GeminiService {
   ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
 
     if (this._isCallInProgress) {
-        throw new Error(t('error.call_in_progress', 'en'));
+        throw new Error("error.call_in_progress");
     }
     this._isCallInProgress = true;
 
@@ -258,8 +256,6 @@ export class GeminiService {
 
             } catch (error: any) {
                 if (abortSignal?.aborted) throw new Error("Aborted by user");
-                
-                // Removed console.error
                 
                 // Extract Error Code
                 let errorCode = 'Error';
@@ -386,7 +382,7 @@ export class GeminiService {
       _ignoredSystemInstruction: string | undefined // systemInstruction is not supported in countTokens for Gemini API
   ): Promise<number> {
       if (this._isCallInProgress) {
-          throw new Error(t('error.call_in_progress', 'en'));
+          throw new Error("error.call_in_progress");
       }
       this._isCallInProgress = true;
       try {
@@ -418,7 +414,6 @@ export class GeminiService {
               });
               return response.totalTokens || 0;
           } catch (error) {
-              // Removed console.error
               return -1;
           }
       } finally {

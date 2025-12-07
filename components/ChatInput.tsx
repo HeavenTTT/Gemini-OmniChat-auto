@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -40,8 +41,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [exactTokenCount, setExactTokenCount] = useState<number | null>(null);
 
-  // Determine height constraints based on token usage display
-  const minHeight = showTokenUsage ? 76 : 52;
+  // Determine dynamic min-height based on fontSize to prevent scrollbars for single lines
+  // Approximate line height (1.5em) + padding (32px for p-4 + buffer)
+  const minHeight = Math.floor(fontSize * 1.5 + 34);
   const maxHeight = showTokenUsage ? 224 : 192;
 
   // Debounced API call for exact token count
@@ -53,9 +55,13 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     const timer = setTimeout(async () => {
         if (input.trim() || history.length > 0) {
-            const count = await onGetTokenCount(input);
-            if (count > -1) {
-                setExactTokenCount(count);
+            try {
+                const count = await onGetTokenCount(input);
+                if (count > -1) {
+                    setExactTokenCount(count);
+                }
+            } catch (e) {
+                // Ignore "call in progress" errors silently during typing to avoid spamming toasts
             }
         }
     }, 1000); // 1s debounce
@@ -103,8 +109,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
       textareaRef.current.style.height = 'auto';
       
       // Calculate target height
-      // We take the larger of content height (scrollHeight) and minHeight (UI consistency)
-      // But clamp it to maxHeight
       const currentScrollHeight = textareaRef.current.scrollHeight;
       const targetHeight = Math.min(Math.max(currentScrollHeight, minHeight), maxHeight);
       
@@ -128,7 +132,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             disabled={isDisabled} 
             className={`w-full bg-transparent text-gray-900 dark:text-white p-3 md:p-4 pr-12 resize-none outline-none scrollbar-hide ${showTokenUsage ? 'pb-8 max-h-56' : 'max-h-48'}`}
             rows={1} 
-            style={{ height: 'auto', minHeight: `${minHeight}px`, fontSize: `${fontSize}px` }} 
+            style={{ height: 'auto', minHeight: `${minHeight}px`, fontSize: `${fontSize}px`, lineHeight: '1.5' }} 
           />
           
           <div className="absolute right-2 bottom-2 flex flex-col items-end gap-1">

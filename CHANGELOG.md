@@ -3,6 +3,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.8] - 2024-05-28
+### Fixed
+- **Duplicate Message Fix (Critical)**: Implemented a robust filter in the API call logic (`App.tsx`) to explicitly remove the current user message from the history context. This ensures that even if state updates race, the prompt is never duplicated in the payload sent to Gemini/OpenAI.
+- **Input Box Height**: Updated chat input to calculate minimum height dynamically based on user font size settings. This prevents scrollbars from appearing on single-line text when font size is increased.
+- **Concurrent Call Handling**: Added safeguards to prevent multiple simultaneous API calls. The app now displays a Toast notification ("An API call is already in progress") and gracefully aborts new actions instead of crashing or logging errors.
+- **Translation**: Added missing translation keys for concurrency errors.
+- **Console Cleanup**: Removed remaining `console.error` logs from services to ensure a clean console in production.
+
 ## [1.3.7] - 2024-05-28
 ### Fixed
 - **Duplicate Message Bug**: Refactored the core message handling logic (`triggerBotResponse`) to explicitly separate the chat history context from the new user prompt. This eliminates race conditions and ensures the API receives the correct context without duplicating the user's latest message.

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -362,8 +363,9 @@ const App: React.FC = () => {
     try {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
-      // API Context: Use ONLY historyBefore (excludes the new message, as it is passed as promptText)
-      const historyForApi = historyBefore;
+      // CRITICAL FIX: Ensure history passed to API does NOT contain the new user message.
+      // Even if historyBefore somehow included it (due to state updates), we filter it out by ID to be absolutely safe.
+      const historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
 
       // Apply History Context Limit (Truncate history sent to model)
       let contextToSend = historyForApi;
@@ -419,16 +421,23 @@ const App: React.FC = () => {
       );
     } catch (error: any) {
       if (error.message !== "Aborted by user") {
-          // Replaced console.error with toast or inline message
-          const errorMessage: Message = {
-            id: uuidv4(),
-            role: Role.MODEL,
-            text: `Error: ${error.message || t('error.unexpected_error', settings.language)}`,
-            timestamp: Date.now(),
-            isError: true,
-            executionTime: Date.now() - startTime
-          };
-          setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+          // If concurrent call error, show toast instead of chat message
+          if (error.message === "error.call_in_progress") {
+             addToast(t('error.call_in_progress', settings.language), 'error');
+             // Remove the placeholder bot message
+             setMessages(prev => prev.filter(m => m.id !== tempBotId));
+          } else {
+             // Other errors show in chat
+             const errorMessage: Message = {
+                id: uuidv4(),
+                role: Role.MODEL,
+                text: `${t('action.error', settings.language)}: ${error.message || t('error.unexpected_error', settings.language)}`,
+                timestamp: Date.now(),
+                isError: true,
+                executionTime: Date.now() - startTime
+             };
+             setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
+          }
       }
     } finally {
       setIsLoading(false);
@@ -453,8 +462,13 @@ const App: React.FC = () => {
 
   const handleSendMessage = async () => {
     // Prevent race conditions with isProcessingRef
-    if (!input.trim() || isLoading || !geminiService || isProcessingRef.current) return;
+    if (isLoading || !geminiService || isProcessingRef.current) {
+        if (isLoading) addToast(t('error.call_in_progress', settings.language), 'error');
+        return;
+    }
     
+    if (!input.trim()) return;
+
     if (apiKeys.filter(k => k.isActive).length === 0) {
       setIsSettingsOpen(true);
       return;
@@ -521,7 +535,11 @@ const App: React.FC = () => {
   };
 
   const handleRegenerate = async (id: string) => {
-    if (isLoading || !geminiService) return;
+    if (isLoading || !geminiService) {
+         if (isLoading) addToast(t('error.call_in_progress', settings.language), 'error');
+         return;
+    }
+
     const index = messages.findIndex(m => m.id === id);
     if (index === -1) return;
     const targetMsg = messages[index];
@@ -631,6 +649,11 @@ const App: React.FC = () => {
 
   const handleSummarize = async () => {
     if (messages.length === 0 || !geminiService) return;
+    if (isLoading) {
+        addToast(t('error.call_in_progress', settings.language), 'error');
+        return;
+    }
+    
     setIsSummarizing(true); 
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
@@ -641,8 +664,12 @@ const App: React.FC = () => {
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
             addToast(t('action.ok', settings.language), 'success');
         }
-    } catch (error) {
-        addToast(t('msg.summarize_error', settings.language), 'error');
+    } catch (error: any) {
+        if (error.message === "error.call_in_progress") {
+            addToast(t('error.call_in_progress', settings.language), 'error');
+        } else {
+            addToast(t('msg.summarize_error', settings.language), 'error');
+        }
     } finally {
         setIsSummarizing(false);
     }
