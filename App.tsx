@@ -1,6 +1,3 @@
-
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -25,7 +22,6 @@ const STORAGE_KEYS_KEY = 'gemini_omnichat_keys_v4';
 const STORAGE_SETTINGS_KEY = 'gemini_omnichat_settings_v8'; 
 const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
-const STORAGE_KNOWN_MODELS_KEY = 'gemini_omnichat_known_models_v1';
 
 const ENV_KEY = process.env.API_KEY || '';
 
@@ -49,8 +45,6 @@ const App: React.FC = () => {
   const [isLocked, setIsLocked] = useState(false);
   
   const [apiKeys, setApiKeys] = useState<KeyConfig[]>([]);
-  const [knownModels, setKnownModels] = useState<ModelInfo[]>(DEFAULT_KNOWN_MODELS);
-  
   const [settings, setSettings] = useState<AppSettings>({
     defaultModel: DEFAULT_MODEL,
     defaultBaseUrl: 'https://api.openai.com/v1',
@@ -84,7 +78,8 @@ const App: React.FC = () => {
         inputFilterCode: '',
         outputFilterEnabled: false,
         outputFilterCode: ''
-    }
+    },
+    knownModels: DEFAULT_KNOWN_MODELS
   });
 
   // UI State
@@ -155,7 +150,7 @@ const App: React.FC = () => {
         key: k,
         provider: 'google' as ModelProvider,
         isActive: true,
-        usageLimit: 5, // Default usage limit set to 5
+        usageLimit: 1,
         isRateLimited: false,
         lastUsed: 0,
         model: DEFAULT_MODEL
@@ -166,33 +161,9 @@ const App: React.FC = () => {
     // 2. Load Settings
     const storedSettings = localStorage.getItem(STORAGE_SETTINGS_KEY);
     let loadedSettings = settings;
-    let loadedKnownModels = DEFAULT_KNOWN_MODELS;
-
-    // 2.1 Load Known Models from separate cache
-    const storedKnownModels = localStorage.getItem(STORAGE_KNOWN_MODELS_KEY);
-    if (storedKnownModels) {
-        try {
-            loadedKnownModels = JSON.parse(storedKnownModels);
-        } catch (e) {
-            console.error("Failed to parse known models from storage", e);
-        }
-    }
 
     if (storedSettings) {
-      const parsedSettings = JSON.parse(storedSettings);
-      
-      // Migration: If knownModels existed in settings but not in separate cache, use it
-      if (parsedSettings.knownModels && !storedKnownModels) {
-          loadedKnownModels = parsedSettings.knownModels;
-      }
-      
-      // Remove knownModels from settings object if present
-      if ('knownModels' in parsedSettings) {
-          delete parsedSettings.knownModels;
-      }
-
-      loadedSettings = { ...settings, ...parsedSettings };
-
+      loadedSettings = { ...settings, ...JSON.parse(storedSettings) };
       // Ensure lockoutDurationSeconds is set
       if (loadedSettings.security && loadedSettings.security.lockoutDurationSeconds === undefined) {
           loadedSettings.security.lockoutDurationSeconds = 86400; // Default to 24 hours
@@ -225,6 +196,10 @@ const App: React.FC = () => {
       if (loadedSettings.generation && loadedSettings.generation.thinkingBudget === undefined) {
           loadedSettings.generation.thinkingBudget = 0;
       }
+      // Ensure knownModels exists
+      if (!loadedSettings.knownModels) {
+          loadedSettings.knownModels = DEFAULT_KNOWN_MODELS;
+      }
       // Ensure scripts setting exists
       if (!loadedSettings.scripts) {
           loadedSettings.scripts = {
@@ -236,12 +211,9 @@ const App: React.FC = () => {
       }
     } 
     setSettings(loadedSettings);
-    setKnownModels(loadedKnownModels);
     
     // Init Service
-    setGeminiService(new GeminiService(initialKeys, (id, errorCode) => {
-        setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
-    }));
+    setGeminiService(new GeminiService(initialKeys));
 
     // Security
     if (loadedSettings.security.enabled) {
@@ -293,9 +265,7 @@ const App: React.FC = () => {
     if (geminiService) {
       geminiService.updateKeys(apiKeys);
     } else {
-       setGeminiService(new GeminiService(apiKeys, (id, errorCode) => {
-           setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
-       }));
+       setGeminiService(new GeminiService(apiKeys));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
   }, [apiKeys, geminiService]);
@@ -307,10 +277,6 @@ const App: React.FC = () => {
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KNOWN_MODELS_KEY, JSON.stringify(knownModels));
-  }, [knownModels]);
 
   useEffect(() => {
     if (!activeSessionId) return;
@@ -395,7 +361,7 @@ const App: React.FC = () => {
               ...msg, 
               text: processedFinalText, 
               keyIndex: usedKeyIndex, 
-              provider: provider, 
+              provider: provider,
               model: usedModel 
           } : msg
         )
@@ -746,8 +712,6 @@ const App: React.FC = () => {
             geminiService={geminiService}
             onShowToast={addToast}
             onShowDialog={showDialog}
-            knownModels={knownModels}
-            onUpdateKnownModels={setKnownModels}
         />
       </div>
     </div>

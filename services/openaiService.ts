@@ -21,31 +21,6 @@ export class OpenAIService {
   }
 
   /**
-   * Tests if the key can perform a chat completion.
-   */
-  public async testChat(apiKey: string, baseUrl: string, modelId: string): Promise<boolean> {
-    const cleanUrl = baseUrl.replace(/\/$/, '');
-    try {
-      const response = await fetch(`${cleanUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: modelId,
-          messages: [{ role: 'user', content: 'Hi' }],
-          max_tokens: 1
-        })
-      });
-      return response.ok;
-    } catch (e) {
-      console.error("Chat test failed", e);
-      return false;
-    }
-  }
-
-  /**
    * Fetches available models from the OpenAI-compatible endpoint.
    */
   public async listModels(apiKey: string, baseUrl: string): Promise<ModelInfo[]> {

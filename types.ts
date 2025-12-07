@@ -1,6 +1,6 @@
 
 
-export const APP_VERSION = '1.3.5';
+export const APP_VERSION = '1.3.4';
 
 export enum Role {
   USER = 'user',
@@ -38,7 +38,6 @@ export interface KeyConfig {
   lastUsed: number;
   baseUrl?: string; // Specific Base URL for this key (OpenAI)
   model?: string;   // Specific Model for this key
-  lastErrorCode?: string; // Code of the last error encountered
 }
 
 export enum GeminiModel {
@@ -117,7 +116,7 @@ export interface AppSettings {
   generation: GenerationConfig;
   scripts: ScriptConfig; // New: Script settings
   
-  // knownModels removed from AppSettings to separate cache from configuration
+  knownModels: ModelInfo[]; // New: Cache known models and their limits
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }
 
