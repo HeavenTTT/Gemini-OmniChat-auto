@@ -3,7 +3,7 @@
 
 import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2 } from 'lucide-react';
+import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -17,6 +17,7 @@ interface ChatMessageProps {
   textWrapping: TextWrappingMode;
   fontSize: number;
   showModelName: boolean;
+  showResponseTimer?: boolean;
   language: Language;
   theme: Theme;
   kirbyThemeColor: boolean;
@@ -123,6 +124,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   textWrapping,
   fontSize,
   showModelName,
+  showResponseTimer = false,
   language,
   theme,
   kirbyThemeColor,
@@ -366,6 +368,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     {showModelName && msg.model && (
                         <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
                     )}
+                    {showResponseTimer && msg.executionTime && (
+                        <div className="flex items-center gap-0.5 text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Response Time">
+                            <Clock className="w-2.5 h-2.5" />
+                            <span>{t('label.response_time', language).replace('{duration}', (msg.executionTime / 1000).toFixed(1))}</span>
+                        </div>
+                    )}
                 </div>
                 )}
                 {!isLoading && !isEditing && (
@@ -411,6 +419,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     prev.textWrapping === next.textWrapping &&
     prev.fontSize === next.fontSize &&
     prev.showModelName === next.showModelName &&
+    prev.showResponseTimer === next.showResponseTimer &&
     prev.language === next.language &&
     prev.theme === next.theme &&
     prev.kirbyThemeColor === next.kirbyThemeColor &&

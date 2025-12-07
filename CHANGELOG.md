@@ -3,6 +3,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.7] - 2024-05-28
+### Fixed
+- **Duplicate Message Bug**: Fixed a race condition where rapidly triggering the send action (e.g., via Enter key or slow state updates) could cause the user message to be sent to the API context twice.
+- **IME Composition**: Improved message submission handling to better support IME inputs.
+
 ## [1.3.6] - 2024-05-27
 ### Fixed
 - **Translation Keys**: Corrected translation keys for chat session import and settings import success messages to ensure accurate user feedback.

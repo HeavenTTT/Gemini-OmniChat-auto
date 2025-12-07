@@ -1,5 +1,5 @@
 
-export const APP_VERSION = '1.3.6';
+export const APP_VERSION = '1.3.7';
 
 export enum Role {
   USER = 'user',
@@ -15,6 +15,7 @@ export interface Message {
   keyIndex?: number; // 1-based index of the key used
   provider?: ModelProvider; // Track which provider generated this
   model?: string; // The specific model used for this message
+  executionTime?: number; // Time taken to generate response in ms
 }
 
 export interface ChatSession {
@@ -110,6 +111,7 @@ export interface AppSettings {
   showModelName: boolean; // New: Toggle model name visibility
   kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation
   showTokenUsage: boolean; // New: Toggle token usage estimation
+  showResponseTimer: boolean; // New: Toggle response execution time display
   smoothAnimation: boolean; // New: Toggle typewriter animation
   historyContextLimit: number; // New: Limit number of past messages sent (0 = unlimited)
   security: SecurityConfig;

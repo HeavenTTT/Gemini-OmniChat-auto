@@ -83,6 +83,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   }, [input, history, showTokenUsage, historyLimit]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Prevent double submission during IME composition (e.g. Chinese Pinyin)
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       onSend();

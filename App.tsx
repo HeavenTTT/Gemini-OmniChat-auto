@@ -61,6 +61,7 @@ const App: React.FC = () => {
     showModelName: true, // Default to true
     kirbyThemeColor: false, // Default to false
     showTokenUsage: false, // Default to false
+    showResponseTimer: false, // Default to false
     smoothAnimation: true, // Default to true
     historyContextLimit: 0, // Default to 0 (unlimited)
     security: {
@@ -96,6 +97,7 @@ const App: React.FC = () => {
 
   const [geminiService, setGeminiService] = useState<GeminiService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isProcessingRef = useRef(false);
 
   // --- Helpers for UI ---
   const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -210,6 +212,10 @@ const App: React.FC = () => {
        // Ensure showTokenUsage setting exists
        if (loadedSettings.showTokenUsage === undefined) {
           loadedSettings.showTokenUsage = false;
+      }
+      // Ensure showResponseTimer setting exists
+      if (loadedSettings.showResponseTimer === undefined) {
+          loadedSettings.showResponseTimer = false;
       }
       // Ensure smoothAnimation setting exists
       if (loadedSettings.smoothAnimation === undefined) {
@@ -347,13 +353,20 @@ const App: React.FC = () => {
     };
     setMessages([...history, botMessage]);
 
+    const startTime = Date.now();
+
     try {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
+      // FIXED: Exclude the last message (current user prompt) from the history sent to the API,
+      // because the service methods (callGoogle/OpenAI) accept the prompt separately and append it.
+      // Failing to do this causes the prompt to appear twice in the context.
+      const historyForApi = history.slice(0, -1);
+
       // Apply History Context Limit (Truncate history sent to model)
-      let contextToSend = history;
-      if (settings.historyContextLimit > 0 && history.length > settings.historyContextLimit) {
-          contextToSend = history.slice(-settings.historyContextLimit);
+      let contextToSend = historyForApi;
+      if (settings.historyContextLimit > 0 && historyForApi.length > settings.historyContextLimit) {
+          contextToSend = historyForApi.slice(-settings.historyContextLimit);
       }
 
       const { text: fullText, usedKeyIndex, provider, usedModel } = await geminiService.streamChatResponse(
@@ -378,6 +391,8 @@ const App: React.FC = () => {
         settings.language
       );
       
+      const executionTime = Date.now() - startTime;
+
       // Apply Output Filter (Final)
       let processedFinalText = fullText;
       if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
@@ -395,7 +410,8 @@ const App: React.FC = () => {
               text: processedFinalText, 
               keyIndex: usedKeyIndex, 
               provider: provider, 
-              model: usedModel 
+              model: usedModel,
+              executionTime: executionTime
           } : msg
         )
       );
@@ -407,7 +423,8 @@ const App: React.FC = () => {
             role: Role.MODEL,
             text: `Error: ${error.message || 'Something went wrong.'}`,
             timestamp: Date.now(),
-            isError: true
+            isError: true,
+            executionTime: Date.now() - startTime
           };
           setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
       }
@@ -433,11 +450,15 @@ const App: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !geminiService) return;
+    // Prevent race conditions with isProcessingRef
+    if (!input.trim() || isLoading || !geminiService || isProcessingRef.current) return;
+    
     if (apiKeys.filter(k => k.isActive).length === 0) {
       setIsSettingsOpen(true);
       return;
     }
+
+    isProcessingRef.current = true; // Lock
 
     // Apply Input Filter
     let processedInput = input.trim();
@@ -458,7 +479,12 @@ const App: React.FC = () => {
     const newHistory = [...messages, newMessage];
     setMessages(newHistory);
     setInput('');
-    await triggerBotResponse(newHistory, newMessage.text);
+    
+    try {
+        await triggerBotResponse(newHistory, newMessage.text);
+    } finally {
+        isProcessingRef.current = false; // Unlock
+    }
   };
 
   const handleGetTokenCount = async (currentInput: string): Promise<number> => {
@@ -707,6 +733,7 @@ const App: React.FC = () => {
               textWrapping={settings.textWrapping}
               bubbleTransparency={settings.bubbleTransparency}
               showModelName={settings.showModelName}
+              showResponseTimer={settings.showResponseTimer}
               theme={settings.theme}
               kirbyThemeColor={settings.kirbyThemeColor}
               onShowToast={addToast}

@@ -1,12 +1,8 @@
 
-
-
-
-
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, ExternalLink, Network, ChevronUp, Edit2, Upload, Loader2, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Key, RotateCw, RefreshCw, Power, Activity, Server, ChevronDown, Copy, ExternalLink, Network, ChevronUp, Edit2, Upload, Loader2, CheckCircle, Download } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -362,6 +358,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [isEditingKey, setIsEditingKey] = useState(false);
     const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // Load cached models specific to this key
     useEffect(() => {
@@ -396,7 +393,10 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(modelNames));
                 
                 // Update global known models with limits via callback
-                onUpdateKnownModels(modelsInfo);
+                // Only for Google provider to separate lists
+                if (config.provider === 'google') {
+                    onUpdateKnownModels(modelsInfo);
+                }
 
                 if (!config.model) onUpdate({ model: modelNames[0] });
                 onShowToast(t('msg.fetch_success_count', lang).replace('{count}', modelNames.length.toString()), 'success');
@@ -409,6 +409,59 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
         } finally {
             setIsFetching(false);
         }
+    };
+
+    const handleExportConfig = () => {
+        const data = {
+            type: 'omnichat_key_config',
+            version: 1,
+            config: config,
+            cachedModels: availableModels
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `key_config_${config.provider}_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        onShowToast(t('msg.config_exported', lang), 'success');
+    };
+
+    const handleImportConfigTrigger = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImportConfig = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const content = event.target?.result as string;
+                const parsed = JSON.parse(content);
+                if (parsed.type === 'omnichat_key_config' && parsed.config) {
+                     onUpdate({ 
+                         ...parsed.config, 
+                         id: config.id, // Keep original ID to persist slot
+                         isActive: parsed.config.isActive ?? true 
+                     });
+                     if (parsed.cachedModels && Array.isArray(parsed.cachedModels)) {
+                         setAvailableModels(parsed.cachedModels);
+                         localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(parsed.cachedModels));
+                     }
+                     onShowToast(t('msg.config_imported', lang), 'success');
+                } else {
+                    onShowToast(t('msg.invalid_format', lang), 'error');
+                }
+            } catch (e) {
+                onShowToast(t('error.load_file', lang), 'error');
+            }
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        };
+        reader.readAsText(file);
     };
 
     const getMaskedKey = (key: string) => {
@@ -545,6 +598,25 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                             />
                         </div>
                         
+                        <button 
+                            onClick={handleExportConfig}
+                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+                            title={t('action.export_key', lang)}
+                            aria-label={t('action.export_key', lang)}
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button 
+                            onClick={handleImportConfigTrigger}
+                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+                            title={t('action.import_key', lang)}
+                            aria-label={t('action.import_key', lang)}
+                        >
+                            <Upload className="w-3.5 h-3.5" />
+                        </button>
+                        <input type="file" ref={fileInputRef} onChange={handleImportConfig} accept=".json" className="hidden" />
+
                          <button 
                             onClick={handleTest}
                             disabled={isTesting || !config.key}

@@ -18,11 +18,31 @@ interface ChatInterfaceProps {
   textWrapping: TextWrappingMode;
   bubbleTransparency: number;
   showModelName: boolean;
+  showResponseTimer?: boolean;
   theme: Theme;
   kirbyThemeColor: boolean;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   smoothAnimation?: boolean;
 }
+
+const LoadingTimer = () => {
+  const [tenths, setTenths] = useState(0);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      setTenths(Math.floor(elapsed / 100));
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <span className="text-xs font-mono text-primary-600 dark:text-primary-400 ml-2 select-none min-w-[3ch]">
+      {(tenths / 10).toFixed(1)}s
+    </span>
+  );
+};
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     messages, 
@@ -35,6 +55,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     textWrapping, 
     bubbleTransparency,
     showModelName,
+    showResponseTimer = false,
     theme,
     kirbyThemeColor,
     onShowToast,
@@ -153,6 +174,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setConfirmDeleteId(null);
   };
 
+  // Calculate styles for loading bubble to match ChatMessage model bubbles
+  const borderAlpha = 0.5 + (bubbleTransparency / 100) * 0.5;
+  const loadingBubbleStyle = {
+      backgroundColor: `rgba(var(--color-theme-primary-rgb), ${(bubbleTransparency / 100) * 0.15})`,
+      borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`
+  };
+
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -184,6 +212,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     textWrapping={textWrapping}
                     fontSize={fontSize}
                     showModelName={showModelName}
+                    showResponseTimer={showResponseTimer}
                     language={language}
                     theme={theme}
                     kirbyThemeColor={kirbyThemeColor}
@@ -210,10 +239,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
                     </div>
                 </div>
-                <div className="bg-primary-50 dark:bg-primary-900/20 border border-primary-100 dark:border-primary-800 px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm">
+                <div 
+                    className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm border backdrop-blur-sm"
+                    style={loadingBubbleStyle}
+                >
                     <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
                     <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    {showResponseTimer && <LoadingTimer />}
                 </div>
             </div>
             </div>
