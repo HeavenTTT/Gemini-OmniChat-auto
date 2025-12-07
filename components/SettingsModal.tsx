@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -135,7 +134,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                if (importedSettings.knownModels) delete importedSettings.knownModels;
                setLocalSettings({ ...localSettings, ...importedSettings });
            }
-           onShowToast(t('success.import', lang), 'success');
+           onShowToast(t('success.settings_import', lang), 'success');
         } else {
            onShowToast(t('msg.invalid_format', lang), 'error');
         }
@@ -216,7 +215,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     onShowToast={onShowToast}
                     onShowDialog={onShowDialog}
                     knownModels={localKnownModels}
-                    onUpdateKnownModels={setLocalKnownModels}
+                    onUpdateKnownModels={onUpdateKnownModels}
                 />
 
                 {/* Script Filters */}

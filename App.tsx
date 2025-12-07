@@ -1,8 +1,4 @@
 
-
-
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -90,7 +86,7 @@ const App: React.FC = () => {
   });
 
   // UI State
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toasts, setToasts] = useState<ToastMessage[]>([] );
   const [dialog, setDialog] = useState<DialogConfig>({
       isOpen: false,
       type: 'alert',
@@ -599,7 +595,7 @@ const App: React.FC = () => {
       if (title) {
           setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: title } : s));
       }
-      addToast(t('success.import', settings.language), 'success');
+      addToast(t('success.chat_import', settings.language), 'success');
   };
 
   const handleSummarize = async () => {

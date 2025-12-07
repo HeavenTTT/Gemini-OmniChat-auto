@@ -1,5 +1,4 @@
 
-
 import { Language } from '../types';
 
 type Translations = {
@@ -160,7 +159,10 @@ const translations: Translations = {
     'error.invalid_chat_file': 'Invalid chat file format.',
     'error.no_active_keys': 'No active API keys available. Please enable at least one in settings.',
     'error.all_keys_failed': 'All active keys failed.',
-    'success.import': 'Settings imported successfully!',
+    'error.call_in_progress': 'An API call is already in progress. Please wait.',
+    'error.fetch_failed': 'Failed to fetch. Check network or Base URL.',
+    'success.settings_import': 'Settings imported successfully!',
+    'success.chat_import': 'Chat session imported successfully!',
     'theme.light': 'Day',
     'theme.dark': 'Night',
     'theme.twilight': 'Twilight',
@@ -237,8 +239,8 @@ const translations: Translations = {
     'param.top_p_slider': 'Adjust Top P parameter',
     'param.top_k_slider': 'Adjust Top K parameter',
     'param.max_output_tokens_input': 'Set maximum output tokens',
-    'param.thinking_budget_input': 'Set thinking budget (tokens)',
-    'param.history_context_limit_input': 'Set context message limit',
+    'param.thinkingBudget_input': 'Set thinking budget (tokens)',
+    'param.historyContextLimit_input': 'Set context message limit',
     'input.password_to_unlock': 'Enter password to unlock',
     'input.answer_to_unlock': 'Enter answer to unlock',
     'input.password': 'Password',
@@ -416,7 +418,10 @@ const translations: Translations = {
     'error.invalid_chat_file': '无效的聊天文件格式。',
     'error.no_active_keys': '没有可用的活跃 API 密钥。请在设置中至少启用一个。',
     'error.all_keys_failed': '所有活跃密钥均尝试失败。',
-    'success.import': '配置导入成功！',
+    'error.call_in_progress': 'API 调用已在进行中。请稍候。',
+    'error.fetch_failed': '获取失败。请检查网络或 Base URL。',
+    'success.settings_import': '配置导入成功！',
+    'success.chat_import': '聊天会话导入成功！',
     'theme.light': '白天',
     'theme.dark': '黑夜',
     'theme.twilight': '黄昏',
@@ -491,10 +496,10 @@ const translations: Translations = {
     'param.stream_response_toggle': '切换流式传输回复',
     'param.temperature_slider': '调整模型随机性',
     'param.top_p_slider': '调整Top P参数',
-    'param.top_k_slider': '调整Top K参数',
+    'param.topK_slider': '调整Top K参数',
     'param.max_output_tokens_input': '设置最大输出长度',
-    'param.thinking_budget_input': '设置思考预算 (Tokens)',
-    'param.history_context_limit_input': '设置上下文消息限制',
+    'param.thinkingBudget_input': '设置思考预算 (Tokens)',
+    'param.historyContextLimit_input': '设置上下文消息限制',
     'input.password_to_unlock': '输入密码解锁',
     'input.answer_to_unlock': '输入答案解锁',
     'input.password': '密码',
@@ -672,7 +677,10 @@ const translations: Translations = {
     'error.invalid_chat_file': 'チャットファイルの形式が無効です。',
     'error.no_active_keys': '有効なAPIキーがありません。設定で少なくとも1つを有効にしてください。',
     'error.all_keys_failed': 'すべての有効なキーが失敗しました。',
-    'success.import': '設定をインポートしました！',
+    'error.call_in_progress': 'API呼び出しが進行中です。お待ちください。',
+    'error.fetch_failed': '取得失敗。ネットワークまたはBase URLを確認してください。',
+    'success.settings_import': '設定をインポートしました！',
+    'success.chat_import': 'チャットセッションをインポートしました！',
     'theme.light': 'ライト',
     'theme.dark': 'ダーク',
     'theme.twilight': 'トワイライト',
@@ -746,10 +754,10 @@ const translations: Translations = {
     'param.stream_response_toggle': 'ストリーム応答を切り替え',
     'param.temperature_slider': '温度 (Temperature) を調整',
     'param.top_p_slider': 'トップP (Top P) を調整',
-    'param.top_k_slider': 'トップK (Top K) を調整',
+    'param.topK_slider': 'トップK (Top K) を調整',
     'param.max_output_tokens_input': '最大出力トークン数を設定',
-    'param.thinking_budget_input': '思考予算 (Tokens) を設定',
-    'param.history_context_limit_input': 'コンテキストメッセージ制限を設定',
+    'param.thinkingBudget_input': '思考予算 (Tokens) を設定',
+    'param.historyContextLimit_input': 'コンテキストメッセージ制限を設定',
     'input.password_to_unlock': 'パスワードを入力してロック解除',
     'input.answer_to_unlock': '回答を入力してロック解除',
     'input.password': 'パスワード',
@@ -774,7 +782,7 @@ const translations: Translations = {
     'action.drag_to_reorder': 'ドラッグして並べ替え',
     'label.token_usage': '要求トークン',
     'label.exact_count': 'APIからの正確なカウント',
-    'label.estimated_count': '推定カウント'
+    'label.estimated_count': '估算计数'
   }
 };
 

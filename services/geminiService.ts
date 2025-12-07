@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
@@ -16,6 +15,7 @@ export class GeminiService {
   private keys: KeyConfig[] = [];
   private keyIndex: number = 0;
   private keyUsageCount: number = 0;
+  private _isCallInProgress: boolean = false; // New: Lock to prevent concurrent calls
   
   private openAIService: OpenAIService;
   private onKeyError?: (id: string, errorCode?: string) => void;
@@ -43,42 +43,50 @@ export class GeminiService {
    * Supports both Google GenAI and OpenAI compatible endpoints.
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
-    if (keyConfig.provider === 'openai') {
-        if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
-        return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
-    } else {
-        // Google Implementation
-        try {
-            const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-            const response = await ai.models.list();
-            const models: ModelInfo[] = [];
-            
-            // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
-            for await (const model of response) {
-                const m = model as any;
-                if (m.name) {
-                    const name = m.name.replace('models/', '');
-                    models.push({
-                        name: name,
-                        displayName: m.displayName || name,
-                        inputTokenLimit: m.inputTokenLimit,
-                        outputTokenLimit: m.outputTokenLimit
-                    });
+    if (this._isCallInProgress) {
+        throw new Error(t('error.call_in_progress', 'en')); // 'en' as fallback, UI will catch and re-translate
+    }
+    this._isCallInProgress = true;
+    try {
+        if (keyConfig.provider === 'openai') {
+            if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
+            return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+        } else {
+            // Google Implementation
+            try {
+                const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+                const response = await ai.models.list();
+                const models: ModelInfo[] = [];
+                
+                // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
+                for await (const model of response) {
+                    const m = model as any;
+                    if (m.name) {
+                        const name = m.name.replace('models/', '');
+                        models.push({
+                            name: name,
+                            displayName: m.displayName || name,
+                            inputTokenLimit: m.inputTokenLimit,
+                            outputTokenLimit: m.outputTokenLimit
+                        });
+                    }
                 }
-            }
-            return models.filter(m => 
-                m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
-            );
-        } catch (e: any) {
-            console.error("List models failed", e);
-            // If list models fails (e.g. 403), we return empty to handle gracefully
-            if (e.status === 403 || (e.message && e.message.includes("403"))) {
+                return models.filter(m => 
+                    m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
+                );
+            } catch (e: any) {
+                console.error("List models failed", e);
+                // If list models fails (e.g. 403), we return empty to handle gracefully
+                if (e.status === 403 || (e.message && e.message.includes("403"))) {
+                    return [];
+                }
+                // For other errors, return empty as well to avoid breaking the UI flow, 
+                // but log it.
                 return [];
             }
-            // For other errors, return empty as well to avoid breaking the UI flow, 
-            // but log it.
-            return [];
         }
+    } finally {
+        this._isCallInProgress = false;
     }
   }
 
@@ -87,29 +95,37 @@ export class GeminiService {
    * Performs a minimal chat generation request to verify the key works for chat.
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
-      const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
-
+      if (this._isCallInProgress) {
+          throw new Error(t('error.call_in_progress', 'en'));
+      }
+      this._isCallInProgress = true;
       try {
-          if (keyConfig.provider === 'openai') {
-              if (!keyConfig.baseUrl) return false;
-              return await this.openAIService.testChat(
-                  keyConfig.key, 
-                  keyConfig.baseUrl, 
-                  modelToUse
-              );
-          } else {
-              const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-              await ai.models.generateContent({
-                  model: modelToUse,
-                  contents: 'Test',
-              });
-              // If we get here without error (403/404 throws exception), the key is valid.
-              // Even if the content is blocked by safety (empty text), the connection is established.
-              return true;
+          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
+
+          try {
+              if (keyConfig.provider === 'openai') {
+                  if (!keyConfig.baseUrl) return false;
+                  return await this.openAIService.testChat(
+                      keyConfig.key, 
+                      keyConfig.baseUrl, 
+                      modelToUse
+                  );
+              } else {
+                  const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+                  await ai.models.generateContent({
+                      model: modelToUse,
+                      contents: 'Test',
+                  });
+                  // If we get here without error (403/404 throws exception), the key is valid.
+                  // Even if the content is blocked by safety (empty text), the connection is established.
+                  return true;
+              }
+          } catch (e) {
+              console.error("Test connection failed", e);
+              return false;
           }
-      } catch (e) {
-          console.error("Test connection failed", e);
-          return false;
+      } finally {
+          this._isCallInProgress = false;
       }
   }
 
@@ -186,90 +202,100 @@ export class GeminiService {
     lang: Language = 'en'
   ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
 
-    const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
-    let attempts = 0;
-    const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
-
-    while (attempts < maxRetries) {
-        let keyConfig: KeyConfig;
-        try {
-            keyConfig = this.getNextAvailableKey(lang);
-        } catch (e: any) {
-            throw e;
-        }
-
-        const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-2.5-flash';
-
-        try {
-            let text = "";
-            if (keyConfig.provider === 'openai') {
-                if (!keyConfig.baseUrl) throw new Error("Base URL missing for OpenAI key");
-                text = await this.openAIService.streamChat(
-                    keyConfig.key,
-                    keyConfig.baseUrl,
-                    modelToUse,
-                    history,
-                    newMessage,
-                    systemInstruction,
-                    generationConfig,
-                    onChunk,
-                    abortSignal
-                );
-            } else {
-                // Google Gemini API Call
-                text = await this.callGoogle(
-                    keyConfig.key,
-                    modelToUse,
-                    validHistory,
-                    newMessage,
-                    systemInstruction,
-                    generationConfig,
-                    onChunk,
-                    abortSignal
-                );
-            }
-
-            return { 
-                text, 
-                usedKeyIndex: this.getKeyDisplayIndex(keyConfig.id), 
-                provider: keyConfig.provider,
-                usedModel: modelToUse
-            };
-
-        } catch (error: any) {
-            if (abortSignal?.aborted) throw new Error("Aborted by user");
-            
-            console.error(`API Call failed (${keyConfig.provider})`, error);
-            
-            // Extract Error Code
-            let errorCode = 'Error';
-            if (error.status) {
-                errorCode = error.status.toString();
-            } else if (error.statusCode) {
-                errorCode = error.statusCode.toString();
-            } else {
-                 const match = error.message?.match(/\b\d{3}\b/);
-                 if (match) errorCode = match[0];
-                 else if (error.message?.includes("429")) errorCode = "429";
-            }
-
-            // Auto-deactivate key on error if callback provided
-            if (this.onKeyError) {
-                this.onKeyError(keyConfig.id, errorCode);
-            }
-            
-            // Mark inactive locally to avoid reusing in this loop
-            const localKey = this.keys.find(k => k.id === keyConfig.id);
-            if (localKey) {
-                localKey.isActive = false;
-                localKey.lastErrorCode = errorCode;
-            }
-
-            attempts++;
-            continue;
-        }
+    if (this._isCallInProgress) {
+        throw new Error(t('error.call_in_progress', 'en'));
     }
-    throw new Error(t('error.all_keys_failed', lang));
+    this._isCallInProgress = true;
+
+    try {
+        const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
+        let attempts = 0;
+        const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+
+        while (attempts < maxRetries) {
+            let keyConfig: KeyConfig;
+            try {
+                keyConfig = this.getNextAvailableKey(lang);
+            } catch (e: any) {
+                throw e;
+            }
+
+            const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-2.5-flash';
+
+            try {
+                let text = "";
+                if (keyConfig.provider === 'openai') {
+                    if (!keyConfig.baseUrl) throw new Error("Base URL missing for OpenAI key");
+                    text = await this.openAIService.streamChat(
+                        keyConfig.key,
+                        keyConfig.baseUrl,
+                        modelToUse,
+                        validHistory, // Pass validHistory here
+                        newMessage,
+                        systemInstruction,
+                        generationConfig,
+                        onChunk,
+                        abortSignal
+                    );
+                } else {
+                    // Google Gemini API Call
+                    text = await this.callGoogle(
+                        keyConfig.key,
+                        modelToUse,
+                        validHistory,
+                        newMessage,
+                        systemInstruction,
+                        generationConfig,
+                        onChunk,
+                        abortSignal
+                    );
+                }
+
+                return { 
+                    text, 
+                    usedKeyIndex: this.getKeyDisplayIndex(keyConfig.id), 
+                    provider: keyConfig.provider,
+                    usedModel: modelToUse
+                };
+
+            } catch (error: any) {
+                if (abortSignal?.aborted) throw new Error("Aborted by user");
+                
+                console.error(`API Call failed (${keyConfig.provider})`, error);
+                
+                // Extract Error Code
+                let errorCode = 'Error';
+                if (error.status) { // e.g., from Gemini API client, or raw response status
+                    errorCode = error.status.toString();
+                } else if (error.statusCode) { // e.g., from some libraries
+                    errorCode = error.statusCode.toString();
+                } else {
+                     const match = error.message?.match(/\b\d{3}\b/);
+                     if (match) errorCode = match[0];
+                     else if (error.message?.includes("429")) errorCode = "429";
+                     else if (error.message?.includes(t('error.fetch_failed', 'en'))) errorCode = "Network"; // Specific code for network errors
+                }
+
+                // Auto-deactivate key on error if callback provided
+                if (this.onKeyError) {
+                    this.onKeyError(keyConfig.id, errorCode);
+                }
+                
+                // Mark inactive locally to avoid reusing in this loop
+                const localKey = this.keys.find(k => k.id === keyConfig.id);
+                if (localKey) {
+                    localKey.isActive = false;
+                    localKey.lastErrorCode = errorCode;
+                }
+
+                attempts++;
+                continue;
+            }
+        }
+        throw new Error(t('error.all_keys_failed', lang));
+    } finally {
+        this._isCallInProgress = false;
+    }
   }
 
   /**
@@ -359,40 +385,46 @@ export class GeminiService {
       keyConfig: KeyConfig,
       history: Message[],
       newMessage: string,
-      systemInstruction: string | undefined
+      _ignoredSystemInstruction: string | undefined // systemInstruction is not supported in countTokens for Gemini API
   ): Promise<number> {
-      if (keyConfig.provider !== 'google') return -1;
-
-      const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-      
-      // Filter out invalid messages (error or empty) to match generation logic
-      const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
-
-      const googleHistory = validHistory.map(msg => ({
-          role: msg.role === Role.USER ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-      }));
-
-      const contents = [...googleHistory];
-
-      if (newMessage && newMessage.trim().length > 0) {
-          contents.push({
-              role: 'user',
-              parts: [{ text: newMessage }]
-          });
+      if (this._isCallInProgress) {
+          throw new Error(t('error.call_in_progress', 'en'));
       }
-
+      this._isCallInProgress = true;
       try {
-          // Note: systemInstruction parameter is often not supported in countTokens for certain models/SDK versions 
-          // or needs to be part of contents. Removing it from config to avoid API errors.
-          const response = await ai.models.countTokens({
-              model: keyConfig.model || 'gemini-2.5-flash',
-              contents: contents,
-          });
-          return response.totalTokens || 0;
-      } catch (error) {
-          console.error("Count tokens failed", error);
-          return -1;
+          if (keyConfig.provider !== 'google') return -1;
+
+          const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+          
+          // Filter out invalid messages (error or empty) to match generation logic
+          const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+
+          const googleHistory = validHistory.map(msg => ({
+              role: msg.role === Role.USER ? 'user' : 'model',
+              parts: [{ text: msg.text }]
+          }));
+
+          const contents = [...googleHistory];
+
+          if (newMessage && newMessage.trim().length > 0) {
+              contents.push({
+                  role: 'user',
+                  parts: [{ text: newMessage }]
+              });
+          }
+
+          try {
+              const response = await ai.models.countTokens({
+                  model: keyConfig.model || 'gemini-2.5-flash',
+                  contents: contents,
+              });
+              return response.totalTokens || 0;
+          } catch (error) {
+              console.error("Count tokens failed", error);
+              return -1;
+          }
+      } finally {
+          this._isCallInProgress = false;
       }
   }
 }

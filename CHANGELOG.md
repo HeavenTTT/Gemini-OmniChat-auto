@@ -1,6 +1,11 @@
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.3.6] - 2024-05-27
+### Fixed
+- **Translation Keys**: Corrected translation keys for chat session import and settings import success messages to ensure accurate user feedback.
 
 ## [1.3.5] - 2024-05-26
 ### Added
