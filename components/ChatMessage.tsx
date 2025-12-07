@@ -1,9 +1,10 @@
 
+
 "use client";
 
-import React, { useRef, useState, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock } from 'lucide-react';
+import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -115,6 +116,35 @@ const AutoResizeTextarea = ({
   );
 };
 
+// Thought Block Component
+const ThoughtBlock = ({ text, lang }: { text: string, lang: Language }) => {
+  const [isOpen, setIsOpen] = useState(false); // Default collapsed
+  
+  // If streaming and text is actively updating (not likely passed here, but good to know), keep open?
+  // Actually, usually users prefer thoughts collapsed by default or open if interesting.
+  // Default to collapsed to reduce noise.
+
+  return (
+    <div className="my-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+      >
+        <Brain className="w-3.5 h-3.5 text-gray-400" />
+        <span>{t('label.thought_process', lang)}</span>
+        <div className="ml-auto">
+            {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        </div>
+      </button>
+      {isOpen && (
+         <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-xs font-mono text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">
+             {text}
+         </div>
+      )}
+    </div>
+  );
+};
+
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   msg,
   isEditing,
@@ -208,6 +238,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
           onScrollToBottom();
       }
   }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing]);
+
+  // Parse Text for Thoughts
+  const { thoughts, content } = useMemo(() => {
+    if (msg.role !== Role.MODEL || isEditing) {
+        return { thoughts: [], content: displayedText };
+    }
+    
+    // Regex to extract <think>...</think> blocks
+    // Handles multiple blocks, and open blocks at end (streaming)
+    const thinkRegex = /<think>([\s\S]*?)(?:<\/think>|$)/g;
+    const extractedThoughts: string[] = [];
+    let match;
+    
+    // We assume standard usage: <think> content </think>
+    // This loop extracts the *content* of the think tags
+    while ((match = thinkRegex.exec(displayedText)) !== null) {
+        extractedThoughts.push(match[1]);
+    }
+
+    // Remove the tags and content to get the clean display text
+    // Note: If streaming, we might have <think>... without </think> yet.
+    // In that case, the content is still "thinking", so we might want to hide it from main view
+    const cleanContent = displayedText.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
+
+    return { thoughts: extractedThoughts, content: cleanContent };
+  }, [displayedText, msg.role, isEditing]);
+
 
   const cancelEditing = () => { 
     setEditingId(null); 
@@ -347,9 +404,18 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
                     ) : (
                     <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
+                        {/* Render Thought Blocks if present */}
+                        {thoughts.length > 0 && (
+                            <div className="mb-3 flex flex-col gap-2">
+                                {thoughts.map((thought, idx) => (
+                                    <ThoughtBlock key={idx} text={thought} lang={language} />
+                                ))}
+                            </div>
+                        )}
+
                         <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language} onShowToast={onShowToast}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>
-                            {/* Use displayedText for smooth rendering, fallback to msg.text if empty (shouldn't happen due to init state) */}
-                            {displayedText}
+                            {/* Use clean content for markdown rendering */}
+                            {content}
                         </ReactMarkdown>
                     </div>
                     )}

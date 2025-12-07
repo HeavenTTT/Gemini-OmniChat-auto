@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -76,7 +77,8 @@ const App: React.FC = () => {
         topK: 40,
         maxOutputTokens: 8192,
         stream: false, // Default to false (closed)
-        thinkingBudget: 0 // Default 0
+        thinkingBudget: 0, // Default 0
+        stripThoughts: false // Default to false
     },
     scripts: {
         inputFilterEnabled: false,
@@ -229,6 +231,10 @@ const App: React.FC = () => {
       if (loadedSettings.generation && loadedSettings.generation.thinkingBudget === undefined) {
           loadedSettings.generation.thinkingBudget = 0;
       }
+      // Ensure stripThoughts exists
+      if (loadedSettings.generation && loadedSettings.generation.stripThoughts === undefined) {
+          loadedSettings.generation.stripThoughts = false;
+      }
       // Ensure scripts setting exists
       if (!loadedSettings.scripts) {
           loadedSettings.scripts = {
@@ -365,7 +371,18 @@ const App: React.FC = () => {
 
       // CRITICAL FIX: Ensure history passed to API does NOT contain the new user message.
       // Even if historyBefore somehow included it (due to state updates), we filter it out by ID to be absolutely safe.
-      const historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
+      let historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
+
+      // Apply "Strip Thoughts" if enabled
+      if (settings.generation.stripThoughts) {
+        historyForApi = historyForApi.map(msg => {
+            if (msg.role === Role.MODEL && msg.text.includes('<think>')) {
+                 const cleanText = msg.text.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
+                 return { ...msg, text: cleanText };
+            }
+            return msg;
+        });
+      }
 
       // Apply History Context Limit (Truncate history sent to model)
       let contextToSend = historyForApi;
@@ -512,8 +529,19 @@ const App: React.FC = () => {
       if (!activeKey) return 0;
 
       let contextToSend = messages;
-      if (settings.historyContextLimit > 0 && messages.length > settings.historyContextLimit) {
-          contextToSend = messages.slice(-settings.historyContextLimit);
+      // Strip thoughts for token counting if enabled
+      if (settings.generation.stripThoughts) {
+        contextToSend = messages.map(msg => {
+            if (msg.role === Role.MODEL && msg.text.includes('<think>')) {
+                 const cleanText = msg.text.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
+                 return { ...msg, text: cleanText };
+            }
+            return msg;
+        });
+      }
+
+      if (settings.historyContextLimit > 0 && contextToSend.length > settings.historyContextLimit) {
+          contextToSend = contextToSend.slice(-settings.historyContextLimit);
       }
       
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');

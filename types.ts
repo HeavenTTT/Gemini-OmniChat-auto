@@ -86,6 +86,7 @@ export interface GenerationConfig {
   maxOutputTokens: number;
   stream: boolean;
   thinkingBudget?: number; // New: For Gemini 2.5 thinking models
+  stripThoughts?: boolean; // New: Strip <think> tags from history to save tokens
 }
 
 export interface ScriptConfig {

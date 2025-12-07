@@ -272,7 +272,10 @@ const translations: Translations = {
     'label.token_usage': 'Request Tokens',
     'label.exact_count': 'Exact count from API',
     'label.estimated_count': 'Estimated count',
-    'label.response_time': '{duration}s'
+    'label.response_time': '{duration}s',
+    'label.thought_process': 'Thought Process',
+    'param.strip_thoughts': 'Strip Thoughts from History',
+    'param.strip_thoughts_desc': 'Remove <think> blocks from context sent to API to save tokens.'
   },
   zh: {
     'app.title': '全能聊天',
@@ -538,7 +541,10 @@ const translations: Translations = {
     'label.token_usage': '请求 Tokens',
     'label.exact_count': '来自 API 的精确计数',
     'label.estimated_count': '估算计数',
-    'label.response_time': '{duration}秒'
+    'label.response_time': '{duration}秒',
+    'label.thought_process': '思考过程',
+    'param.strip_thoughts': '从历史记录中移除思考过程',
+    'param.strip_thoughts_desc': '发送给API时移除 <think> 内容以节省 Token。'
   },
   ja: {
     'app.title': 'OmniChat',
@@ -803,7 +809,10 @@ const translations: Translations = {
     'label.token_usage': '要求トークン',
     'label.exact_count': 'APIからの正確なカウント',
     'label.estimated_count': '估算计数',
-    'label.response_time': '{duration}秒'
+    'label.response_time': '{duration}秒',
+    'label.thought_process': '思考プロセス',
+    'param.strip_thoughts': '履歴から思考プロセスを削除',
+    'param.strip_thoughts_desc': 'トークン節約のため、API送信時に <think> コンテンツを削除します。'
   }
 };
 
