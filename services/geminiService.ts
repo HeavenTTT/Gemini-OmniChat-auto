@@ -43,10 +43,11 @@ export class GeminiService {
         return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
     } else {
         // Google Implementation
-        const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-        const response = await ai.models.list();
-        const models: ModelInfo[] = [];
         try {
+            const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+            const response = await ai.models.list();
+            const models: ModelInfo[] = [];
+            
             // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
             for await (const model of response) {
                 const m = model as any;
@@ -60,35 +61,47 @@ export class GeminiService {
                     });
                 }
             }
-        } catch (e) {
-             const raw = response as any;
-             if (Array.isArray(raw.models)) {
-                 raw.models.forEach((m: any) => {
-                     if (m.name) {
-                         const name = m.name.replace('models/', '');
-                         models.push({
-                             name: name,
-                             displayName: m.displayName || name,
-                             inputTokenLimit: m.inputTokenLimit,
-                             outputTokenLimit: m.outputTokenLimit
-                         });
-                     }
-                 });
-             }
+            return models.filter(m => 
+                m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
+            );
+        } catch (e: any) {
+            console.error("List models failed", e);
+            // If list models fails (e.g. 403), we return empty to handle gracefully
+            if (e.status === 403 || (e.message && e.message.includes("403"))) {
+                return [];
+            }
+            // For other errors, return empty as well to avoid breaking the UI flow, 
+            // but log it.
+            return [];
         }
-        return models.filter(m => 
-            m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
-        );
     }
   }
 
   /**
    * Tests connection for a specific key configuration to ensure validity.
+   * Performs a minimal chat generation request to verify the key works for chat.
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
+      const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
+
       try {
-          const models = await this.listModels(keyConfig);
-          return models.length > 0;
+          if (keyConfig.provider === 'openai') {
+              if (!keyConfig.baseUrl) return false;
+              return await this.openAIService.testChat(
+                  keyConfig.key, 
+                  keyConfig.baseUrl, 
+                  modelToUse
+              );
+          } else {
+              const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+              await ai.models.generateContent({
+                  model: modelToUse,
+                  contents: 'Test',
+              });
+              // If we get here without error (403/404 throws exception), the key is valid.
+              // Even if the content is blocked by safety (empty text), the connection is established.
+              return true;
+          }
       } catch (e) {
           console.error("Test connection failed", e);
           return false;

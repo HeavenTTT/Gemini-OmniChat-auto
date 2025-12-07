@@ -105,8 +105,6 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         baseUrl: ''
     }));
 
-    // Process checks sequentially or in small batches to be safe, though parallel is faster.
-    // Given the context, Promise.all is likely fine for typical batch sizes.
     const results = await Promise.all(tempConfigs.map(async (config) => {
         try {
             const passed = await geminiService.testConnection(config);
@@ -324,7 +322,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                         <button 
                             onClick={handleBatchImport} 
                             disabled={!batchKeysInput.trim() || isBatchTesting}
-                            className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-500 disabled:opacity-50 transition-colors"
+                            className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-50 disabled:opacity-50 transition-colors"
                         >
                              {t('action.import', lang)}
                         </button>
@@ -356,6 +354,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
     const [testResult, setTestResult] = useState<boolean | null>(null);
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [isEditingKey, setIsEditingKey] = useState(false);
+    const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
     
     // Load cached models specific to this key
     useEffect(() => {
@@ -418,7 +417,10 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
     const Header = (
         <div 
             className="flex items-center gap-3 w-full cursor-pointer" 
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+                setIsExpanded(!isExpanded);
+                if (isExpanded) setIsModelSelectOpen(false); // Reset dropdown state on close
+            }}
         >
              {/* Provider Icon */}
             <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${config.provider === 'openai' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
@@ -457,7 +459,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
     );
 
     return (
-        <div className={`p-3 rounded-xl border transition-all duration-300 relative ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'}`}>
+        <div className={`p-3 rounded-xl border transition-all duration-300 relative ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'} ${isModelSelectOpen ? 'z-20' : ''}`}>
             {Header}
 
             {isExpanded && (
@@ -565,6 +567,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                                placeholder={t('input.model_placeholder', lang)}
                                className="static flex-1"
                                emptyMessage={t('msg.fetch_models_hint', lang)}
+                               onOpenChange={setIsModelSelectOpen}
                             />
                         </div>
                         
