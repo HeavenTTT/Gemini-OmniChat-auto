@@ -1,6 +1,8 @@
 
 
 
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -376,7 +378,8 @@ const App: React.FC = () => {
            }
            setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
         },
-        controller.signal
+        controller.signal,
+        settings.language
       );
       
       // Apply Output Filter (Final)
@@ -605,7 +608,7 @@ const App: React.FC = () => {
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
         const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
-        const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation);
+        const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation, undefined, undefined, settings.language);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
         if (newTitle) {
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));

@@ -1,8 +1,9 @@
 
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
+import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
+import { t } from "../utils/i18n";
 
 // Helper to wait/sleep
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -116,11 +117,11 @@ export class GeminiService {
    * Retrieves the next available active API key using a Round-Robin strategy.
    * Handles usage limits per key (Poll Count) and skips rate-limited keys.
    */
-  private getNextAvailableKey(): KeyConfig {
+  private getNextAvailableKey(lang: Language): KeyConfig {
     const activeKeys = this.keys.filter(k => k.isActive);
     
     if (activeKeys.length === 0) {
-      throw new Error("No active API keys available. Please enable at least one in settings.");
+      throw new Error(t('error.no_active_keys', lang));
     }
 
     // Simple round-robin strategy across ALL active keys
@@ -181,7 +182,8 @@ export class GeminiService {
     systemInstruction: string | undefined,
     generationConfig: GenerationConfig,
     onChunk?: (text: string) => void,
-    abortSignal?: AbortSignal
+    abortSignal?: AbortSignal,
+    lang: Language = 'en'
   ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
 
     const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
@@ -191,7 +193,7 @@ export class GeminiService {
     while (attempts < maxRetries) {
         let keyConfig: KeyConfig;
         try {
-            keyConfig = this.getNextAvailableKey();
+            keyConfig = this.getNextAvailableKey(lang);
         } catch (e: any) {
             throw e;
         }
@@ -267,7 +269,7 @@ export class GeminiService {
             continue;
         }
     }
-    throw new Error("All active keys failed.");
+    throw new Error(t('error.all_keys_failed', lang));
   }
 
   /**
