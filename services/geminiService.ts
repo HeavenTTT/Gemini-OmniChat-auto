@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo } from "../types";
 import { OpenAIService } from "./openaiService";
@@ -17,12 +15,10 @@ export class GeminiService {
   private keyUsageCount: number = 0;
   
   private openAIService: OpenAIService;
-  private onKeyError?: (id: string, errorCode?: string) => void;
 
-  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
+  constructor(initialKeys: KeyConfig[]) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
-    this.onKeyError = onKeyError;
   }
 
   /**
@@ -47,11 +43,10 @@ export class GeminiService {
         return this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
     } else {
         // Google Implementation
+        const ai = new GoogleGenAI({ apiKey: keyConfig.key });
+        const response = await ai.models.list();
+        const models: ModelInfo[] = [];
         try {
-            const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-            const response = await ai.models.list();
-            const models: ModelInfo[] = [];
-            
             // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
             for await (const model of response) {
                 const m = model as any;
@@ -65,47 +60,35 @@ export class GeminiService {
                     });
                 }
             }
-            return models.filter(m => 
-                m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
-            );
-        } catch (e: any) {
-            console.error("List models failed", e);
-            // If list models fails (e.g. 403), we return empty to handle gracefully
-            if (e.status === 403 || (e.message && e.message.includes("403"))) {
-                return [];
-            }
-            // For other errors, return empty as well to avoid breaking the UI flow, 
-            // but log it.
-            return [];
+        } catch (e) {
+             const raw = response as any;
+             if (Array.isArray(raw.models)) {
+                 raw.models.forEach((m: any) => {
+                     if (m.name) {
+                         const name = m.name.replace('models/', '');
+                         models.push({
+                             name: name,
+                             displayName: m.displayName || name,
+                             inputTokenLimit: m.inputTokenLimit,
+                             outputTokenLimit: m.outputTokenLimit
+                         });
+                     }
+                 });
+             }
         }
+        return models.filter(m => 
+            m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
+        );
     }
   }
 
   /**
    * Tests connection for a specific key configuration to ensure validity.
-   * Performs a minimal chat generation request to verify the key works for chat.
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
-      const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
-
       try {
-          if (keyConfig.provider === 'openai') {
-              if (!keyConfig.baseUrl) return false;
-              return await this.openAIService.testChat(
-                  keyConfig.key, 
-                  keyConfig.baseUrl, 
-                  modelToUse
-              );
-          } else {
-              const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-              await ai.models.generateContent({
-                  model: modelToUse,
-                  contents: 'Test',
-              });
-              // If we get here without error (403/404 throws exception), the key is valid.
-              // Even if the content is blocked by safety (empty text), the connection is established.
-              return true;
-          }
+          const models = await this.listModels(keyConfig);
+          return models.length > 0;
       } catch (e) {
           console.error("Test connection failed", e);
           return false;
@@ -239,32 +222,14 @@ export class GeminiService {
             
             console.error(`API Call failed (${keyConfig.provider})`, error);
             
-            // Extract Error Code
-            let errorCode = 'Error';
-            if (error.status) {
-                errorCode = error.status.toString();
-            } else if (error.statusCode) {
-                errorCode = error.statusCode.toString();
-            } else {
-                 const match = error.message?.match(/\b\d{3}\b/);
-                 if (match) errorCode = match[0];
-                 else if (error.message?.includes("429")) errorCode = "429";
+            const isRateLimit = error.message?.includes('429') || error.status === 429;
+            if (isRateLimit) {
+                this.markKeyRateLimited(keyConfig.id);
+                attempts++;
+                await delay(500);
+                continue;
             }
-
-            // Auto-deactivate key on error if callback provided
-            if (this.onKeyError) {
-                this.onKeyError(keyConfig.id, errorCode);
-            }
-            
-            // Mark inactive locally to avoid reusing in this loop
-            const localKey = this.keys.find(k => k.id === keyConfig.id);
-            if (localKey) {
-                localKey.isActive = false;
-                localKey.lastErrorCode = errorCode;
-            }
-
-            attempts++;
-            continue;
+            throw error;
         }
     }
     throw new Error("All active keys failed.");
@@ -381,11 +346,12 @@ export class GeminiService {
       }
 
       try {
-          // Note: systemInstruction parameter is often not supported in countTokens for certain models/SDK versions 
-          // or needs to be part of contents. Removing it from config to avoid API errors.
           const response = await ai.models.countTokens({
               model: keyConfig.model || 'gemini-2.5-flash',
               contents: contents,
+              config: systemInstruction ? {
+                  systemInstruction: systemInstruction
+              } : undefined
           });
           return response.totalTokens || 0;
       } catch (error) {

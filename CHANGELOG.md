@@ -1,17 +1,8 @@
+
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
-
-## [1.3.5] - 2024-05-26
-### Added
-- **Batch Key Import**: Added ability to bulk import API keys.
-- **Test & Import**: Validates keys during batch import, ensuring only working keys are added.
-- **Compact Key UI**: API Key cards are now collapsed by default for a cleaner interface.
-- **Thinking UI**: Added support/visibility for "Thinking" models in UI configuration.
-
-### Changed
-- **Shared Model Cache**: Gemini keys now share a global model cache to avoid redundant fetching.
-- **Error Handling**: Enhanced handling for 403 Permission Denied errors.
 
 ## [1.3.4] - 2024-05-25
 ### Added
