@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -101,17 +99,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Reset height when input is cleared or layout changes
   useEffect(() => {
     if (textareaRef.current) {
-      if (!input) {
-        // Reset to minimum if empty
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${minHeight}px`; 
-      } else {
-        // Re-adjust if content exists (e.g. when toggling token usage)
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, maxHeight)}px`;
-      }
+      // Reset height to auto to ensure we get the correct scrollHeight based on content/font
+      textareaRef.current.style.height = 'auto';
+      
+      // Calculate target height
+      // We take the larger of content height (scrollHeight) and minHeight (UI consistency)
+      // But clamp it to maxHeight
+      const currentScrollHeight = textareaRef.current.scrollHeight;
+      const targetHeight = Math.min(Math.max(currentScrollHeight, minHeight), maxHeight);
+      
+      textareaRef.current.style.height = `${targetHeight}px`;
     }
-  }, [input, minHeight, maxHeight]);
+  }, [input, minHeight, maxHeight, fontSize]);
 
   const displayCount = exactTokenCount !== null ? exactTokenCount : tokenEstimate;
 
