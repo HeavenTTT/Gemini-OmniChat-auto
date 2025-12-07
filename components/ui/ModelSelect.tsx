@@ -13,6 +13,7 @@ interface ModelSelectProps {
   disabled?: boolean;
   className?: string;
   emptyMessage?: string;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export const ModelSelect: React.FC<ModelSelectProps> = ({
@@ -22,10 +23,15 @@ export const ModelSelect: React.FC<ModelSelectProps> = ({
   placeholder,
   disabled,
   className,
-  emptyMessage = "No models available"
+  emptyMessage = "No models available",
+  onOpenChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

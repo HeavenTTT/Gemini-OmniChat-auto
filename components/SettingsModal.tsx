@@ -1,8 +1,10 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle } from 'lucide-react';
-import { AppSettings, KeyConfig, DialogConfig, APP_VERSION } from '../types';
+import { AppSettings, KeyConfig, DialogConfig, APP_VERSION, ModelInfo } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
 import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';
@@ -23,6 +25,8 @@ interface SettingsModalProps {
   geminiService: GeminiService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
+  knownModels: ModelInfo[];
+  onUpdateKnownModels: (models: ModelInfo[]) => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -34,10 +38,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateSettings,
   geminiService,
   onShowToast,
-  onShowDialog
+  onShowDialog,
+  knownModels,
+  onUpdateKnownModels
 }) => {
   const [localKeys, setLocalKeys] = useState<KeyConfig[]>([]);
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
+  const [localKnownModels, setLocalKnownModels] = useState<ModelInfo[]>(knownModels);
   const [activeTab, setActiveTab] = useState<'general' | 'model' | 'security'>('general');
   const lang = localSettings.language;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -47,8 +54,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     if (isOpen) {
       setLocalKeys(JSON.parse(JSON.stringify(apiKeys))); 
       setLocalSettings(JSON.parse(JSON.stringify(settings)));
+      setLocalKnownModels(JSON.parse(JSON.stringify(knownModels)));
     }
-  }, [isOpen, apiKeys, settings]);
+  }, [isOpen, apiKeys, settings, knownModels]);
 
   // --- Theme Preview Logic ---
   useEffect(() => {
@@ -76,17 +84,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleSave = () => {
     onUpdateKeys(localKeys);
     onUpdateSettings(localSettings);
+    onUpdateKnownModels(localKnownModels);
     onClose();
   };
 
   // --- Config Export/Import ---
   const handleExportSettings = () => {
+    // Ensure knownModels is not included in the export
+    const settingsToExport = { ...localSettings };
+    // @ts-ignore - Handle legacy property if present during runtime
+    if (settingsToExport.knownModels) delete settingsToExport.knownModels;
+
     const data = {
       version: 4,
       type: 'omnichat_settings',
       timestamp: new Date().toISOString(),
       keys: localKeys,
-      settings: localSettings
+      settings: settingsToExport
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -115,7 +129,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         const parsed = JSON.parse(content);
         if (parsed.type === 'omnichat_settings') {
            if (parsed.keys && Array.isArray(parsed.keys)) setLocalKeys(parsed.keys);
-           if (parsed.settings) setLocalSettings({ ...localSettings, ...parsed.settings });
+           if (parsed.settings) {
+               // Filter out knownModels if present in imported file to enforce cache-only behavior
+               const importedSettings = { ...parsed.settings };
+               if (importedSettings.knownModels) delete importedSettings.knownModels;
+               setLocalSettings({ ...localSettings, ...importedSettings });
+           }
            onShowToast(t('success.import', lang), 'success');
         } else {
            onShowToast(t('msg.invalid_format', lang), 'error');
@@ -196,6 +215,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     geminiService={geminiService}
                     onShowToast={onShowToast}
                     onShowDialog={onShowDialog}
+                    knownModels={localKnownModels}
+                    onUpdateKnownModels={setLocalKnownModels}
                 />
 
                 {/* Script Filters */}
