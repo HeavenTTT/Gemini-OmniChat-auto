@@ -1,5 +1,6 @@
 
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +22,8 @@ interface ApiKeyManagementProps {
   geminiService: GeminiService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
+  knownModels: ModelInfo[];
+  onUpdateKnownModels: (models: ModelInfo[]) => void;
 }
 
 export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
@@ -32,15 +35,17 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   defaultModel,
   geminiService,
   onShowToast,
-  onShowDialog
+  onShowDialog,
+  knownModels,
+  onUpdateKnownModels
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [isBatchImporting, setIsBatchImporting] = useState(false);
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [batchKeysInput, setBatchKeysInput] = useState('');
 
-  // Derived from global known models settings
-  const sharedGeminiModels = settings.knownModels?.map(m => m.name) || [];
+  // Derived from known models prop
+  const sharedGeminiModels = knownModels.map(m => m.name) || [];
 
   const handleAddKey = () => {
     onUpdateKeys([
@@ -257,14 +262,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             onSyncModel={() => handleSyncModel(keyConfig.id)}
                             onUpdateKnownModels={(newModels) => {
                                 // Merge new models with existing, preferring new info
-                                const existing = settings.knownModels || [];
+                                const existing = knownModels || [];
                                 const merged = [...existing];
                                 newModels.forEach(nm => {
                                     const idx = merged.findIndex(em => em.name === nm.name);
                                     if (idx !== -1) merged[idx] = nm;
                                     else merged.push(nm);
                                 });
-                                onUpdateSettings({ ...settings, knownModels: merged });
+                                onUpdateKnownModels(merged);
                             }}
                             lang={lang}
                             geminiService={geminiService}
@@ -388,7 +393,7 @@ const KeyConfigCard: React.FC<KeyConfigCardProps> = ({ config, onUpdate, onRemov
                 setAvailableModels(modelNames);
                 localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(modelNames));
                 
-                // Update global known models with limits
+                // Update global known models with limits via callback
                 onUpdateKnownModels(modelsInfo);
 
                 if (!config.model) onUpdate({ model: modelNames[0] });

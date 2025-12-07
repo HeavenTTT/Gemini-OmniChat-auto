@@ -117,7 +117,7 @@ export interface AppSettings {
   generation: GenerationConfig;
   scripts: ScriptConfig; // New: Script settings
   
-  knownModels: ModelInfo[]; // New: Cache known models and their limits
+  // knownModels removed from AppSettings to separate cache from configuration
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }
 
