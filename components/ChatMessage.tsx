@@ -436,15 +436,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
             </div>
                 
             {/* Meta Info & Actions */}
-            <div className="flex items-center gap-2 mt-1 px-1 h-8">
-                <span className="text-[10px] text-gray-400 dark:text-gray-500">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 px-1 min-h-[1.5rem]">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 {msg.role === Role.MODEL && !msg.isError && (
-                <div className="flex items-center gap-1">
+                <div className="flex flex-wrap items-center gap-1">
                     {msg.keyIndex && (
                         <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
                     )}
                     {showModelName && msg.model && (
-                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Model Used">{msg.model}</span>
+                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 break-all max-w-[250px]" title="Model Used">{msg.model}</span>
                     )}
                     {showResponseTimer && msg.executionTime && (
                         <div className="flex items-center gap-0.5 text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Response Time">
