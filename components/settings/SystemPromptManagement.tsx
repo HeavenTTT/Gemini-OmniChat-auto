@@ -29,6 +29,11 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
   const startEditingPromptContent = (prompt: SystemPrompt) => {
     setEditingPromptId(prompt.id);
     setEditingPromptContent(prompt.content);
+    
+    // Auto-open large editor on mobile (width < 768px)
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        setIsFullEditorOpen(true);
+    }
   };
 
   const savePromptContent = (promptId: string) => {
