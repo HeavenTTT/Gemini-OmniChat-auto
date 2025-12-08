@@ -47,17 +47,7 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
 
         <CollapsibleSection id="ai-parameters" title={t('settings.ai_parameters', lang)} defaultOpen={true} lang={lang}>
             <div className="space-y-6">
-                <div className="flex justify-end mb-2">
-                    <button 
-                        onClick={handleReset}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
-                        title={t('action.reset_default', lang)}
-                    >
-                        <RotateCcw className="w-3.5 h-3.5" />
-                        {t('action.reset_default', lang)}
-                    </button>
-                </div>
-
+                
                 {/* Stream Toggle */}
                 <div className="flex items-center justify-between">
                     <label htmlFor="stream-toggle" className="text-gray-700 dark:text-gray-300 font-medium text-sm">{t('param.stream', lang)}</label>
@@ -207,6 +197,17 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                                 className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500`}
                                 aria-label={t('param.max_output_tokens_input', lang)}
                             />
+                        </div>
+
+                        <div className="flex justify-end pt-2">
+                            <button 
+                                onClick={handleReset}
+                                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
+                                title={t('action.reset_default', lang)}
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                                {t('action.reset_default', lang)}
+                            </button>
                         </div>
                     </div>
                 )}

@@ -1,8 +1,9 @@
 
+
 "use client";
 
-import React, { useState } from 'react';
-import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, ToggleRight, Trash2, Edit2, Box } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, ToggleRight, Trash2, Edit2, Box, ChevronDown, ChevronRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo, KeyGroup } from '../../types';
 import { GeminiService } from '../../services/geminiService';
@@ -42,10 +43,17 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   const [batchKeysInput, setBatchKeysInput] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  
+  // 导入文件的 input ref
+  const importFileInputRef = useRef<HTMLInputElement>(null);
 
   // Derived from known models prop
   const sharedGeminiModels = knownModels.map(m => m.name) || [];
 
+  /**
+   * 添加新的 API 密钥
+   */
   const handleAddKey = (groupId?: string) => {
     onUpdateKeys([
       ...keys, 
@@ -62,6 +70,62 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         groupId: groupId // Assign to group if provided
       }
     ]);
+  };
+
+  const toggleGroupCollapse = (groupId: string) => {
+    const next = new Set(collapsedGroups);
+    if (next.has(groupId)) {
+        next.delete(groupId);
+    } else {
+        next.add(groupId);
+    }
+    setCollapsedGroups(next);
+  };
+
+  /**
+   * 触发单个密钥配置导入的文件选择
+   */
+  const handleImportSingleKeyTrigger = () => {
+    importFileInputRef.current?.click();
+  };
+
+  /**
+   * 处理单个密钥配置文件的导入
+   * 读取 JSON 并作为新密钥添加到列表中
+   */
+  const handleImportSingleKeyConfig = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        try {
+            const content = event.target?.result as string;
+            const parsed = JSON.parse(content);
+            if (parsed.type === 'omnichat_key_config' && parsed.config) {
+                 // 创建新密钥，赋予新 ID，但保留配置
+                 const newKey: KeyConfig = {
+                     ...parsed.config,
+                     id: uuidv4(), // Generate new ID
+                     isActive: true
+                 };
+                 
+                 onUpdateKeys([...keys, newKey]);
+                 
+                 // 如果有缓存的模型列表，也可以尝试恢复到 localStorage (可选，针对新 ID)
+                 if (parsed.cachedModels && Array.isArray(parsed.cachedModels)) {
+                     localStorage.setItem(`gemini_model_cache_${newKey.id}`, JSON.stringify(parsed.cachedModels));
+                 }
+                 
+                 onShowToast(t('msg.config_imported', lang), 'success');
+            } else {
+                onShowToast(t('msg.invalid_format', lang), 'error');
+            }
+        } catch (e) {
+            onShowToast(t('error.load_file', lang), 'error');
+        }
+        if (importFileInputRef.current) importFileInputRef.current.value = '';
+    };
+    reader.readAsText(file);
   };
 
   const handleBatchImport = () => {
@@ -333,13 +397,27 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                 <Plus className="w-5 h-5" />
                 {t('settings.add_key_placeholder', lang)}
             </button>
+            
+            {/* 批量添加按钮 */}
             <button 
                 onClick={() => setIsBatchImporting(!isBatchImporting)}
                 className={`px-4 py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl border border-dashed border-gray-300 dark:border-gray-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow`}
                 title={t('action.batch_add', lang)}
             >
-                <Upload className="w-5 h-5" />
+                <FolderPlus className="w-5 h-5" />
+                <span className="hidden sm:inline text-xs">{t('action.batch_add', lang)}</span>
             </button>
+
+             {/* 单个导入按钮 - 移动到此处 */}
+             <button 
+                onClick={handleImportSingleKeyTrigger}
+                className={`px-4 py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl border border-dashed border-gray-300 dark:border-gray-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow`}
+                title={t('action.import_key', lang)}
+            >
+                <Upload className="w-5 h-5" />
+                <span className="hidden sm:inline text-xs">{t('action.import_key', lang)}</span>
+            </button>
+            <input type="file" ref={importFileInputRef} onChange={handleImportSingleKeyConfig} accept=".json" className="hidden" />
         </div>
 
         {isBatchImporting && (
@@ -380,6 +458,9 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         )}
     </div>
   );
+  
+  // 计算是否有未分配的密钥
+  const unassignedKeys = keys.filter(k => !k.groupId);
 
   return (
     <div className="space-y-4">
@@ -460,11 +541,18 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                         const groupKeys = keys.filter(k => k.groupId === group.id);
                         const allActive = groupKeys.length > 0 && groupKeys.every(k => k.isActive);
                         const someActive = groupKeys.some(k => k.isActive);
+                        const isCollapsed = collapsedGroups.has(group.id);
 
                         return (
-                            <div key={group.id} className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-gray-50/30 dark:bg-gray-900/20">
-                                <div className="bg-gray-100/50 dark:bg-gray-800/50 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
+                            <div key={group.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/30 dark:bg-gray-900/20">
+                                <div 
+                                    className="bg-gray-100/50 dark:bg-gray-800/50 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-pointer"
+                                    onClick={() => toggleGroupCollapse(group.id)}
+                                >
                                     <div className="flex items-center gap-3">
+                                        <div className="text-gray-400">
+                                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </div>
                                         <Folder className="w-4 h-4 text-gray-500" />
                                         {editingGroupId === group.id ? (
                                             <input 
@@ -472,6 +560,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                                 defaultValue={group.name}
                                                 onBlur={(e) => handleRenameGroup(group.id, e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && handleRenameGroup(group.id, e.currentTarget.value)}
+                                                onClick={e => e.stopPropagation()}
                                                 className="bg-white dark:bg-gray-900 border border-primary-500 rounded px-2 py-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200 outline-none w-40"
                                             />
                                         ) : (
@@ -480,7 +569,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                         <span className="text-xs text-gray-400 font-mono bg-white dark:bg-gray-900 px-1.5 rounded">{groupKeys.length}</span>
                                     </div>
                                     
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                          <button 
                                             onClick={() => toggleGroupActive(group.id, allActive)}
                                             className={`p-1.5 rounded-lg transition-colors ${allActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : someActive ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 bg-gray-200 dark:bg-gray-800'}`}
@@ -504,21 +593,25 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-3">
-                                    {renderKeyList(groupKeys, group.id)}
-                                </div>
+                                {!isCollapsed && (
+                                    <div className="p-3 animate-fade-in-up">
+                                        {renderKeyList(groupKeys, group.id)}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
 
-                    {/* Unassigned Keys */}
-                    <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 bg-gray-50/50 dark:bg-gray-900/10">
-                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <Box className="w-3.5 h-3.5" />
-                            {t('label.unassigned_group', lang)}
-                         </h4>
-                         {renderKeyList(keys.filter(k => !k.groupId), undefined, false)}
-                    </div>
+                    {/* Unassigned Keys - 仅在有未分配密钥时显示 */}
+                    {unassignedKeys.length > 0 && (
+                        <div className="border border-dashed border-gray-300 dark:border-gray-700 rounded-xl p-4 bg-gray-50/50 dark:bg-gray-900/10">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <Box className="w-3.5 h-3.5" />
+                                {t('label.unassigned_group', lang)}
+                            </h4>
+                            {renderKeyList(unassignedKeys, undefined, false)}
+                        </div>
+                    )}
                 </div>
             ) : (
                 /* Standard Flat List */

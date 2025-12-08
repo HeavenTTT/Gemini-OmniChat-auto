@@ -1,8 +1,9 @@
 
+
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Upload, Trash2, GripVertical } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Trash2, GripVertical } from 'lucide-react';
 import { KeyConfig, Language, ModelProvider, ModelInfo, KeyGroup } from '../../types';
 import { GeminiService } from '../../services/geminiService';
 import { t } from '../../utils/i18n';
@@ -56,7 +57,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const [availableModels, setAvailableModels] = useState<string[]>([]);
     const [isEditingKey, setIsEditingKey] = useState(false);
     const [isModelSelectOpen, setIsModelSelectOpen] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     
     // Load cached models specific to this key
     useEffect(() => {
@@ -137,40 +137,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         onShowToast(t('msg.config_exported', lang), 'success');
-    };
-
-    const handleImportConfigTrigger = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleImportConfig = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const content = event.target?.result as string;
-                const parsed = JSON.parse(content);
-                if (parsed.type === 'omnichat_key_config' && parsed.config) {
-                     onUpdate({ 
-                         ...parsed.config, 
-                         id: config.id, // Keep original ID to persist slot
-                         isActive: parsed.config.isActive ?? true 
-                     });
-                     if (parsed.cachedModels && Array.isArray(parsed.cachedModels)) {
-                         setAvailableModels(parsed.cachedModels);
-                         localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(parsed.cachedModels));
-                     }
-                     onShowToast(t('msg.config_imported', lang), 'success');
-                } else {
-                    onShowToast(t('msg.invalid_format', lang), 'error');
-                }
-            } catch (e) {
-                onShowToast(t('error.load_file', lang), 'error');
-            }
-            if (fileInputRef.current) fileInputRef.current.value = '';
-        };
-        reader.readAsText(file);
     };
 
     const getMaskedKey = (key: string) => {
@@ -354,27 +320,18 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                         
                         <button 
                             onClick={handleExportConfig}
-                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+                            className="px-2 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors flex items-center gap-1.5 text-xs font-medium"
                             title={t('action.export_key', lang)}
                             aria-label={t('action.export_key', lang)}
                         >
                             <Download className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">{t('action.export_key', lang)}</span>
                         </button>
-
-                        <button 
-                            onClick={handleImportConfigTrigger}
-                            className="p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
-                            title={t('action.import_key', lang)}
-                            aria-label={t('action.import_key', lang)}
-                        >
-                            <Upload className="w-3.5 h-3.5" />
-                        </button>
-                        <input type="file" ref={fileInputRef} onChange={handleImportConfig} accept=".json" className="hidden" />
 
                          <button 
                             onClick={handleTest}
                             disabled={isTesting || !config.key}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm border flex-1 justify-center whitespace-nowrap ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm border justify-center whitespace-nowrap min-w-[70px] ${
                                 testResult === true ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400' :
                                 testResult === false ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' :
                                 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -388,7 +345,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
                          <button 
                             onClick={onRemove} 
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800 whitespace-nowrap"
+                            className="ml-auto p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all border border-transparent hover:border-red-200 dark:hover:border-red-800 whitespace-nowrap"
                             title={t('action.delete_key', lang)}
                             aria-label={t('action.delete_api_key', lang)}
                         >
@@ -398,7 +355,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
                     <div className="flex items-center gap-2 mt-1">
                         <div className={`relative flex-1 flex items-center gap-2 bg-white dark:bg-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm focus-within:ring-2 focus-within:ring-primary-500/10 focus-within:border-primary-500 transition-all z-10`}>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t('label.model', lang)}</span>
                             
                             <ModelSelect 
                                value={config.model || ''}
