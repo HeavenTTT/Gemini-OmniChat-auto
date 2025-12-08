@@ -258,6 +258,7 @@ const App: React.FC = () => {
     // Init Service
     setGeminiService(new GeminiService(initialKeys, (id, errorCode) => {
         setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
+        // Add toast with error code
         addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
     }));
 
@@ -313,6 +314,7 @@ const App: React.FC = () => {
     } else {
        setGeminiService(new GeminiService(apiKeys, (id, errorCode) => {
            setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
+           // Add toast with error code
            addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
        }));
     }
