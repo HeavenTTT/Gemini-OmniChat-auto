@@ -3,6 +3,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2024-05-30
+### Added
+- **Thinking Model Support**: 
+  - Visualizes `<think>` blocks in chat with collapsible "Thought Process" sections.
+  - Added option to **Strip Thoughts from History** in AI Parameters to save tokens during context window transmission.
+- **API Key Grouping**: 
+  - Users can now create named groups for API keys.
+  - Features bulk activation/deactivation per group.
+  - Drag-and-drop sorting support within groups.
+- **Large Text Editor**:
+  - Implemented a full-screen text editor for System Prompts, significantly improving the editing experience on mobile devices.
+- **Key Indexing**: 
+  - API keys now display a visual index number for easier reference.
+
+### Changed
+- **Settings UI Overhaul**:
+  - **General**: "Appearance" settings are now nested within the "General" tab and collapsed by default.
+  - **API Keys**: Moved to a dedicated, independent tab for better management space.
+  - **AI Parameters**: Advanced parameters (Top P, Top K, etc.) are now collapsed by default to simplify the interface.
+- **Refactoring**:
+  - Decoupled `KeyConfigCard` component for better code modularity.
+  - Improved drag-and-drop logic to handle grouped and ungrouped states more reliably.
+
+## [1.3.9] - 2024-05-29
+### Fixed
+- **History Context Bug**: Fixed an issue where the new user message was accidentally duplicated in the history array sent to the API.
+- **UI Tweaks**: Minor adjustments to spacing and mobile responsiveness.
+
 ## [1.3.8] - 2024-05-28
 ### Fixed
 - **Duplicate Message Fix (Critical)**: Implemented a robust filter in the API call logic (`App.tsx`) to explicitly remove the current user message from the history context. This ensures that even if state updates race, the prompt is never duplicated in the payload sent to Gemini/OpenAI.

@@ -1,5 +1,6 @@
 
-export const APP_VERSION = '1.3.8';
+
+export const APP_VERSION = '1.4.0';
 
 export enum Role {
   USER = 'user',
@@ -27,6 +28,11 @@ export interface ChatSession {
 
 export type ModelProvider = 'google' | 'openai';
 
+export interface KeyGroup {
+  id: string;
+  name: string;
+}
+
 export interface KeyConfig {
   id: string;
   key: string;
@@ -39,6 +45,7 @@ export interface KeyConfig {
   baseUrl?: string; // Specific Base URL for this key (OpenAI)
   model?: string;   // Specific Model for this key
   lastErrorCode?: string; // Code of the last error encountered
+  groupId?: string; // Optional: ID of the group this key belongs to
 }
 
 export enum GeminiModel {
@@ -119,6 +126,10 @@ export interface AppSettings {
   generation: GenerationConfig;
   scripts: ScriptConfig; // New: Script settings
   
+  // API Key Grouping
+  enableKeyGrouping?: boolean;
+  keyGroups?: KeyGroup[];
+
   // knownModels removed from AppSettings to separate cache from configuration
   savedModels?: string[]; // Deprecated, kept for interface compat if needed, but logic moved to keys
 }

@@ -116,8 +116,15 @@ const AutoResizeTextarea = ({
   );
 };
 
+// Fix: Explicitly define props interface for ThoughtBlock to resolve TypeScript error with 'key' prop in mapping.
+interface ThoughtBlockProps {
+  text: string;
+  lang: Language;
+}
+
 // Thought Block Component
-const ThoughtBlock = ({ text, lang }: { text: string, lang: Language }) => {
+// Displays the reasoning process (extracted from <think> tags) in a collapsible section.
+const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang }) => {
   const [isOpen, setIsOpen] = useState(false); // Default collapsed
   
   // If streaming and text is actively updating (not likely passed here, but good to know), keep open?
@@ -193,6 +200,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [isEditing, msg.text]);
 
   // Smooth Text Animation Loop
+  // This effect handles the typewriter effect for the model's response.
+  // It interpolates between the current displayed text and the target text (msg.text).
   useEffect(() => {
     if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing) return;
 
@@ -233,6 +242,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [msg.role, msg.isError, isEditing, smoothAnimation]);
 
   // Scroll Synchronization
+  // Ensures that when new content is added via animation, the view scrolls to bottom if it was already at the bottom.
   useLayoutEffect(() => {
       if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing) {
           onScrollToBottom();
@@ -240,6 +250,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing]);
 
   // Parse Text for Thoughts
+  // Extracts <think> tags from the raw message text to separate "thought process" from "visible content".
+  // Note: <think> tags are specific to some Gemini models (e.g. 2.5).
   const { thoughts, content } = useMemo(() => {
     if (msg.role !== Role.MODEL || isEditing) {
         return { thoughts: [], content: displayedText };

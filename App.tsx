@@ -1,5 +1,8 @@
 
 
+
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -85,7 +88,9 @@ const App: React.FC = () => {
         inputFilterCode: '',
         outputFilterEnabled: false,
         outputFilterCode: ''
-    }
+    },
+    enableKeyGrouping: false,
+    keyGroups: []
   });
 
   // UI State
@@ -234,6 +239,13 @@ const App: React.FC = () => {
       // Ensure stripThoughts exists
       if (loadedSettings.generation && loadedSettings.generation.stripThoughts === undefined) {
           loadedSettings.generation.stripThoughts = false;
+      }
+      // Ensure key grouping settings exist
+      if (loadedSettings.enableKeyGrouping === undefined) {
+          loadedSettings.enableKeyGrouping = false;
+      }
+      if (loadedSettings.keyGroups === undefined) {
+          loadedSettings.keyGroups = [];
       }
       // Ensure scripts setting exists
       if (!loadedSettings.scripts) {

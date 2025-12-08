@@ -3,11 +3,12 @@
 "use client";
 
 import React, { useState } from 'react';
-import { CheckCircle, Edit2, Trash2, X, Save } from 'lucide-react';
+import { CheckCircle, Edit2, Trash2, X, Save, Maximize2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { SystemPrompt, Language, AppSettings } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
+import { LargeTextEditor } from '../ui/LargeTextEditor';
 
 interface SystemPromptManagementProps {
   settings: AppSettings;
@@ -23,6 +24,7 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
   const [editingPromptId, setEditingPromptId] = useState<string | null>(null);
   const [editingPromptContent, setEditingPromptContent] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [isFullEditorOpen, setIsFullEditorOpen] = useState(false);
 
   const startEditingPromptContent = (prompt: SystemPrompt) => {
     setEditingPromptId(prompt.id);
@@ -152,15 +154,25 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
                    </div>
                    {editingPromptId === prompt.id && (
                        <>
-                        <textarea 
-                          className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[120px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2`}
-                          rows={6}
-                          value={editingPromptContent}
-                          onChange={e => setEditingPromptContent(e.target.value)}
-                          placeholder={t('input.instruction_placeholder', lang)}
-                          autoFocus
-                          aria-label={t('input.instruction_field', lang)}
-                        />
+                        <div className="relative">
+                            <textarea 
+                            className={`w-full bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700/50 rounded-lg p-3 text-xs resize-y min-h-[120px] md:h-auto outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all mt-2`}
+                            rows={6}
+                            value={editingPromptContent}
+                            onChange={e => setEditingPromptContent(e.target.value)}
+                            placeholder={t('input.instruction_placeholder', lang)}
+                            autoFocus
+                            aria-label={t('input.instruction_field', lang)}
+                            />
+                            <button 
+                                onClick={() => setIsFullEditorOpen(true)}
+                                className="absolute bottom-3 right-3 p-1.5 bg-white/80 dark:bg-gray-800/80 rounded-lg text-gray-500 hover:text-primary-600 transition-colors border border-gray-200 dark:border-gray-700"
+                                title={t('action.open_full_editor', lang)}
+                            >
+                                <Maximize2 className="w-4 h-4" />
+                            </button>
+                        </div>
+
                         <div className="flex justify-end gap-2 mt-2">
                             <button 
                                 onClick={cancelPromptContentEdit} 
@@ -190,6 +202,20 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
         >
             {t('action.add_prompt', lang)}
         </button>
+
+        {isFullEditorOpen && editingPromptId && (
+            <LargeTextEditor 
+                isOpen={isFullEditorOpen}
+                onClose={() => setIsFullEditorOpen(false)}
+                title={settings.systemPrompts.find(p => p.id === editingPromptId)?.title || 'Editor'}
+                initialValue={editingPromptContent}
+                onSave={(val) => {
+                    setEditingPromptContent(val);
+                    setIsFullEditorOpen(false);
+                }}
+                lang={lang}
+            />
+        )}
         </div>
     </CollapsibleSection>
   );

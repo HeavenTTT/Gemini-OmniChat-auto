@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle } from 'lucide-react';
+import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle, Key } from 'lucide-react';
 import { AppSettings, KeyConfig, DialogConfig, APP_VERSION, ModelInfo } from '../types';
 import { GeminiService } from '../services/geminiService';
 import { t } from '../utils/i18n';
@@ -44,7 +45,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [localKeys, setLocalKeys] = useState<KeyConfig[]>([]);
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [localKnownModels, setLocalKnownModels] = useState<ModelInfo[]>(knownModels);
-  const [activeTab, setActiveTab] = useState<'general' | 'model' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'apikeys' | 'model' | 'security'>('general');
   const lang = localSettings.language;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -150,7 +151,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   const tabs = [
-    { id: 'general', icon: <Sliders className="w-4 h-4"/>, label: t('settings.title', lang) },
+    { id: 'general', icon: <Sliders className="w-4 h-4"/>, label: t('settings.general', lang) },
+    { id: 'apikeys', icon: <Key className="w-4 h-4"/>, label: t('settings.api_keys', lang) },
     { id: 'model', icon: <RotateCw className="w-4 h-4"/>, label: t('settings.ai_parameters', lang) },
     { id: 'security', icon: <Shield className="w-4 h-4"/>, label: t('settings.security', lang) }
   ];
@@ -173,7 +175,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-800 md:px-6 px-3 gap-6" role="tablist">
+        <div className="flex border-b border-gray-200 dark:border-gray-800 md:px-6 px-3 gap-6 overflow-x-auto scrollbar-hide" role="tablist">
             {tabs.map(tab => (
                 <button
                     key={tab.id}
@@ -182,7 +184,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     aria-controls={`panel-${tab.id}`}
                     aria-selected={activeTab === tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
                     aria-label={tab.label}
                 >
                     {tab.icon}
@@ -202,20 +204,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     settings={localSettings} 
                     onUpdateSettings={setLocalSettings} 
                     lang={lang} 
-                />
-
-                <ApiKeyManagement 
-                    keys={localKeys} 
-                    onUpdateKeys={setLocalKeys} 
-                    settings={localSettings}
-                    onUpdateSettings={setLocalSettings}
-                    lang={lang} 
-                    defaultModel={localSettings.defaultModel}
-                    geminiService={geminiService}
-                    onShowToast={onShowToast}
-                    onShowDialog={onShowDialog}
-                    knownModels={localKnownModels}
-                    onUpdateKnownModels={onUpdateKnownModels}
                 />
 
                 {/* Script Filters */}
@@ -269,10 +257,28 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
+          {/* API Keys Tab */}
+          {activeTab === 'apikeys' && (
+              <div role="tabpanel" id="panel-apikeys" aria-labelledby="tab-apikeys" className="space-y-4">
+                 <ApiKeyManagement 
+                    keys={localKeys} 
+                    onUpdateKeys={setLocalKeys} 
+                    settings={localSettings}
+                    onUpdateSettings={setLocalSettings}
+                    lang={lang} 
+                    defaultModel={localSettings.defaultModel}
+                    geminiService={geminiService}
+                    onShowToast={onShowToast}
+                    onShowDialog={onShowDialog}
+                    knownModels={localKnownModels}
+                    onUpdateKnownModels={setLocalKnownModels}
+                />
+              </div>
+          )}
+
           {/* Model Params Tab */}
           {activeTab === 'model' && (
              <div role="tabpanel" id="panel-model" aria-labelledby="tab-model" className="space-y-4">
-                
                 <ModelParameterSettings 
                     settings={localSettings} 
                     onUpdateSettings={setLocalSettings} 
