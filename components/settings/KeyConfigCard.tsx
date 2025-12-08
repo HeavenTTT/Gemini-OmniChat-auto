@@ -69,6 +69,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         }
     }, [config.id]);
 
+    /**
+     * 测试 API 密钥连接
+     * Test the connection for this specific API key.
+     */
     const handleTest = async () => {
         if (!geminiService || !config.key) return;
         setIsTesting(true);
@@ -76,9 +80,16 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         try {
             const success = await geminiService.testConnection(config);
             setTestResult(success);
+            if (success) {
+                onShowToast(t('msg.connection_success', lang), 'success');
+            } else {
+                onShowToast(t('msg.connection_failed', lang), 'error');
+            }
         } catch (e: any) {
             if (e.message === 'error.call_in_progress') {
                 onShowToast(t('error.call_in_progress', lang), 'error');
+            } else {
+                onShowToast(t('msg.connection_failed', lang), 'error');
             }
             setTestResult(false);
         } finally {
@@ -87,6 +98,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         }
     };
 
+    /**
+     * 获取可用模型列表
+     * Fetch the list of available models using this API key.
+     */
     const handleFetchModels = async () => {
         if (!geminiService || !config.key) return;
         setIsFetching(true);
@@ -120,6 +135,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         }
     };
 
+    /**
+     * 导出密钥配置
+     * Export this single key configuration to a JSON file.
+     */
     const handleExportConfig = () => {
         const data = {
             type: 'omnichat_key_config',
@@ -139,6 +158,11 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         onShowToast(t('msg.config_exported', lang), 'success');
     };
 
+    /**
+     * 掩码显示密钥
+     * Helper to mask the API key for display.
+     * @param key - The API key string.
+     */
     const getMaskedKey = (key: string) => {
         if (!key || key.length < 8) return '********';
         return `...${key.substring(key.length - 4)}`;

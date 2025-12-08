@@ -53,6 +53,8 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
 
   /**
    * 添加新的 API 密钥
+   * Add a new API key to the list, optionally assigning it to a group.
+   * @param groupId - Optional ID of the group to add the key to.
    */
   const handleAddKey = (groupId?: string) => {
     onUpdateKeys([
@@ -70,8 +72,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         groupId: groupId // Assign to group if provided
       }
     ]);
+    onShowToast(t('msg.key_added', lang), 'success');
   };
 
+  /**
+   * 切换分组折叠状态
+   * Toggle the collapsed state of a key group.
+   * @param groupId - The ID of the group to toggle.
+   */
   const toggleGroupCollapse = (groupId: string) => {
     const next = new Set(collapsedGroups);
     if (next.has(groupId)) {
@@ -84,6 +92,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
 
   /**
    * 触发单个密钥配置导入的文件选择
+   * Trigger the file input dialog for importing a single key config.
    */
   const handleImportSingleKeyTrigger = () => {
     importFileInputRef.current?.click();
@@ -92,6 +101,8 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   /**
    * 处理单个密钥配置文件的导入
    * 读取 JSON 并作为新密钥添加到列表中
+   * Handle the file selection and import a single key configuration JSON.
+   * @param e - File input change event.
    */
   const handleImportSingleKeyConfig = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,6 +139,10 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     reader.readAsText(file);
   };
 
+  /**
+   * 批量导入 API 密钥
+   * Import multiple API keys from a text block (one per line).
+   */
   const handleBatchImport = () => {
       const lines = batchKeysInput.split(/[\r\n]+/).map(line => line.trim()).filter(line => line.length > 0);
       if (lines.length === 0) return;
@@ -150,6 +165,10 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
       onShowToast(t('msg.batch_import_success', lang).replace('{count}', newKeys.length.toString()), 'success');
   };
 
+  /**
+   * 测试并批量导入
+   * Test keys sequentially and only import those that pass connection test.
+   */
   const handleTestAndBatchImport = async () => {
     if (!geminiService) return;
     const lines = batchKeysInput.split(/[\r\n]+/).map(line => line.trim()).filter(line => line.length > 0);
@@ -222,14 +241,31 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     setIsBatchTesting(false);
   };
 
+  /**
+   * 删除单个 API 密钥
+   * Remove a single API key by ID.
+   * @param id - The ID of the key to remove.
+   */
   const handleRemoveKey = (id: string) => {
     onUpdateKeys(keys.filter(k => k.id !== id));
+    onShowToast(t('msg.key_deleted', lang), 'info');
   };
 
+  /**
+   * 更新单个 API 密钥
+   * Update properties of a single API key.
+   * @param id - The ID of the key to update.
+   * @param updates - Partial key configuration object.
+   */
   const handleUpdateKey = (id: string, updates: Partial<KeyConfig>) => {
     onUpdateKeys(keys.map(k => k.id === id ? { ...k, ...updates } : k));
   };
 
+  /**
+   * 同步模型配置
+   * Apply the model configuration from one key to all other keys of the same provider.
+   * @param sourceId - The ID of the source key.
+   */
   const handleSyncModel = (sourceId: string) => {
     const sourceKey = keys.find(k => k.id === sourceId);
     if (!sourceKey || !sourceKey.model) return;
@@ -257,27 +293,52 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   };
 
   // --- Grouping Logic ---
+
+  /**
+   * 添加新分组
+   * Create a new key group.
+   */
   const handleAddGroup = () => {
     const name = newGroupName.trim() || `Group ${(settings.keyGroups?.length || 0) + 1}`;
     const newGroup: KeyGroup = { id: uuidv4(), name };
     onUpdateSettings({ ...settings, keyGroups: [...(settings.keyGroups || []), newGroup] });
     setNewGroupName('');
+    onShowToast(t('msg.group_added', lang), 'success');
   };
 
+  /**
+   * 删除分组
+   * Delete a key group and unassign its keys.
+   * @param groupId - The ID of the group to delete.
+   */
   const handleDeleteGroup = (groupId: string) => {
     const updatedKeys = keys.map(k => k.groupId === groupId ? { ...k, groupId: undefined } : k);
     onUpdateKeys(updatedKeys);
     
     const updatedGroups = (settings.keyGroups || []).filter(g => g.id !== groupId);
     onUpdateSettings({ ...settings, keyGroups: updatedGroups });
+    onShowToast(t('msg.group_deleted', lang), 'info');
   };
 
+  /**
+   * 重命名分组
+   * Rename an existing key group.
+   * @param groupId - The ID of the group to rename.
+   * @param newName - The new name for the group.
+   */
   const handleRenameGroup = (groupId: string, newName: string) => {
      const updatedGroups = (settings.keyGroups || []).map(g => g.id === groupId ? { ...g, name: newName } : g);
      onUpdateSettings({ ...settings, keyGroups: updatedGroups });
      setEditingGroupId(null);
+     onShowToast(t('msg.group_renamed', lang), 'success');
   };
 
+  /**
+   * 切换分组内所有密钥的激活状态
+   * Activate or deactivate all keys within a specific group.
+   * @param groupId - The ID of the group.
+   * @param currentState - The current active state to toggle from.
+   */
   const toggleGroupActive = (groupId: string | undefined, currentState: boolean) => {
       const updatedKeys = keys.map(k => {
           if (k.groupId === groupId) return { ...k, isActive: !currentState };
@@ -287,6 +348,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   };
 
   // --- Drag and Drop Logic ---
+
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -309,10 +371,6 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     // If grouping is enabled, adopt the group of the target key
     // This allows moving keys between groups by dragging
     if (settings.enableKeyGrouping) {
-        // Find the key currently at targetIndex (use safe access as targetIndex refers to newKeys state after splice if we are not careful, but here we splice from clone)
-        // Actually, in the *current* keys array, we want to know what group is at targetIndex.
-        // But since we just spliced draggedIndex out of newKeys, indices shift.
-        // Let's rely on the fact that the drop target was rendered at 'targetIndex' of the *original* list.
         const targetKey = keys[targetIndex];
         if (targetKey) {
              movedItem.groupId = targetKey.groupId;
@@ -330,6 +388,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   };
 
   // --- Rendering Helpers ---
+
+  /**
+   * 渲染密钥列表
+   * Render the list of key config cards, filtered by group.
+   * @param filteredKeys - Array of keys to render.
+   * @param groupId - Optional Group ID context.
+   * @param showContextualAddButton - Whether to show the "+ Add Key" button at the bottom of the list.
+   */
   const renderKeyList = (filteredKeys: KeyConfig[], groupId?: string, showContextualAddButton: boolean = true) => {
       return (
           <div className="space-y-2">
@@ -386,9 +452,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
       );
   };
 
+  /**
+   * 渲染底部添加/导入按钮
+   * Render the bottom action buttons for adding/importing keys.
+   */
   const renderAddButtons = () => (
     <div className="pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
         <div className="flex gap-2">
+            {/* Standard Add Button */}
             <button 
                 onClick={() => handleAddKey()}
                 className={`flex-1 py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-primary-600 dark:text-primary-400 rounded-xl border border-dashed border-primary-300 dark:border-primary-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow`}
@@ -398,7 +469,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                 {t('settings.add_key_placeholder', lang)}
             </button>
             
-            {/* 批量添加按钮 */}
+            {/* Batch Add Button */}
             <button 
                 onClick={() => setIsBatchImporting(!isBatchImporting)}
                 className={`px-4 py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl border border-dashed border-gray-300 dark:border-gray-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow`}
@@ -408,7 +479,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                 <span className="hidden sm:inline text-xs">{t('action.batch_add', lang)}</span>
             </button>
 
-             {/* 单个导入按钮 - 移动到此处 */}
+             {/* Single Import Button (Moved to bottom right of Batch Add) */}
              <button 
                 onClick={handleImportSingleKeyTrigger}
                 className={`px-4 py-3 bg-white dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-xl border border-dashed border-gray-300 dark:border-gray-700/50 transition-all flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow`}

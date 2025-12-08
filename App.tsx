@@ -1,8 +1,3 @@
-
-
-
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -263,6 +258,7 @@ const App: React.FC = () => {
     // Init Service
     setGeminiService(new GeminiService(initialKeys, (id, errorCode) => {
         setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
+        addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
     }));
 
     // Security
@@ -317,6 +313,7 @@ const App: React.FC = () => {
     } else {
        setGeminiService(new GeminiService(apiKeys, (id, errorCode) => {
            setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
+           addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
        }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
