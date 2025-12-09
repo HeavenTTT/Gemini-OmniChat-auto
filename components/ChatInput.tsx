@@ -43,7 +43,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const [exactTokenCount, setExactTokenCount] = useState<number | null>(null);
 
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
-  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
+  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
 
   // Determine dynamic min-height based on fontSize to prevent scrollbars for single lines
   // Approximate line height (1.5em) + padding (32px for p-4 + buffer)

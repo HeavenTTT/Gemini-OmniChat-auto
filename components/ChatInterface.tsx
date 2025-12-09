@@ -71,7 +71,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const lastIsLoading = useRef(isLoading);
 
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
-  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
+  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
 
   // --- Scroll Logic ---
 

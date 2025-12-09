@@ -350,15 +350,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
 
   // Theme-specific layout adjustments (VSCode themes = wider bubbles)
-  // Normal: max-w-5xl container, max-w-85% bubble (approx 870px)
-  // VSCode: max-w-6xl container (1152px), max-w-full bubble (approx 1152px)
-  // 1152 / 870 ~= 1.32x width.
-  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
+  // VSCode: 1.33x width of normal (5xl is 64rem, so ~85rem)
+  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
+  
   const wrapperWidthClass = isEditing 
       ? 'w-full max-w-full' 
-      : isVSCodeTheme 
-          ? 'max-w-full' // Allow full width in VSCode themes
-          : 'max-w-[95%] md:max-w-[85%]'; // Standard constraint
+      : 'max-w-[95%] md:max-w-[85%]'; // Standard constraint
   
   // VSCode Themes: No border color
   const bubbleBorderColor = isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`;
