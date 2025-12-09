@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -324,9 +326,9 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
     root.classList.add(`theme-${settings.theme}`);
-    if (['dark', 'twilight'].includes(settings.theme)) root.classList.add('dark');
+    if (['dark', 'twilight', 'vscode-dark'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);
 
   useEffect(() => {
@@ -734,7 +736,7 @@ const App: React.FC = () => {
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
   
   if (isLocked) return (
-    <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
+    <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' || settings.theme === 'vscode-dark' ? 'dark' : ''}`}>
         <SecurityLock 
             config={settings.security} 
             onUnlock={handleUnlock} 
@@ -746,7 +748,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' ? 'dark' : ''}`}>
+    <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' || settings.theme === 'vscode-dark' ? 'dark' : ''}`}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <CustomDialog config={dialog} onClose={closeDialog} lang={settings.language} />
 
@@ -826,6 +828,7 @@ const App: React.FC = () => {
                 history={messages}
                 historyLimit={settings.historyContextLimit}
                 onGetTokenCount={handleGetTokenCount}
+                theme={settings.theme}
              />
              <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-1 select-none">
                 {t('footer.ai_generated', settings.language)}{APP_VERSION}

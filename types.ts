@@ -68,7 +68,7 @@ export interface SystemPrompt {
   isActive: boolean;
 }
 
-export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda';
+export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda' | 'vscode-light' | 'vscode-dark';
 export type Language = 'en' | 'zh' | 'ja';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 

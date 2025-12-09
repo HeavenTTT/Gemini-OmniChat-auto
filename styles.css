@@ -75,6 +75,24 @@
   --box-shadow-rgba: 0, 0, 0, 0.2;
 }
 
+/* VSCode Light Theme */
+.theme-vscode-light {
+  --color-foreground-rgb: 40, 40, 40;
+  --color-background-start-rgb: 255, 255, 255;
+  --color-background-end-rgb: 243, 243, 243;
+  --color-theme-primary-rgb: 0, 122, 204; /* VSCode Blue #007acc */
+  --box-shadow-rgba: 0, 0, 0, 0.1;
+}
+
+/* VSCode Dark Theme */
+.theme-vscode-dark {
+  --color-foreground-rgb: 204, 204, 204;
+  --color-background-start-rgb: 30, 30, 30; /* #1e1e1e */
+  --color-background-end-rgb: 37, 37, 38; /* #252526 */
+  --color-theme-primary-rgb: 122, 122, 122; /* VSCode Blue #007acc */
+  --box-shadow-rgba: 0, 0, 0, 0.5;
+}
+
 body {
   color: rgb(var(--color-foreground-rgb));
   background: linear-gradient(
@@ -121,7 +139,8 @@ body {
 }
 
 .theme-dark ::-webkit-scrollbar-thumb,
-.theme-twilight ::-webkit-scrollbar-thumb {
+.theme-twilight ::-webkit-scrollbar-thumb,
+.theme-vscode-dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -130,7 +149,8 @@ body {
 }
 
 .theme-dark ::-webkit-scrollbar-thumb:hover,
-.theme-twilight ::-webkit-scrollbar-thumb:hover {
+.theme-twilight ::-webkit-scrollbar-thumb:hover,
+.theme-vscode-dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }
 

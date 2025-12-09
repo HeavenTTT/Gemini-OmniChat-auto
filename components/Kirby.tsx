@@ -28,6 +28,8 @@ const themeColors: Record<string, { body: string, feet: string, blush: string }>
   sunrise: { body: '#fb923c', feet: '#c2410c', blush: '#fdba74' }, // Orange 400, 700, 300
   lime: { body: '#a3e635', feet: '#3f6212', blush: '#bef264' }, // Lime 400, 800, 300
   panda: { body: '#d0d0d0', feet: '#606060', blush: '#808080' }, // Neutral Grays
+  'vscode-light': { body: '#007acc', feet: '#004e8a', blush: '#3399dd' }, // VSCode Blue
+  'vscode-dark': { body: '#007acc', feet: '#004e8a', blush: '#3399dd' }, // VSCode Blue
 };
 
 const defaultColors = {

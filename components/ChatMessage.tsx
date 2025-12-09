@@ -61,7 +61,7 @@ const CodeBlock = ({
   };
 
   // Determine syntax highlighter style based on app theme
-  const isDarkTheme = ['dark', 'twilight', 'panda'].includes(theme);
+  const isDarkTheme = ['dark', 'twilight', 'panda', 'vscode-dark'].includes(theme);
   const style = isDarkTheme ? vscDarkPlus : vs;
 
   return (
@@ -198,6 +198,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const [displayedText, setDisplayedText] = useState(msg.text);
   const targetTextRef = useRef(msg.text);
   const animationRef = useRef<number>(0);
+
+  const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
 
   // Sync target text when prop changes
   useEffect(() => {
@@ -347,9 +349,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // Animation class
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
 
+  // Theme-specific layout adjustments (VSCode themes = wider bubbles)
+  // Normal: max-w-5xl container, max-w-85% bubble (approx 870px)
+  // VSCode: max-w-6xl container (1152px), max-w-full bubble (approx 1152px)
+  // 1152 / 870 ~= 1.32x width.
+  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
+  const wrapperWidthClass = isEditing 
+      ? 'w-full max-w-full' 
+      : isVSCodeTheme 
+          ? 'max-w-full' // Allow full width in VSCode themes
+          : 'max-w-[95%] md:max-w-[85%]'; // Standard constraint
+  
+  // VSCode Themes: No border color
+  const bubbleBorderColor = isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`;
+
   return (
-    <div className={`flex w-full max-w-5xl mx-auto ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
-        <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'}`}>
+    <div className={`flex w-full ${containerClass} mx-auto ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
+        <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${wrapperWidthClass}`}>
             
             {/* Avatar */}
             <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
@@ -369,7 +385,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 style={
                     !msg.isError ? { 
                         backgroundColor,
-                        borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`,
+                        borderColor: bubbleBorderColor,
                         textShadow: textShadowStyle
                     } : {}
                 }

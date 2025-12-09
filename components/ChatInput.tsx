@@ -1,9 +1,8 @@
-
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Send, Square, Zap } from 'lucide-react';
-import { Language, Message } from '../types';
+import { Language, Message, Theme } from '../types';
 import { t } from '../utils/i18n';
 
 interface ChatInputProps {
@@ -20,6 +19,7 @@ interface ChatInputProps {
   history?: Message[];
   historyLimit?: number;
   onGetTokenCount?: (text: string) => Promise<number>;
+  theme?: Theme;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -35,11 +35,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
   showTokenUsage = false,
   history = [],
   historyLimit = 0,
-  onGetTokenCount
+  onGetTokenCount,
+  theme
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [exactTokenCount, setExactTokenCount] = useState<number | null>(null);
+
+  const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
+  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
 
   // Determine dynamic min-height based on fontSize to prevent scrollbars for single lines
   // Approximate line height (1.5em) + padding (32px for p-4 + buffer)
@@ -120,7 +124,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   return (
     <div className="p-3 md:p-4 pb-2 bg-transparent">
-      <div className="max-w-5xl mx-auto">
+      <div className={`${containerClass} mx-auto`}>
         <div className="relative flex items-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
           <textarea 
             ref={textareaRef}

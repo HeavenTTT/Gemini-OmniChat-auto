@@ -55,6 +55,8 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                 <option value="sunrise">{t('theme.sunrise', lang)}</option>
                 <option value="lime">{t('theme.lime', lang)}</option>
                 <option value="panda">{t('theme.panda', lang)}</option>
+                <option value="vscode-light">{t('theme.vscode-light', lang)}</option>
+                <option value="vscode-dark">{t('theme.vscode-dark', lang)}</option>
                 </select>
             </div>
             </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect, useCallback } from 'react';
@@ -70,6 +69,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const isUserScrolledUp = useRef(false);
   const scrollRafId = useRef<number | null>(null);
   const lastIsLoading = useRef(isLoading);
+
+  const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
+  const containerClass = isVSCodeTheme ? 'max-w-6xl' : 'max-w-5xl';
 
   // --- Scroll Logic ---
 
@@ -178,7 +180,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const borderAlpha = 0.5 + (bubbleTransparency / 100) * 0.5;
   const loadingBubbleStyle = {
       backgroundColor: `rgba(var(--color-theme-primary-rgb), ${(bubbleTransparency / 100) * 0.15})`,
-      borderColor: `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`
+      borderColor: isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`
   };
 
   if (messages.length === 0) {
@@ -232,7 +234,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ))}
         
         {isLoading && (
-            <div className="flex justify-start w-full max-w-5xl mx-auto animate-fade-in-up px-2 md:px-0" data-role="loading">
+            <div className={`flex justify-start w-full ${containerClass} mx-auto animate-fade-in-up px-2 md:px-0`} data-role="loading">
             <div className="flex gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
                     <div className="w-full h-full scale-150">
