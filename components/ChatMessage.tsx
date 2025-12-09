@@ -10,7 +10,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { Message, Role, Language, TextWrappingMode, Theme } from '../types';
+import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 
@@ -38,6 +38,7 @@ interface ChatMessageProps {
   smoothAnimation?: boolean;
   isLast?: boolean;
   onScrollToBottom?: () => void;
+  avatarVisibility: AvatarVisibility;
 }
 
 const CodeBlock = ({ 
@@ -192,7 +193,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   onShowToast,
   smoothAnimation = true,
   isLast = false,
-  onScrollToBottom
+  onScrollToBottom,
+  avatarVisibility
 }) => {
   const [editText, setEditText] = useState(msg.text);
   
@@ -360,14 +362,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // VSCode Themes: No border color
   const bubbleBorderColor = isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`;
 
+  // Avatar Visibility Logic
+  const showAvatar = 
+    avatarVisibility === 'always' || 
+    (avatarVisibility === 'user-only' && msg.role === Role.USER) ||
+    (avatarVisibility === 'model-only' && msg.role === Role.MODEL);
+
   return (
     <div className={`flex w-full ${containerClass} mx-auto ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
         <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${wrapperWidthClass}`}>
             
             {/* Avatar */}
-            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
-            {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon theme={theme} isThemed={kirbyThemeColor} /></div>}
-            </div>
+            {showAvatar && (
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
+                    {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon theme={theme} isThemed={kirbyThemeColor} /></div>}
+                </div>
+            )}
 
             {/* Message Content Wrapper */}
             <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
@@ -610,6 +620,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     prev.theme === next.theme &&
     prev.kirbyThemeColor === next.kirbyThemeColor &&
     prev.smoothAnimation === next.smoothAnimation &&
-    prev.isLast === next.isLast
+    prev.isLast === next.isLast &&
+    prev.avatarVisibility === next.avatarVisibility
   );
 });

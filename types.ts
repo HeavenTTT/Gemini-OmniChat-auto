@@ -71,6 +71,7 @@ export interface SystemPrompt {
 export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda' | 'vscode-light' | 'vscode-dark';
 export type Language = 'en' | 'zh' | 'ja';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
+export type AvatarVisibility = 'always' | 'user-only' | 'model-only' | 'never';
 
 export interface SecurityQuestion {
   id: string;
@@ -115,6 +116,7 @@ export interface AppSettings {
   language: Language;
   fontSize: number; 
   textWrapping: TextWrappingMode;
+  avatarVisibility: AvatarVisibility; // New: Control avatar visibility
   bubbleTransparency: number; // 0-100
   showModelName: boolean; // New: Toggle model name visibility
   kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation

@@ -3,7 +3,7 @@
 "use client";
 
 import React from 'react';
-import { AppSettings, Language, Theme, TextWrappingMode } from '../../types';
+import { AppSettings, Language, Theme, TextWrappingMode, AvatarVisibility } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
 
@@ -169,20 +169,38 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                         </div>
                     </div>
 
-                    {/* Text Wrapping */}
-                    <div className="pt-2">
-                        <label htmlFor="text-wrapping-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.text_wrapping', lang)}</label>
-                        <select 
-                        id="text-wrapping-select"
-                        value={settings.textWrapping}
-                        onChange={(e) => onUpdateSettings({...settings, textWrapping: e.target.value as TextWrappingMode})}
-                        className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
-                        aria-label={t('settings.text_wrapping_select', lang)}
-                        >
-                        <option value="default">{t('wrap.default', lang)}</option>
-                        <option value="forced">{t('wrap.forced', lang)}</option>
-                        <option value="auto">{t('wrap.auto', lang)}</option>
-                        </select>
+                    {/* Text Wrapping & Avatar Visibility */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                        <div>
+                            <label htmlFor="text-wrapping-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.text_wrapping', lang)}</label>
+                            <select 
+                            id="text-wrapping-select"
+                            value={settings.textWrapping}
+                            onChange={(e) => onUpdateSettings({...settings, textWrapping: e.target.value as TextWrappingMode})}
+                            className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                            aria-label={t('settings.text_wrapping_select', lang)}
+                            >
+                            <option value="default">{t('wrap.default', lang)}</option>
+                            <option value="forced">{t('wrap.forced', lang)}</option>
+                            <option value="auto">{t('wrap.auto', lang)}</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label htmlFor="avatar-visibility-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('settings.avatar_visibility', lang)}</label>
+                            <select 
+                            id="avatar-visibility-select"
+                            value={settings.avatarVisibility}
+                            onChange={(e) => onUpdateSettings({...settings, avatarVisibility: e.target.value as AvatarVisibility})}
+                            className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                            aria-label={t('settings.avatar_visibility', lang)}
+                            >
+                            <option value="always">{t('avatar.always', lang)}</option>
+                            <option value="user-only">{t('avatar.user_only', lang)}</option>
+                            <option value="model-only">{t('avatar.model_only', lang)}</option>
+                            <option value="never">{t('avatar.never', lang)}</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
             </CollapsibleSection>

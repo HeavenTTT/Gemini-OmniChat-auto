@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect, useCallback } from 'react';
-import { Message, Language, TextWrappingMode, Theme, Role } from '../types';
+import { Message, Language, TextWrappingMode, Theme, Role, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 import { ChatMessage } from './ChatMessage';
@@ -24,6 +24,7 @@ interface ChatInterfaceProps {
   kirbyThemeColor: boolean;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   smoothAnimation?: boolean;
+  avatarVisibility: AvatarVisibility;
 }
 
 const LoadingTimer = () => {
@@ -60,7 +61,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     theme,
     kirbyThemeColor,
     onShowToast,
-    smoothAnimation = true
+    smoothAnimation = true,
+    avatarVisibility
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -185,6 +187,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       borderColor: isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`
   };
 
+  const showLoadingAvatar = avatarVisibility === 'always' || avatarVisibility === 'model-only';
+
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center px-4">
@@ -231,6 +235,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     smoothAnimation={smoothAnimation}
                     isLast={index === messages.length - 1}
                     onScrollToBottom={scrollToBottom}
+                    avatarVisibility={avatarVisibility}
                 />
             </div>
         ))}
@@ -238,11 +243,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         {isLoading && (
             <div className={`flex justify-start w-full ${containerClass} mx-auto animate-fade-in-up px-2 md:px-0`} data-role="loading">
             <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                    <div className="w-full h-full scale-150">
-                        <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+                {showLoadingAvatar && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                        <div className="w-full h-full scale-150">
+                            <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+                        </div>
                     </div>
-                </div>
+                )}
                 <div 
                     className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm border backdrop-blur-sm"
                     style={loadingBubbleStyle}

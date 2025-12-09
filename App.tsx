@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -64,6 +66,7 @@ const App: React.FC = () => {
     showTokenUsage: false, // Default to false
     showResponseTimer: false, // Default to false
     smoothAnimation: true, // Default to true
+    avatarVisibility: 'always', // Default to always show
     historyContextLimit: 0, // Default to 0 (unlimited)
     security: {
         enabled: false,
@@ -224,6 +227,10 @@ const App: React.FC = () => {
       // Ensure smoothAnimation setting exists
       if (loadedSettings.smoothAnimation === undefined) {
           loadedSettings.smoothAnimation = true;
+      }
+      // Ensure avatarVisibility setting exists
+      if (loadedSettings.avatarVisibility === undefined) {
+          loadedSettings.avatarVisibility = 'always';
       }
       // Ensure historyContextLimit setting exists
       if (loadedSettings.historyContextLimit === undefined) {
@@ -815,6 +822,7 @@ const App: React.FC = () => {
               kirbyThemeColor={settings.kirbyThemeColor}
               onShowToast={addToast}
               smoothAnimation={settings.smoothAnimation}
+              avatarVisibility={settings.avatarVisibility}
           />
 
           <div className="flex-shrink-0 z-20 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-black dark:via-black/90 dark:to-transparent pt-4">
