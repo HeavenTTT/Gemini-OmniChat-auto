@@ -1,10 +1,13 @@
-
-
 "use client";
 
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight } from 'lucide-react';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -35,43 +38,61 @@ interface ChatMessageProps {
   onScrollToBottom?: () => void;
 }
 
-const CodeBlock = ({ children, className, lang, onShowToast }: { children?: React.ReactNode, className?: string, lang: Language, onShowToast: (msg: string, type: 'success') => void }) => {
+const CodeBlock = ({ 
+  value, 
+  language, 
+  lang, 
+  theme,
+  onShowToast 
+}: { 
+  value: string, 
+  language: string, 
+  lang: Language, 
+  theme: Theme,
+  onShowToast: (msg: string, type: 'success' | 'error' | 'info') => void 
+}) => {
   const [copied, setCopied] = React.useState(false);
-  const textRef = useRef<string>("");
-
-  useEffect(() => {
-    if (typeof children === 'string') {
-      textRef.current = children;
-    } else if (Array.isArray(children)) {
-      textRef.current = children.map(c => typeof c === 'string' ? c : '').join('');
-    }
-  }, [children]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(textRef.current);
+    navigator.clipboard.writeText(value);
     setCopied(true);
     onShowToast(t('action.copied_code', lang), 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const match = /language-(\w+)/.exec(className || '');
-  const language = match ? match[1] : '';
+  // Determine syntax highlighter style based on app theme
+  const isDarkTheme = ['dark', 'twilight', 'panda'].includes(theme);
+  const style = isDarkTheme ? vscDarkPlus : vs;
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden border border-primary-200 dark:border-primary-800 bg-white/50 dark:bg-black/20 group">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800 text-xs text-primary-700 dark:text-primary-300">
-        <span className="font-mono">{language || 'text'}</span>
+    <div className="relative my-4 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#1e1e1e] group shadow-sm">
+      <div className="flex items-center justify-between px-3 py-2 bg-gray-100 dark:bg-[#252526] border-b border-gray-200 dark:border-gray-700">
+        <span className="font-mono text-xs text-gray-500 dark:text-gray-400 font-medium">{language || 'text'}</span>
         <button 
           onClick={handleCopy} 
-          className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors bg-gray-200/50 dark:bg-gray-700/50 px-2 py-1 rounded"
           aria-label={copied ? t('action.copied_code', lang) : t('action.copy_code', lang)}
         >
-          {copied ? <Check className="w-3.5 h-3.5 text-primary-600" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied ? t('action.copied', lang) : t('action.copy', lang)}
+          {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? t('action.copied', lang) : t('action.copy', lang)}</span>
         </button>
       </div>
-      <div className="p-3 overflow-x-auto">
-        <code className={`font-mono text-sm ${className} text-gray-800 dark:text-gray-200`}>{children}</code>
+      <div className="overflow-x-auto text-sm">
+        <SyntaxHighlighter
+          language={language || 'text'}
+          style={style}
+          customStyle={{
+            margin: 0,
+            padding: '1rem',
+            background: 'transparent',
+            fontSize: 'inherit',
+          }}
+          codeTagProps={{
+            style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }
+          }}
+        >
+          {value}
+        </SyntaxHighlighter>
       </div>
     </div>
   );
@@ -116,23 +137,17 @@ const AutoResizeTextarea = ({
   );
 };
 
-// Fix: Explicitly define props interface for ThoughtBlock to resolve TypeScript error with 'key' prop in mapping.
 interface ThoughtBlockProps {
   text: string;
   lang: Language;
 }
 
 // Thought Block Component
-// Displays the reasoning process (extracted from <think> tags) in a collapsible section.
 const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang }) => {
-  const [isOpen, setIsOpen] = useState(false); // Default collapsed
-  
-  // If streaming and text is actively updating (not likely passed here, but good to know), keep open?
-  // Actually, usually users prefer thoughts collapsed by default or open if interesting.
-  // Default to collapsed to reduce noise.
+  const [isOpen, setIsOpen] = useState(false); 
 
   return (
-    <div className="my-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
+    <div className="my-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
@@ -200,8 +215,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [isEditing, msg.text]);
 
   // Smooth Text Animation Loop
-  // This effect handles the typewriter effect for the model's response.
-  // It interpolates between the current displayed text and the target text (msg.text).
   useEffect(() => {
     if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing) return;
 
@@ -218,8 +231,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
         // Determine speed based on buffer size (catch up logic)
         const diff = target.length - current.length;
         
-        // Base speed: 2 chars per frame (approx 120 chars/sec at 60fps)
-        // Adaptive speed: If buffer grows large (lag), increase speed significantly
         let chunk = 2;
         if (diff > 50) chunk = 5;
         if (diff > 100) chunk = 15;
@@ -242,7 +253,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [msg.role, msg.isError, isEditing, smoothAnimation]);
 
   // Scroll Synchronization
-  // Ensures that when new content is added via animation, the view scrolls to bottom if it was already at the bottom.
   useLayoutEffect(() => {
       if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing) {
           onScrollToBottom();
@@ -250,28 +260,19 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing]);
 
   // Parse Text for Thoughts
-  // Extracts <think> tags from the raw message text to separate "thought process" from "visible content".
-  // Note: <think> tags are specific to some Gemini models (e.g. 2.5).
   const { thoughts, content } = useMemo(() => {
     if (msg.role !== Role.MODEL || isEditing) {
         return { thoughts: [], content: displayedText };
     }
     
-    // Regex to extract <think>...</think> blocks
-    // Handles multiple blocks, and open blocks at end (streaming)
     const thinkRegex = /<think>([\s\S]*?)(?:<\/think>|$)/g;
     const extractedThoughts: string[] = [];
     let match;
     
-    // We assume standard usage: <think> content </think>
-    // This loop extracts the *content* of the think tags
     while ((match = thinkRegex.exec(displayedText)) !== null) {
         extractedThoughts.push(match[1]);
     }
 
-    // Remove the tags and content to get the clean display text
-    // Note: If streaming, we might have <think>... without </think> yet.
-    // In that case, the content is still "thinking", so we might want to hide it from main view
     const cleanContent = displayedText.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
 
     return { thoughts: extractedThoughts, content: cleanContent };
@@ -343,7 +344,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
        backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
   }
 
-  // Animation class only if enabled
+  // Animation class
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
 
   return (
@@ -425,7 +426,101 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                             </div>
                         )}
 
-                        <ReactMarkdown components={{ code({node, className, children, ...props}) { const match = /language-(\w+)/.exec(className || ''); const isInline = !match && !String(children).includes('\n'); return !isInline ? (<CodeBlock className={className} lang={language} onShowToast={onShowToast}>{children}</CodeBlock>) : (<code className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono" {...props}>{children}</code>) } }}>
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm, remarkMath]} 
+                            rehypePlugins={[rehypeKatex]} 
+                            components={{ 
+                                code({node, className, children, ...props}) { 
+                                    const match = /language-(\w+)/.exec(className || ''); 
+                                    const isInline = !match && !String(children).includes('\n'); 
+                                    
+                                    if (isInline) {
+                                      return (
+                                        <code 
+                                          className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono border border-primary-200 dark:border-primary-800/50" 
+                                          {...props}
+                                        >
+                                          {children}
+                                        </code>
+                                      );
+                                    }
+
+                                    return (
+                                      <CodeBlock 
+                                        language={match ? match[1] : 'text'} 
+                                        value={String(children).replace(/\n$/, '')} 
+                                        theme={theme}
+                                        onShowToast={onShowToast}
+                                        lang={language}
+                                      />
+                                    );
+                                },
+                                table({children}) {
+                                    return <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-white/50 dark:bg-black/20"><table className="w-full text-left text-sm border-collapse">{children}</table></div>;
+                                },
+                                thead({children}) {
+                                    return <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">{children}</thead>;
+                                },
+                                th({children}) {
+                                    return <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider">{children}</th>;
+                                },
+                                tr({children}) {
+                                    return <tr className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">{children}</tr>;
+                                },
+                                td({children}) {
+                                    return <td className="px-4 py-3 text-gray-600 dark:text-gray-300 align-top">{children}</td>;
+                                },
+                                a({href, children}) {
+                                    return (
+                                        <a 
+                                            href={href} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="text-primary-600 dark:text-primary-400 hover:underline hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-0.5"
+                                        >
+                                            {children}
+                                            <ExternalLink className="w-3 h-3 opacity-70" />
+                                        </a>
+                                    );
+                                },
+                                blockquote({children}) {
+                                    return <blockquote className="border-l-4 border-primary-300 dark:border-primary-700 pl-4 py-2 my-4 text-gray-600 dark:text-gray-400 italic bg-gray-50/50 dark:bg-gray-800/30 rounded-r">{children}</blockquote>;
+                                },
+                                ul({children}) {
+                                    return <ul className="list-disc pl-6 my-2 space-y-1 text-gray-700 dark:text-gray-300 marker:text-gray-400">{children}</ul>;
+                                },
+                                ol({children}) {
+                                    return <ol className="list-decimal pl-6 my-2 space-y-1 text-gray-700 dark:text-gray-300 marker:text-gray-400">{children}</ol>;
+                                },
+                                li({children}) {
+                                    return <li className="pl-1 leading-relaxed">{children}</li>;
+                                },
+                                h1({children}) {
+                                    return <h1 className="text-2xl font-bold mt-6 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex items-center gap-2">{children}</h1>;
+                                },
+                                h2({children}) {
+                                    return <h2 className="text-xl font-bold mt-5 mb-3 text-gray-900 dark:text-white">{children}</h2>;
+                                },
+                                h3({children}) {
+                                    return <h3 className="text-lg font-bold mt-4 mb-2 text-gray-900 dark:text-white">{children}</h3>;
+                                },
+                                h4({children}) {
+                                    return <h4 className="text-base font-bold mt-3 mb-2 text-gray-900 dark:text-white">{children}</h4>;
+                                },
+                                hr({}) {
+                                    return <hr className="my-6 border-gray-200 dark:border-gray-700" />;
+                                },
+                                img({src, alt}) {
+                                    return <img src={src} alt={alt} className="max-w-full h-auto rounded-lg my-4 shadow-sm border border-gray-200 dark:border-gray-700 block mx-auto" loading="lazy" />;
+                                },
+                                del({children}) {
+                                    return <del className="text-gray-400 dark:text-gray-500 line-through decoration-gray-400 dark:decoration-gray-500">{children}</del>;
+                                },
+                                input({checked, readOnly}) {
+                                    return <input type="checkbox" checked={checked} readOnly={readOnly} className="mr-2 accent-primary-600 rounded w-4 h-4 align-text-bottom cursor-default" />;
+                                }
+                            }}
+                        >
                             {/* Use clean content for markdown rendering */}
                             {content}
                         </ReactMarkdown>
