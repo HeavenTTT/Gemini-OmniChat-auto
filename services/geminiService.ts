@@ -40,21 +40,6 @@ export class GeminiService {
   }
 
   /**
-   * Returns whether a call is currently in progress.
-   */
-  public get isCallInProgress(): boolean {
-      return this._isCallInProgress;
-  }
-
-  /**
-   * Force resets the internal call lock.
-   * Used when the UI needs to forcefully stop a generation state.
-   */
-  public cancelCurrentCall() {
-      this._isCallInProgress = false;
-  }
-
-  /**
    * Lists available models for a specific key configuration.
    * Supports both Google GenAI and OpenAI compatible endpoints.
    */

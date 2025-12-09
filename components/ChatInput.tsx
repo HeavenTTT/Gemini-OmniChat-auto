@@ -43,7 +43,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
   // Determine dynamic min-height based on fontSize to prevent scrollbars for single lines
   // Approximate line height (1.5em) + padding (32px for p-4 + buffer)
-  const minHeight = Math.floor(fontSize * 1.5 + 34);
+  const minHeight = Math.floor(fontSize * 1.5 + 36);
   const maxHeight = showTokenUsage ? 224 : 192;
 
   // Debounced API call for exact token count

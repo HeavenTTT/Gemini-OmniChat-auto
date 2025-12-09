@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -378,7 +376,6 @@ const App: React.FC = () => {
     setMessages([...historyBefore, userMessage, botMessage]);
 
     const startTime = Date.now();
-    let shouldResetLoading = true; // Control flag for finally block
 
     try {
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
@@ -457,10 +454,6 @@ const App: React.FC = () => {
              addToast(t('error.call_in_progress', settings.language), 'error');
              // Remove the placeholder bot message
              setMessages(prev => prev.filter(m => m.id !== tempBotId));
-             
-             // NEW: Keep the UI in loading state so the "Stop" button remains visible.
-             // This allows the user to click "Stop" to force-clear the service lock.
-             shouldResetLoading = false; 
           } else {
              // Other errors show in chat
              const errorMessage: Message = {
@@ -475,32 +468,17 @@ const App: React.FC = () => {
           }
       }
     } finally {
-      // Only reset if we didn't encounter a "call in progress" lock that needs manual clearing
-      if (shouldResetLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
       abortControllerRef.current = null;
     }
   };
 
   const handleStopGeneration = () => {
-      // 1. Abort network request
       if (abortControllerRef.current) {
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
+          setIsLoading(false);
       }
-
-      // 2. Force unlock service state (reset internal locks)
-      if (geminiService) {
-          geminiService.cancelCurrentCall();
-      }
-
-      // 3. Force unlock local locks
-      isProcessingRef.current = false;
-
-      // 4. Force update UI state
-      setIsLoading(false);
-      setIsSummarizing(false);
   };
 
   const handleUnlock = () => {
