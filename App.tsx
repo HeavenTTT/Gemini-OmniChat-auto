@@ -1,22 +1,22 @@
-
-
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { GeminiService } from './services/geminiService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo } from './types';
 import ChatInterface from './components/ChatInterface';
-import SettingsModal from './components/SettingsModal';
-import SecurityLock from './components/SecurityLock';
 import Sidebar from './components/Sidebar';
-import MobileMenu from './components/MobileMenu';
 import { Header } from './components/Header';
 import ChatInput from './components/ChatInput';
 import { t } from './utils/i18n';
 import { ToastContainer } from './components/ui/Toast';
 import { CustomDialog } from './components/ui/CustomDialog';
 import { executeFilterScript } from './utils/scriptExecutor';
+
+// Lazy load heavy or hidden-by-default components
+const SettingsModal = lazy(() => import('./components/SettingsModal'));
+const SecurityLock = lazy(() => import('./components/SecurityLock'));
+const MobileMenu = lazy(() => import('./components/MobileMenu'));
 
 // --- Default Configuration ---
 const DEFAULT_MODEL = GeminiModel.FLASH;
@@ -737,13 +737,15 @@ const App: React.FC = () => {
   
   if (isLocked) return (
     <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' || settings.theme === 'vscode-dark' ? 'dark' : ''}`}>
-        <SecurityLock 
-            config={settings.security} 
-            onUnlock={handleUnlock} 
-            lang={settings.language} 
-            theme={settings.theme}
-            kirbyThemeColor={settings.kirbyThemeColor}
-        />
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950"></div>}>
+            <SecurityLock 
+                config={settings.security} 
+                onUnlock={handleUnlock} 
+                lang={settings.language} 
+                theme={settings.theme}
+                kirbyThemeColor={settings.kirbyThemeColor}
+            />
+        </Suspense>
     </div>
   );
 
@@ -766,17 +768,19 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsOpen(true)}
         />
 
-        <MobileMenu 
-            isOpen={isMobileMenuOpen}
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            language={settings.language}
-            onClose={() => setIsMobileMenuOpen(false)}
-            onNewChat={handleNewChat}
-            onSelectSession={handleSelectSession}
-            onDeleteSession={handleDeleteSession}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-        />
+        <Suspense fallback={null}>
+            <MobileMenu 
+                isOpen={isMobileMenuOpen}
+                sessions={sessions}
+                activeSessionId={activeSessionId}
+                language={settings.language}
+                onClose={() => setIsMobileMenuOpen(false)}
+                onNewChat={handleNewChat}
+                onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+            />
+        </Suspense>
 
         <main className="flex-1 flex flex-col relative h-full min-w-0">
           <Header 
@@ -836,19 +840,21 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        <SettingsModal 
-            isOpen={isSettingsOpen} 
-            onClose={() => setIsSettingsOpen(false)} 
-            apiKeys={apiKeys} 
-            onUpdateKeys={setApiKeys} 
-            settings={settings} 
-            onUpdateSettings={setSettings} 
-            geminiService={geminiService}
-            onShowToast={addToast}
-            onShowDialog={showDialog}
-            knownModels={knownModels}
-            onUpdateKnownModels={setKnownModels}
-        />
+        <Suspense fallback={null}>
+            <SettingsModal 
+                isOpen={isSettingsOpen} 
+                onClose={() => setIsSettingsOpen(false)} 
+                apiKeys={apiKeys} 
+                onUpdateKeys={setApiKeys} 
+                settings={settings} 
+                onUpdateSettings={setSettings} 
+                geminiService={geminiService}
+                onShowToast={addToast}
+                onShowDialog={showDialog}
+                knownModels={knownModels}
+                onUpdateKnownModels={setKnownModels}
+            />
+        </Suspense>
       </div>
     </div>
   );

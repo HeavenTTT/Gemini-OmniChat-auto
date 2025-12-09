@@ -52,9 +52,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   // Initialize local state
   useEffect(() => {
     if (isOpen) {
-      setLocalKeys(JSON.parse(JSON.stringify(apiKeys))); 
-      setLocalSettings(JSON.parse(JSON.stringify(settings)));
-      setLocalKnownModels(JSON.parse(JSON.stringify(knownModels)));
+      setLocalKeys(JSON.parse(JSON.stringify(apiKeys || []))); 
+      setLocalSettings(JSON.parse(JSON.stringify(settings || {})));
+      setLocalKnownModels(JSON.parse(JSON.stringify(knownModels || [])));
     }
   }, [isOpen, apiKeys, settings, knownModels]);
 
@@ -62,20 +62,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
     
     root.classList.add(`theme-${localSettings.theme}`);
-    if (['dark', 'twilight'].includes(localSettings.theme)) {
+    if (['dark', 'twilight', 'vscode-dark'].includes(localSettings.theme)) {
         root.classList.add('dark');
     }
   }, [localSettings.theme, isOpen]);
 
   const handleCloseOrCancel = () => {
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
     
     root.classList.add(`theme-${settings.theme}`);
-    if (['dark', 'twilight'].includes(settings.theme)) {
+    if (['dark', 'twilight', 'vscode-dark'].includes(settings.theme)) {
         root.classList.add('dark');
     }
     onClose();

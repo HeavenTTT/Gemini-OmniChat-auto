@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
@@ -199,7 +201,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const targetTextRef = useRef(msg.text);
   const animationRef = useRef<number>(0);
 
+  // VSCode Theme Logic
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
+  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl'; // Wider container (1.33x)
 
   // Sync target text when prop changes
   useEffect(() => {
@@ -349,10 +353,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // Animation class
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
 
-  // Theme-specific layout adjustments (VSCode themes = wider bubbles)
-  // VSCode: 1.33x width of normal (5xl is 64rem, so ~85rem)
-  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
-  
   const wrapperWidthClass = isEditing 
       ? 'w-full max-w-full' 
       : 'max-w-[95%] md:max-w-[85%]'; // Standard constraint
@@ -475,7 +475,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                     return <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">{children}</thead>;
                                 },
                                 th({children}) {
-                                    return <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider">{children}</th>;
+                                    return <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-left">{children}</th>;
                                 },
                                 tr({children}) {
                                     return <tr className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">{children}</tr>;
@@ -489,7 +489,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                             href={href} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
-                                            className="text-primary-600 dark:text-primary-400 hover:underline hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-0.5"
+                                            className="text-primary-600 dark:text-primary-400 hover:underline hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-0.5 font-medium transition-colors"
                                         >
                                             {children}
                                             <ExternalLink className="w-3 h-3 opacity-70" />
@@ -512,7 +512,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                     return <h1 className="text-2xl font-bold mt-6 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex items-center gap-2">{children}</h1>;
                                 },
                                 h2({children}) {
-                                    return <h2 className="text-xl font-bold mt-5 mb-3 text-gray-900 dark:text-white">{children}</h2>;
+                                    return <h2 className="text-xl font-bold mt-5 mb-3 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1">{children}</h2>;
                                 },
                                 h3({children}) {
                                     return <h3 className="text-lg font-bold mt-4 mb-2 text-gray-900 dark:text-white">{children}</h3>;
@@ -524,7 +524,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                     return <hr className="my-6 border-gray-200 dark:border-gray-700" />;
                                 },
                                 img({src, alt}) {
-                                    return <img src={src} alt={alt} className="max-w-full h-auto rounded-lg my-4 shadow-sm border border-gray-200 dark:border-gray-700 block mx-auto" loading="lazy" />;
+                                    return <img src={src} alt={alt} className="max-w-full h-auto rounded-lg my-4 shadow-sm border border-gray-200 dark:border-gray-700 block mx-auto hover:opacity-95 transition-opacity cursor-pointer" loading="lazy" onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} />;
                                 },
                                 del({children}) {
                                     return <del className="text-gray-400 dark:text-gray-500 line-through decoration-gray-400 dark:decoration-gray-500">{children}</del>;

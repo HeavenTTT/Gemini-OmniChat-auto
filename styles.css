@@ -89,7 +89,7 @@
   --color-foreground-rgb: 204, 204, 204;
   --color-background-start-rgb: 30, 30, 30; /* #1e1e1e */
   --color-background-end-rgb: 37, 37, 38; /* #252526 */
-  --color-theme-primary-rgb: 122, 122, 122; /* VSCode Blue #007acc */
+  --color-theme-primary-rgb: 0, 122, 204; /* VSCode Blue */
   --box-shadow-rgba: 0, 0, 0, 0.5;
 }
 

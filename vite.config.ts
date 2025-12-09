@@ -22,6 +22,41 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        // Raise the warning limit slightly to accommodate the React runtime, 
+        // but rely on manualChunks for actual optimization.
+        chunkSizeWarningLimit: 1000, 
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                // Core React
+                if (id.includes('react') || id.includes('react-dom') || id.includes('scheduler')) {
+                  return 'react-vendor';
+                }
+                // Heavy: Google GenAI SDK
+                if (id.includes('@google/genai')) {
+                  return 'genai-sdk';
+                }
+                // Heavy: Syntax Highlighting (contains many language definitions)
+                if (id.includes('react-syntax-highlighter') || id.includes('prismjs')) {
+                  return 'syntax-highlighter';
+                }
+                // Heavy: Markdown and Math parsing
+                if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('katex') || id.includes('micromark')) {
+                  return 'markdown-libs';
+                }
+                // UI Icons
+                if (id.includes('lucide-react')) {
+                  return 'ui-icons';
+                }
+                // General Vendor
+                return 'vendor';
+              }
+            }
+          }
+        }
       }
     };
 });
