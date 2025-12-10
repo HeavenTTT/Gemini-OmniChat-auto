@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -73,7 +74,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
      * Test the connection for this specific API key.
      */
     const handleTest = async () => {
-        if (!llmService || !config.key) return;
+        if (!llmService) return;
+        // For Ollama, key is optional, so we check if provider is Ollama OR key exists
+        if (config.provider !== 'ollama' && !config.key) return;
+
         setIsTesting(true);
         setTestResult(null);
         try {
@@ -102,7 +106,9 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
      * Fetch the list of available models using this API key.
      */
     const handleFetchModels = async () => {
-        if (!llmService || !config.key) return;
+        if (!llmService) return;
+        if (config.provider !== 'ollama' && !config.key) return;
+
         setIsFetching(true);
         try {
             const modelsInfo = await llmService.listModels(config);
@@ -177,6 +183,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderIcon = () => {
         switch (config.provider) {
             case 'openai': return <Server className="w-4 h-4" />;
+            case 'ollama': return <Cloud className="w-4 h-4" />;
             default: return <Network className="w-4 h-4" />;
         }
     };
@@ -184,6 +191,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderColor = () => {
         switch (config.provider) {
             case 'openai': return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+            case 'ollama': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
             default: return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
         }
     };
@@ -191,12 +199,14 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderLabel = () => {
         switch (config.provider) {
             case 'openai': return 'OpenAI Compatible';
+            case 'ollama': return 'Ollama Cloud';
             default: return 'Google Gemini';
         }
     };
 
     const getBaseUrlPlaceholder = () => {
         if (config.provider === 'openai') return t('input.base_url_placeholder', lang);
+        if (config.provider === 'ollama') return t('input.ollama_url_placeholder', lang);
         return '';
     };
 
@@ -245,7 +255,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 </div>
                 <div className="text-[10px] text-gray-500 truncate flex gap-2">
                     <span>{getProviderLabel()}</span>
-                    {(config.provider === 'openai') && config.baseUrl && <span>• {config.baseUrl}</span>}
+                    {(config.provider === 'openai' || config.provider === 'ollama') && config.baseUrl && <span>• {config.baseUrl}</span>}
                 </div>
             </div>
 
@@ -291,6 +301,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                     const newProvider = e.target.value as ModelProvider;
                                     let newBaseUrl = '';
                                     if (newProvider === 'openai') newBaseUrl = 'https://api.openai.com/v1';
+                                    if (newProvider === 'ollama') newBaseUrl = 'http://localhost:11434';
                                     
                                     onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
                                 }}
@@ -299,6 +310,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             >
                                 <option value="google">Google Gemini</option>
                                 <option value="openai">OpenAI Compatible</option>
+                                <option value="ollama">Ollama Cloud</option>
                             </select>
                             <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
                         </div>
@@ -320,7 +332,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             </div>
                         )}
 
-                         {(config.provider === 'openai') && (
+                         {(config.provider === 'openai' || config.provider === 'ollama') && (
                             <div className="flex items-center gap-2 group flex-[2]">
                                 <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md`}>
                                     <Server className="w-3.5 h-3.5 text-gray-500" />
@@ -344,7 +356,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                 <input 
                                 type="text" 
                                 autoFocus
-                                placeholder={t('input.apikey_placeholder', lang)}
+                                placeholder={config.provider === 'ollama' ? "Optional / Auth Header" : t('input.apikey_placeholder', lang)}
                                 className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200 min-w-0"
                                 value={config.key}
                                 onChange={(e) => onUpdate({ key: e.target.value })}
@@ -353,7 +365,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             />
                         ) : (
                             <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
-                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
+                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{config.provider === 'ollama' ? "Optional / Auth Header" : t('input.apikey_placeholder', lang)}</span>}
                             </span>
                         )}
                     </div>
@@ -385,7 +397,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
                          <button 
                             onClick={handleTest}
-                            disabled={isTesting || !config.key}
+                            disabled={isTesting || (config.provider !== 'ollama' && !config.key)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all shadow-sm border justify-center whitespace-nowrap min-w-[70px] ${
                                 testResult === true ? 'bg-primary-50 border-primary-200 text-primary-700 dark:bg-primary-900/20 dark:border-primary-800 dark:text-primary-400' :
                                 testResult === false ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400' :
@@ -434,7 +446,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
                          <button 
                             onClick={handleFetchModels}
-                            disabled={isFetching || !config.key}
+                            disabled={isFetching || (config.provider !== 'ollama' && !config.key)}
                             className={`px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 text-xs font-medium transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap`}
                             title={t('action.fetch_models', lang)}
                             aria-label={t('action.fetch_models_list', lang)}

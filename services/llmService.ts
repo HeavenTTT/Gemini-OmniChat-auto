@@ -2,11 +2,12 @@
 import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
+import { OllamaService } from "./ollamaService";
 import { t } from "../utils/i18n";
 
 /**
  * Service class for handling Multi-Provider LLM interactions.
- * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini or OpenAI).
+ * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini, OpenAI, or Ollama).
  */
 export class LLMService {
   private keys: KeyConfig[] = [];
@@ -16,12 +17,14 @@ export class LLMService {
   
   private openAIService: OpenAIService;
   private googleService: GoogleService;
+  private ollamaService: OllamaService;
   private onKeyError?: (id: string, errorCode?: string) => void;
 
   constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
     this.googleService = new GoogleService();
+    this.ollamaService = new OllamaService();
     this.onKeyError = onKeyError;
   }
 
@@ -39,7 +42,7 @@ export class LLMService {
 
   /**
    * Lists available models for a specific key configuration.
-   * Supports Google GenAI and OpenAI compatible endpoints.
+   * Supports Google GenAI, OpenAI, and Ollama endpoints.
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     if (this._isCallInProgress) {
@@ -50,6 +53,9 @@ export class LLMService {
         if (keyConfig.provider === 'openai') {
             if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
             return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+        } else if (keyConfig.provider === 'ollama') {
+            if (!keyConfig.baseUrl) throw new Error("Base URL is required for Ollama provider");
+            return await this.ollamaService.listModels(keyConfig.baseUrl, keyConfig.key);
         } else {
             // Google Implementation
             return await this.googleService.listModels(keyConfig.key);
@@ -61,7 +67,7 @@ export class LLMService {
 
   /**
    * Tests connection for a specific key configuration to ensure validity.
-   * Performs a minimal chat generation request to verify the key works for chat.
+   * Performs a minimal chat generation request or model list check.
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
       if (this._isCallInProgress) {
@@ -79,6 +85,9 @@ export class LLMService {
                       keyConfig.baseUrl, 
                       modelToUse
                   );
+              } else if (keyConfig.provider === 'ollama') {
+                  if (!keyConfig.baseUrl) return false;
+                  return await this.ollamaService.testConnection(keyConfig.baseUrl, keyConfig.key);
               } else {
                   return await this.googleService.testConnection(keyConfig.key, modelToUse);
               }
@@ -177,10 +186,23 @@ export class LLMService {
                         keyConfig.key,
                         keyConfig.baseUrl,
                         modelToUse,
-                        validHistory, // Pass validHistory here
+                        validHistory,
                         newMessage,
                         systemInstruction,
                         generationConfig,
+                        onChunk,
+                        abortSignal
+                    );
+                } else if (keyConfig.provider === 'ollama') {
+                    if (!keyConfig.baseUrl) throw new Error("Base URL required for Ollama");
+                    text = await this.ollamaService.streamChat(
+                        keyConfig.baseUrl,
+                        modelToUse,
+                        validHistory,
+                        newMessage,
+                        systemInstruction,
+                        generationConfig,
+                        keyConfig.key, // Optional API key
                         onChunk,
                         abortSignal
                     );
@@ -245,7 +267,7 @@ export class LLMService {
 
   /**
    * Counts tokens for a given context.
-   * Returns -1 if provider does not support counting (like generic OpenAI) or error occurs.
+   * Returns -1 if provider does not support counting (like generic OpenAI or Ollama) or error occurs.
    */
   public async countTokens(
       keyConfig: KeyConfig,

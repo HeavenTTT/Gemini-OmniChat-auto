@@ -1,15 +1,23 @@
 
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.5.1] - 2024-06-02
+### Changed
+- **Ollama Integration**: 
+  - Migrated Ollama service to use the official `ollama` JavaScript library (`ollama/browser`).
+  - Improved compatibility with Ollama Cloud and custom authentication headers.
+  - Optimized streaming response handling using AsyncGenerators.
 
 ## [1.5.0] - 2024-06-01
 ### Added
 - **Ollama Cloud Support**: 
   - Integrated **Ollama Cloud (Preview)** as a new model provider.
   - Supports fetching model list (tags) and streaming chat responses.
-  - Configurable Base URL (defaults to `https://ollama.com`).
-  - *Note: Direct browser access to Ollama Cloud API may require CORS handling or a proxy.*
+  - Configurable Base URL (defaults to `http://localhost:11434` or remote endpoints).
+  - Flexible API Key handling: optional for local instances, used as Bearer token for protected endpoints.
 
 ## [1.4.0] - 2024-05-30
 ### Added

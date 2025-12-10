@@ -26,7 +26,7 @@ export interface ChatSession {
   createdAt: number;
 }
 
-export type ModelProvider = 'google' | 'openai';
+export type ModelProvider = 'google' | 'openai' | 'ollama';
 
 export interface KeyGroup {
   id: string;

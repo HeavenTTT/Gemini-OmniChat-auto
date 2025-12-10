@@ -39,6 +39,10 @@ export default defineConfig(({ mode }) => {
                 if (id.includes('@google/genai')) {
                   return 'genai-sdk';
                 }
+                // Heavy: Ollama SDK
+                if (id.includes('ollama')) {
+                  return 'ollama-sdk';
+                }
                 // Heavy: Syntax Highlighting (contains many language definitions)
                 if (id.includes('react-syntax-highlighter') || id.includes('prismjs')) {
                   return 'syntax-highlighter';
