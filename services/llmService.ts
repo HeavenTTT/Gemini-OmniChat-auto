@@ -8,7 +8,7 @@ import { t } from "../utils/i18n";
  * Service class for handling Multi-Provider LLM interactions.
  * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini or OpenAI).
  */
-export class GeminiService {
+export class LLMService {
   private keys: KeyConfig[] = [];
   private keyIndex: number = 0;
   private keyUsageCount: number = 0;

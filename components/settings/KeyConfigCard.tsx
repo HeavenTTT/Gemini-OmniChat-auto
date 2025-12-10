@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Trash2, GripVertical, Cloud } from 'lucide-react';
 import { KeyConfig, Language, ModelProvider, ModelInfo, KeyGroup } from '../../types';
-import { GeminiService } from '../../services/geminiService';
+import { LLMService } from '../../services/llmService';
 import { t } from '../../utils/i18n';
 import { ModelSelect } from '../ui/ModelSelect';
 
@@ -17,7 +16,7 @@ interface KeyConfigCardProps {
   onSyncModel: () => void;
   onUpdateKnownModels: (models: ModelInfo[]) => void;
   lang: Language;
-  geminiService: GeminiService | null;
+  llmService: LLMService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   sharedModels: string[];
   enableGrouping?: boolean;
@@ -38,7 +37,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
   onSyncModel, 
   onUpdateKnownModels, 
   lang, 
-  geminiService, 
+  llmService, 
   onShowToast, 
   sharedModels, 
   enableGrouping, 
@@ -74,11 +73,11 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
      * Test the connection for this specific API key.
      */
     const handleTest = async () => {
-        if (!geminiService || !config.key) return;
+        if (!llmService || !config.key) return;
         setIsTesting(true);
         setTestResult(null);
         try {
-            const success = await geminiService.testConnection(config);
+            const success = await llmService.testConnection(config);
             setTestResult(success);
             if (success) {
                 onShowToast(t('msg.connection_success', lang), 'success');
@@ -103,10 +102,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
      * Fetch the list of available models using this API key.
      */
     const handleFetchModels = async () => {
-        if (!geminiService || !config.key) return;
+        if (!llmService || !config.key) return;
         setIsFetching(true);
         try {
-            const modelsInfo = await geminiService.listModels(config);
+            const modelsInfo = await llmService.listModels(config);
             const modelNames = modelsInfo.map(m => m.name);
             
             if (modelNames.length > 0) {

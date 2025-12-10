@@ -1,10 +1,9 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { GeminiService } from './services/geminiService';
+import { LLMService } from './services/llmService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo } from './types';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
@@ -102,7 +101,7 @@ const App: React.FC = () => {
       onConfirm: () => {}
   });
 
-  const [geminiService, setGeminiService] = useState<GeminiService | null>(null);
+  const [llmService, setLlmService] = useState<LLMService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isProcessingRef = useRef(false);
 
@@ -265,7 +264,7 @@ const App: React.FC = () => {
     setKnownModels(loadedKnownModels);
     
     // Init Service
-    setGeminiService(new GeminiService(initialKeys, (id, errorCode) => {
+    setLlmService(new LLMService(initialKeys, (id, errorCode) => {
         setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
         // Add toast with error code
         addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
@@ -318,17 +317,17 @@ const App: React.FC = () => {
 
   // --- Persistence ---
   useEffect(() => {
-    if (geminiService) {
-      geminiService.updateKeys(apiKeys);
+    if (llmService) {
+      llmService.updateKeys(apiKeys);
     } else {
-       setGeminiService(new GeminiService(apiKeys, (id, errorCode) => {
+       setLlmService(new LLMService(apiKeys, (id, errorCode) => {
            setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
            // Add toast with error code
            addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
        }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
-  }, [apiKeys, geminiService]);
+  }, [apiKeys, llmService]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
@@ -366,7 +365,7 @@ const App: React.FC = () => {
   // REFACTORED: Now accepts historyBefore (context) and userMessage (new prompt) separately
   // This avoids ambiguity and prevents duplicate messages in the context.
   const triggerBotResponse = async (historyBefore: Message[], userMessage: Message) => {
-    if (!geminiService) return;
+    if (!llmService) return;
     setIsLoading(true);
     
     if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -410,7 +409,7 @@ const App: React.FC = () => {
           contextToSend = historyForApi.slice(-settings.historyContextLimit);
       }
 
-      const { text: fullText, usedKeyIndex, provider, usedModel } = await geminiService.streamChatResponse(
+      const { text: fullText, usedKeyIndex, provider, usedModel } = await llmService.streamChatResponse(
         '', // Global model ignored, uses key config
         contextToSend, 
         userMessage.text, // Explicit prompt text
@@ -451,7 +450,7 @@ const App: React.FC = () => {
               text: processedFinalText, 
               keyIndex: usedKeyIndex, 
               provider: provider, 
-              model: usedModel,
+              model: usedModel, 
               executionTime: executionTime
           } : msg
         )
@@ -499,7 +498,7 @@ const App: React.FC = () => {
 
   const handleSendMessage = async () => {
     // Prevent race conditions with isProcessingRef
-    if (isLoading || !geminiService || isProcessingRef.current) {
+    if (isLoading || !llmService || isProcessingRef.current) {
         if (isLoading) addToast(t('error.call_in_progress', settings.language), 'error');
         return;
     }
@@ -543,7 +542,7 @@ const App: React.FC = () => {
   };
 
   const handleGetTokenCount = async (currentInput: string): Promise<number> => {
-      if (!geminiService || apiKeys.length === 0) return 0;
+      if (!llmService || apiKeys.length === 0) return 0;
       
       const activeKey = apiKeys.find(k => k.isActive);
       if (!activeKey) return 0;
@@ -566,7 +565,7 @@ const App: React.FC = () => {
       
       const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
-      return await geminiService.countTokens(
+      return await llmService.countTokens(
           activeKey,
           contextToSend,
           currentInput,
@@ -583,7 +582,7 @@ const App: React.FC = () => {
   };
 
   const handleRegenerate = async (id: string) => {
-    if (isLoading || !geminiService) {
+    if (isLoading || !llmService) {
          if (isLoading) addToast(t('error.call_in_progress', settings.language), 'error');
          return;
     }
@@ -696,7 +695,7 @@ const App: React.FC = () => {
   };
 
   const handleSummarize = async () => {
-    if (messages.length === 0 || !geminiService) return;
+    if (messages.length === 0 || !llmService) return;
     if (isLoading) {
         addToast(t('error.call_in_progress', settings.language), 'error');
         return;
@@ -706,7 +705,7 @@ const App: React.FC = () => {
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
         const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
-        const { text } = await geminiService.streamChatResponse('', [], prompt, undefined, settings.generation, undefined, undefined, settings.language);
+        const { text } = await llmService.streamChatResponse('', [], prompt, undefined, settings.generation, undefined, undefined, settings.language);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
         if (newTitle) {
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
@@ -856,7 +855,7 @@ const App: React.FC = () => {
                 onUpdateKeys={setApiKeys} 
                 settings={settings} 
                 onUpdateSettings={setSettings} 
-                geminiService={geminiService}
+                llmService={llmService}
                 onShowToast={addToast}
                 onShowDialog={showDialog}
                 knownModels={knownModels}

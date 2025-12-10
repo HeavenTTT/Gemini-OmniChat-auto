@@ -1,12 +1,11 @@
 
-
 "use client";
 
 import React, { useState, useRef } from 'react';
 import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, ToggleRight, Trash2, Edit2, Box, ChevronDown, ChevronRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo, KeyGroup } from '../../types';
-import { GeminiService } from '../../services/geminiService';
+import { LLMService } from '../../services/llmService';
 import { t } from '../../utils/i18n';
 import { KeyConfigCard } from './KeyConfigCard';
 
@@ -17,7 +16,7 @@ interface ApiKeyManagementProps {
   onUpdateSettings: (settings: AppSettings) => void;
   lang: Language;
   defaultModel: string;
-  geminiService: GeminiService | null;
+  llmService: LLMService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
   knownModels: ModelInfo[];
@@ -31,7 +30,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   onUpdateSettings,
   lang,
   defaultModel,
-  geminiService,
+  llmService,
   onShowToast,
   onShowDialog,
   knownModels,
@@ -170,7 +169,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
    * Test keys sequentially and only import those that pass connection test.
    */
   const handleTestAndBatchImport = async () => {
-    if (!geminiService) return;
+    if (!llmService) return;
     const lines = batchKeysInput.split(/[\r\n]+/).map(line => line.trim()).filter(line => line.length > 0);
     if (lines.length === 0) return;
 
@@ -197,7 +196,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
         // Run tests strictly sequentially to avoid "Call in progress" lock errors
         for (const config of tempConfigs) {
             try {
-                const passed = await geminiService.testConnection(config);
+                const passed = await llmService.testConnection(config);
                 if (passed) {
                     validKeys.push(config);
                     successCount++;
@@ -422,7 +421,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             onUpdateKnownModels(merged);
                         }}
                         lang={lang}
-                        geminiService={geminiService}
+                        llmService={llmService}
                         onShowToast={onShowToast}
                         sharedModels={sharedGeminiModels}
                         groups={settings.keyGroups}

@@ -1,11 +1,9 @@
-
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Settings, Download, Upload, Sliders, RotateCw, Shield, Github, CheckCircle, Key } from 'lucide-react';
 import { AppSettings, KeyConfig, DialogConfig, APP_VERSION, ModelInfo } from '../types';
-import { GeminiService } from '../services/geminiService';
+import { LLMService } from '../services/llmService';
 import { t } from '../utils/i18n';
 import { GeneralAppearanceSettings } from './settings/GeneralAppearanceSettings';
 import { ModelParameterSettings } from './settings/ModelParameterSettings';
@@ -22,7 +20,7 @@ interface SettingsModalProps {
   onUpdateKeys: (keys: KeyConfig[]) => void;
   settings: AppSettings;
   onUpdateSettings: (settings: AppSettings) => void;
-  geminiService: GeminiService | null;
+  llmService: LLMService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onShowDialog: (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => void;
   knownModels: ModelInfo[];
@@ -36,7 +34,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateKeys,
   settings,
   onUpdateSettings,
-  geminiService,
+  llmService,
   onShowToast,
   onShowDialog,
   knownModels,
@@ -267,7 +265,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     onUpdateSettings={setLocalSettings}
                     lang={lang} 
                     defaultModel={localSettings.defaultModel}
-                    geminiService={geminiService}
+                    llmService={llmService}
                     onShowToast={onShowToast}
                     onShowDialog={onShowDialog}
                     knownModels={localKnownModels}
