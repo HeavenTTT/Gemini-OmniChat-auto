@@ -3,6 +3,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
+import { OllamaService } from "./ollamaService";
 import { t } from "../utils/i18n";
 
 // Helper to wait/sleep
@@ -10,7 +11,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Service class for handling Multi-Provider LLM interactions.
- * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini or OpenAI).
+ * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini, OpenAI, or Ollama).
  */
 export class GeminiService {
   private keys: KeyConfig[] = [];
@@ -19,11 +20,13 @@ export class GeminiService {
   private _isCallInProgress: boolean = false; // New: Lock to prevent concurrent calls
   
   private openAIService: OpenAIService;
+  private ollamaService: OllamaService;
   private onKeyError?: (id: string, errorCode?: string) => void;
 
   constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
+    this.ollamaService = new OllamaService();
     this.onKeyError = onKeyError;
   }
 
@@ -41,7 +44,7 @@ export class GeminiService {
 
   /**
    * Lists available models for a specific key configuration.
-   * Supports both Google GenAI and OpenAI compatible endpoints.
+   * Supports Google GenAI, OpenAI, and Ollama compatible endpoints.
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     if (this._isCallInProgress) {
@@ -52,6 +55,10 @@ export class GeminiService {
         if (keyConfig.provider === 'openai') {
             if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
             return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+        } else if (keyConfig.provider === 'ollama') {
+            // Default to Cloud URL if not present (though UI should enforce it)
+            const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
+            return await this.ollamaService.listModels(keyConfig.key, baseUrl);
         } else {
             // Google Implementation
             try {
@@ -98,7 +105,7 @@ export class GeminiService {
       }
       this._isCallInProgress = true;
       try {
-          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
+          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : (keyConfig.provider === 'ollama' ? 'llama3' : 'gemini-2.5-flash'));
 
           try {
               if (keyConfig.provider === 'openai') {
@@ -108,6 +115,9 @@ export class GeminiService {
                       keyConfig.baseUrl, 
                       modelToUse
                   );
+              } else if (keyConfig.provider === 'ollama') {
+                  const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
+                  return await this.ollamaService.testConnection(keyConfig.key, baseUrl);
               } else {
                   const ai = new GoogleGenAI({ apiKey: keyConfig.key });
                   await ai.models.generateContent({
@@ -228,6 +238,19 @@ export class GeminiService {
                         keyConfig.baseUrl,
                         modelToUse,
                         validHistory, // Pass validHistory here
+                        newMessage,
+                        systemInstruction,
+                        generationConfig,
+                        onChunk,
+                        abortSignal
+                    );
+                } else if (keyConfig.provider === 'ollama') {
+                    const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
+                    text = await this.ollamaService.streamChat(
+                        keyConfig.key,
+                        baseUrl,
+                        modelToUse,
+                        validHistory,
                         newMessage,
                         systemInstruction,
                         generationConfig,

@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Trash2, GripVertical } from 'lucide-react';
+import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Trash2, GripVertical, Cloud } from 'lucide-react';
 import { KeyConfig, Language, ModelProvider, ModelInfo, KeyGroup } from '../../types';
 import { GeminiService } from '../../services/geminiService';
 import { t } from '../../utils/i18n';
@@ -175,6 +175,36 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         ? Array.from(new Set([...availableModels, ...sharedModels])) 
         : availableModels;
 
+    const getProviderIcon = () => {
+        switch (config.provider) {
+            case 'openai': return <Server className="w-4 h-4" />;
+            case 'ollama': return <Cloud className="w-4 h-4" />;
+            default: return <Network className="w-4 h-4" />;
+        }
+    };
+
+    const getProviderColor = () => {
+        switch (config.provider) {
+            case 'openai': return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400';
+            case 'ollama': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
+            default: return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
+        }
+    };
+    
+    const getProviderLabel = () => {
+        switch (config.provider) {
+            case 'openai': return 'OpenAI Compatible';
+            case 'ollama': return 'Ollama Cloud';
+            default: return 'Google Gemini';
+        }
+    };
+
+    const getBaseUrlPlaceholder = () => {
+        if (config.provider === 'ollama') return 'https://ollama.com';
+        if (config.provider === 'openai') return t('input.base_url_placeholder', lang);
+        return '';
+    };
+
     const Header = (
         <div 
             className="flex items-center gap-3 w-full cursor-move select-none" 
@@ -206,8 +236,8 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
             </div>
 
              {/* Provider Icon */}
-            <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${config.provider === 'openai' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-               {config.provider === 'openai' ? <Server className="w-4 h-4" /> : <Network className="w-4 h-4" />}
+            <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${getProviderColor()}`}>
+               {getProviderIcon()}
             </div>
 
             {/* Info */}
@@ -219,8 +249,8 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                     {config.key && <span className="text-[10px] font-mono text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{getMaskedKey(config.key)}</span>}
                 </div>
                 <div className="text-[10px] text-gray-500 truncate flex gap-2">
-                    <span>{config.provider === 'google' ? 'Google Gemini' : 'OpenAI Compatible'}</span>
-                    {config.provider === 'openai' && config.baseUrl && <span>• {config.baseUrl}</span>}
+                    <span>{getProviderLabel()}</span>
+                    {(config.provider === 'openai' || config.provider === 'ollama') && config.baseUrl && <span>• {config.baseUrl}</span>}
                 </div>
             </div>
 
@@ -262,12 +292,20 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                          <div className="relative flex-1">
                              <select
                                 value={config.provider}
-                                onChange={(e) => onUpdate({ provider: e.target.value as ModelProvider, baseUrl: e.target.value === 'openai' ? 'https://api.openai.com/v1' : '' })}
+                                onChange={(e) => {
+                                    const newProvider = e.target.value as ModelProvider;
+                                    let newBaseUrl = '';
+                                    if (newProvider === 'openai') newBaseUrl = 'https://api.openai.com/v1';
+                                    else if (newProvider === 'ollama') newBaseUrl = 'https://ollama.com';
+                                    
+                                    onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
+                                }}
                                 className={`appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20`}
                                 aria-label={t('settings.model_provider_select', lang)}
                             >
                                 <option value="google">Google Gemini</option>
                                 <option value="openai">OpenAI Compatible</option>
+                                <option value="ollama">Ollama Cloud (Preview)</option>
                             </select>
                             <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
                         </div>
@@ -289,14 +327,14 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             </div>
                         )}
 
-                         {config.provider === 'openai' && (
+                         {(config.provider === 'openai' || config.provider === 'ollama') && (
                             <div className="flex items-center gap-2 group flex-[2]">
                                 <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md`}>
                                     <Server className="w-3.5 h-3.5 text-gray-500" />
                                 </div>
                                 <input 
                                     type="text" 
-                                    placeholder={t('input.base_url_placeholder', lang)}
+                                    placeholder={getBaseUrlPlaceholder()}
                                     className={`flex-1 bg-transparent border-b border-gray-200 dark:border-gray-700 text-xs py-1.5 outline-none font-mono text-gray-600 dark:text-gray-400 focus:border-primary-500 transition-colors`}
                                     value={config.baseUrl || ''}
                                     onChange={(e) => onUpdate({ baseUrl: e.target.value })}

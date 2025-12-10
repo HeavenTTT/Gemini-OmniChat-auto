@@ -3,6 +3,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2024-06-01
+### Added
+- **Ollama Cloud Support**: 
+  - Integrated **Ollama Cloud (Preview)** as a new model provider.
+  - Supports fetching model list (tags) and streaming chat responses.
+  - Configurable Base URL (defaults to `https://ollama.com`).
+  - *Note: Direct browser access to Ollama Cloud API may require CORS handling or a proxy.*
+
 ## [1.4.0] - 2024-05-30
 ### Added
 - **Thinking Model Support**: 

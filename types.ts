@@ -1,6 +1,6 @@
 
 
-export const APP_VERSION = '1.4.0';
+export const APP_VERSION = '1.5.0';
 
 export enum Role {
   USER = 'user',
@@ -26,7 +26,7 @@ export interface ChatSession {
   createdAt: number;
 }
 
-export type ModelProvider = 'google' | 'openai';
+export type ModelProvider = 'google' | 'openai' | 'ollama';
 
 export interface KeyGroup {
   id: string;
@@ -42,7 +42,7 @@ export interface KeyConfig {
   usageLimit: number; // Number of requests before switching
   isRateLimited: boolean;
   lastUsed: number;
-  baseUrl?: string; // Specific Base URL for this key (OpenAI)
+  baseUrl?: string; // Specific Base URL for this key (OpenAI/Ollama)
   model?: string;   // Specific Model for this key
   lastErrorCode?: string; // Code of the last error encountered
   groupId?: string; // Optional: ID of the group this key belongs to
