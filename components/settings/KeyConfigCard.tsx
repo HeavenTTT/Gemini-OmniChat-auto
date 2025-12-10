@@ -177,7 +177,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
     const Header = (
         <div 
-            className="flex items-center gap-3 w-full cursor-pointer select-none" 
+            className="flex items-center gap-3 w-full cursor-move select-none" 
             onClick={() => {
                 setIsExpanded(!isExpanded);
                 if (isExpanded) setIsModelSelectOpen(false); // Reset dropdown state on close
