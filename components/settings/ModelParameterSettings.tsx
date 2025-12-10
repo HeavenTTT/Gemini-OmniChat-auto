@@ -45,7 +45,7 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             <p>{t('msg.model_url_moved', lang)}</p>
          </div>
 
-        <CollapsibleSection id="ai-parameters" title={t('settings.ai_parameters', lang)} defaultOpen={true} lang={lang}>
+        <CollapsibleSection id="ai-parameters" title={t('settings.ai_parameters', lang)} defaultOpen={false} lang={lang}>
             <div className="space-y-6">
                 
                 {/* Stream Toggle */}

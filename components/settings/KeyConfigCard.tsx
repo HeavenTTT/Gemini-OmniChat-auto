@@ -164,8 +164,10 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
      * @param key - The API key string.
      */
     const getMaskedKey = (key: string) => {
-        if (!key || key.length < 8) return '********';
-        return `...${key.substring(key.length - 4)}`;
+        if (!key) return '';
+        if (key.length <= 8) return '********';
+        // Show first 4, then asterisks, then last 4
+        return `${key.substring(0, 4)}****${key.substring(key.length - 4)}`;
     };
 
     // Combine local availableModels with sharedModels if provider is google
@@ -180,16 +182,19 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 setIsExpanded(!isExpanded);
                 if (isExpanded) setIsModelSelectOpen(false); // Reset dropdown state on close
             }}
+            draggable={draggable}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            onDragEnd={onDragEnd}
         >
             {/* Drag Handle */}
             {draggable && (
                 <div 
-                    className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                     onMouseDown={(e) => {
-                        // Prevent click from toggling accordion when grabbing handle
                          e.stopPropagation(); 
                     }}
-                    // Ensure the parent's drag events fire
                 >
                     <GripVertical className="w-4 h-4" />
                 </div>
@@ -246,11 +251,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     return (
         <div 
             className={`p-3 rounded-xl border transition-all duration-300 relative ${config.isActive ? 'bg-white dark:bg-gray-800/60 border-gray-200 dark:border-gray-700 shadow-sm' : 'bg-gray-50 dark:bg-gray-900/30 border-gray-100 dark:border-gray-800 opacity-60'} ${isModelSelectOpen ? 'z-20' : ''}`}
-            draggable={draggable}
-            onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-            onDragEnd={onDragEnd}
         >
             {Header}
 
@@ -322,7 +322,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             />
                         ) : (
                             <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
-                                {config.key ? config.key : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
+                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{t('input.apikey_placeholder', lang)}</span>}
                             </span>
                         )}
                     </div>
