@@ -207,7 +207,6 @@ const translations: Translations = {
     'param.stream': 'Stream Response',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI Compatible',
-    'provider.ollama': 'Ollama Cloud',
     'action.copy_code': 'Copy code to clipboard',
     'action.copied_code': 'Code copied to clipboard',
     'input.edit_message_content': 'Edit message content',
@@ -506,7 +505,6 @@ const translations: Translations = {
     'param.stream': '流式传输',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI 兼容模式',
-    'provider.ollama': 'Ollama Cloud',
 
     'action.copy_code': '复制代码到剪贴板',
     'action.copied_code': '代码已复制到剪贴板',
@@ -806,7 +804,6 @@ const translations: Translations = {
     'param.stream': 'ストリーム応答',
     'provider.google': 'Google Gemini',
     'provider.openai': 'OpenAI 互換',
-    'provider.ollama': 'Ollama Cloud',
     'action.copy_code': 'コードをクリップボードにコピー',
     'action.copied_code': 'コードをコピーしました',
     'input.edit_message_content': 'メッセージ内容を編集',

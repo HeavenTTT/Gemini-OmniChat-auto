@@ -178,7 +178,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderIcon = () => {
         switch (config.provider) {
             case 'openai': return <Server className="w-4 h-4" />;
-            case 'ollama': return <Cloud className="w-4 h-4" />;
             default: return <Network className="w-4 h-4" />;
         }
     };
@@ -186,7 +185,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderColor = () => {
         switch (config.provider) {
             case 'openai': return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-            case 'ollama': return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400';
             default: return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400';
         }
     };
@@ -194,13 +192,11 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     const getProviderLabel = () => {
         switch (config.provider) {
             case 'openai': return 'OpenAI Compatible';
-            case 'ollama': return 'Ollama Cloud';
             default: return 'Google Gemini';
         }
     };
 
     const getBaseUrlPlaceholder = () => {
-        if (config.provider === 'ollama') return 'https://ollama.com';
         if (config.provider === 'openai') return t('input.base_url_placeholder', lang);
         return '';
     };
@@ -250,7 +246,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 </div>
                 <div className="text-[10px] text-gray-500 truncate flex gap-2">
                     <span>{getProviderLabel()}</span>
-                    {(config.provider === 'openai' || config.provider === 'ollama') && config.baseUrl && <span>• {config.baseUrl}</span>}
+                    {(config.provider === 'openai') && config.baseUrl && <span>• {config.baseUrl}</span>}
                 </div>
             </div>
 
@@ -296,7 +292,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                     const newProvider = e.target.value as ModelProvider;
                                     let newBaseUrl = '';
                                     if (newProvider === 'openai') newBaseUrl = 'https://api.openai.com/v1';
-                                    else if (newProvider === 'ollama') newBaseUrl = 'https://ollama.com';
                                     
                                     onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
                                 }}
@@ -305,7 +300,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             >
                                 <option value="google">Google Gemini</option>
                                 <option value="openai">OpenAI Compatible</option>
-                                <option value="ollama">Ollama Cloud (Preview)</option>
                             </select>
                             <ChevronDown className="w-3 h-3 text-gray-400 absolute right-2.5 top-3 pointer-events-none" />
                         </div>
@@ -327,7 +321,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             </div>
                         )}
 
-                         {(config.provider === 'openai' || config.provider === 'ollama') && (
+                         {(config.provider === 'openai') && (
                             <div className="flex items-center gap-2 group flex-[2]">
                                 <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md`}>
                                     <Server className="w-3.5 h-3.5 text-gray-500" />

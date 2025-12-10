@@ -26,7 +26,7 @@ export interface ChatSession {
   createdAt: number;
 }
 
-export type ModelProvider = 'google' | 'openai' | 'ollama';
+export type ModelProvider = 'google' | 'openai';
 
 export interface KeyGroup {
   id: string;
@@ -42,7 +42,7 @@ export interface KeyConfig {
   usageLimit: number; // Number of requests before switching
   isRateLimited: boolean;
   lastUsed: number;
-  baseUrl?: string; // Specific Base URL for this key (OpenAI/Ollama)
+  baseUrl?: string; // Specific Base URL for this key (OpenAI)
   model?: string;   // Specific Model for this key
   lastErrorCode?: string; // Code of the last error encountered
   groupId?: string; // Optional: ID of the group this key belongs to

@@ -1,32 +1,27 @@
 
-
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { Message, Role, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
+import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
-import { OllamaService } from "./ollamaService";
+import { GoogleService } from "./googleService";
 import { t } from "../utils/i18n";
-
-// Helper to wait/sleep
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Service class for handling Multi-Provider LLM interactions.
- * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini, OpenAI, or Ollama).
+ * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini or OpenAI).
  */
 export class GeminiService {
   private keys: KeyConfig[] = [];
   private keyIndex: number = 0;
   private keyUsageCount: number = 0;
-  private _isCallInProgress: boolean = false; // New: Lock to prevent concurrent calls
+  private _isCallInProgress: boolean = false; // Lock to prevent concurrent calls
   
   private openAIService: OpenAIService;
-  private ollamaService: OllamaService;
+  private googleService: GoogleService;
   private onKeyError?: (id: string, errorCode?: string) => void;
 
   constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
-    this.ollamaService = new OllamaService();
+    this.googleService = new GoogleService();
     this.onKeyError = onKeyError;
   }
 
@@ -44,7 +39,7 @@ export class GeminiService {
 
   /**
    * Lists available models for a specific key configuration.
-   * Supports Google GenAI, OpenAI, and Ollama compatible endpoints.
+   * Supports Google GenAI and OpenAI compatible endpoints.
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     if (this._isCallInProgress) {
@@ -55,40 +50,9 @@ export class GeminiService {
         if (keyConfig.provider === 'openai') {
             if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
             return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
-        } else if (keyConfig.provider === 'ollama') {
-            // Default to Cloud URL if not present (though UI should enforce it)
-            const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
-            return await this.ollamaService.listModels(keyConfig.key, baseUrl);
         } else {
             // Google Implementation
-            try {
-                const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-                const response = await ai.models.list();
-                const models: ModelInfo[] = [];
-                
-                // @ts-ignore - The types for list() response iterator might vary slightly in some SDK versions
-                for await (const model of response) {
-                    const m = model as any;
-                    if (m.name) {
-                        const name = m.name.replace('models/', '');
-                        models.push({
-                            name: name,
-                            displayName: m.displayName || name,
-                            inputTokenLimit: m.inputTokenLimit,
-                            outputTokenLimit: m.outputTokenLimit
-                        });
-                    }
-                }
-                return models.filter(m => 
-                    m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
-                );
-            } catch (e: any) {
-                // If list models fails (e.g. 403), we return empty to handle gracefully
-                if (e.status === 403 || (e.message && e.message.includes("403"))) {
-                    return [];
-                }
-                return [];
-            }
+            return await this.googleService.listModels(keyConfig.key);
         }
     } finally {
         this._isCallInProgress = false;
@@ -105,7 +69,7 @@ export class GeminiService {
       }
       this._isCallInProgress = true;
       try {
-          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : (keyConfig.provider === 'ollama' ? 'llama3' : 'gemini-2.5-flash'));
+          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
 
           try {
               if (keyConfig.provider === 'openai') {
@@ -115,18 +79,8 @@ export class GeminiService {
                       keyConfig.baseUrl, 
                       modelToUse
                   );
-              } else if (keyConfig.provider === 'ollama') {
-                  const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
-                  return await this.ollamaService.testConnection(keyConfig.key, baseUrl);
               } else {
-                  const ai = new GoogleGenAI({ apiKey: keyConfig.key });
-                  await ai.models.generateContent({
-                      model: modelToUse,
-                      contents: 'Test',
-                  });
-                  // If we get here without error (403/404 throws exception), the key is valid.
-                  // Even if the content is blocked by safety (empty text), the connection is established.
-                  return true;
+                  return await this.googleService.testConnection(keyConfig.key, modelToUse);
               }
           } catch (e) {
               return false;
@@ -148,8 +102,6 @@ export class GeminiService {
     }
 
     // Simple round-robin strategy across ALL active keys
-    // In a mixed-provider pool, this means we might switch from Gemini to OpenAI per message.
-    
     const currentKey = activeKeys[this.keyIndex % activeKeys.length];
     
     // Check usage limits (Poll Count)
@@ -178,17 +130,6 @@ export class GeminiService {
     return selectedKey;
   }
 
-  /**
-   * Marks a specific key as rate-limited to avoid using it temporarily.
-   */
-  private markKeyRateLimited(id: string) {
-    const key = this.keys.find(k => k.id === id);
-    if (key) {
-      key.isRateLimited = true;
-      key.lastUsed = Date.now();
-    }
-  }
-
   private getKeyDisplayIndex(id: string): number {
       return this.keys.findIndex(k => k.id === id) + 1;
   }
@@ -198,7 +139,6 @@ export class GeminiService {
    * Handles retries on failure and switches keys automatically.
    */
   public async streamChatResponse(
-    // We no longer accept global modelId, we use key's preferred model
     _ignoredGlobalModelId: string, 
     history: Message[],
     newMessage: string,
@@ -244,22 +184,9 @@ export class GeminiService {
                         onChunk,
                         abortSignal
                     );
-                } else if (keyConfig.provider === 'ollama') {
-                    const baseUrl = keyConfig.baseUrl || 'https://ollama.com';
-                    text = await this.ollamaService.streamChat(
-                        keyConfig.key,
-                        baseUrl,
-                        modelToUse,
-                        validHistory,
-                        newMessage,
-                        systemInstruction,
-                        generationConfig,
-                        onChunk,
-                        abortSignal
-                    );
                 } else {
-                    // Google Gemini API Call
-                    text = await this.callGoogle(
+                    // Google Gemini API Call delegated to GoogleService
+                    text = await this.googleService.streamChat(
                         keyConfig.key,
                         modelToUse,
                         validHistory,
@@ -317,93 +244,14 @@ export class GeminiService {
   }
 
   /**
-   * Direct call to Google GenAI SDK.
-   */
-  private async callGoogle(
-      apiKey: string, 
-      modelId: string, 
-      history: Message[], 
-      newMessage: string, 
-      systemInstruction: string | undefined, 
-      config: GenerationConfig,
-      onChunk?: (text: string) => void,
-      abortSignal?: AbortSignal
-  ): Promise<string> {
-      const ai = new GoogleGenAI({ apiKey });
-      const googleHistory = history.map(msg => ({
-        role: msg.role === Role.USER ? 'user' : 'model',
-        parts: [{ text: msg.text }]
-      }));
-
-      const commonConfig: any = {
-        systemInstruction: systemInstruction,
-        temperature: config.temperature,
-        topP: config.topP,
-        topK: config.topK,
-        maxOutputTokens: config.maxOutputTokens
-      };
-
-      // Apply thinking budget if set and > 0
-      if (config.thinkingBudget && config.thinkingBudget > 0) {
-          commonConfig.thinkingConfig = { thinkingBudget: config.thinkingBudget };
-      }
-
-      const client = ai.chats.create({
-        model: modelId,
-        config: commonConfig,
-        history: googleHistory
-      });
-
-      if (config.stream) {
-        const resultStream = await client.sendMessageStream({ message: newMessage });
-        let fullText = '';
-        let stopReason = '';
-
-        for await (const chunk of resultStream) {
-          if (abortSignal?.aborted) break;
-          
-          const response = chunk as GenerateContentResponse;
-          const chunkText = response.text;
-
-          if (chunkText) {
-            fullText += chunkText;
-            if (onChunk) onChunk(fullText);
-          } else {
-            // If text is undefined/empty, check candidates for finishReason
-            const candidate = response.candidates?.[0];
-            if (candidate?.finishReason) {
-                stopReason = candidate.finishReason;
-            }
-          }
-        }
-        
-        // If we have no text but a stop reason (e.g., SAFETY, RECITATION), display it
-        if (!fullText && stopReason) {
-             const reasonMessage = `[Response blocked. Reason: ${stopReason}]`;
-             if (onChunk) onChunk(reasonMessage);
-             return reasonMessage;
-        }
-
-        return fullText;
-      } else {
-        const result = await client.sendMessage({ message: newMessage });
-        // Handling non-streaming empty response
-        if (!result.text && result.candidates?.[0]?.finishReason) {
-             return `[Response blocked. Reason: ${result.candidates[0].finishReason}]`;
-        }
-        return result.text || '';
-      }
-  }
-
-  /**
-   * Counts tokens for a given context using the Gemini API.
-   * Returns -1 if provider is not Google or error occurs.
+   * Counts tokens for a given context.
+   * Returns -1 if provider does not support counting (like generic OpenAI) or error occurs.
    */
   public async countTokens(
       keyConfig: KeyConfig,
       history: Message[],
       newMessage: string,
-      _ignoredSystemInstruction: string | undefined // systemInstruction is not supported in countTokens for Gemini API
+      _ignoredSystemInstruction: string | undefined
   ): Promise<number> {
       if (this._isCallInProgress) {
           throw new Error("error.call_in_progress");
@@ -411,35 +259,13 @@ export class GeminiService {
       this._isCallInProgress = true;
       try {
           if (keyConfig.provider !== 'google') return -1;
-
-          const ai = new GoogleGenAI({ apiKey: keyConfig.key });
           
-          // Filter out invalid messages (error or empty) to match generation logic
-          const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
-
-          const googleHistory = validHistory.map(msg => ({
-              role: msg.role === Role.USER ? 'user' : 'model',
-              parts: [{ text: msg.text }]
-          }));
-
-          const contents = [...googleHistory];
-
-          if (newMessage && newMessage.trim().length > 0) {
-              contents.push({
-                  role: 'user',
-                  parts: [{ text: newMessage }]
-              });
-          }
-
-          try {
-              const response = await ai.models.countTokens({
-                  model: keyConfig.model || 'gemini-2.5-flash',
-                  contents: contents,
-              });
-              return response.totalTokens || 0;
-          } catch (error) {
-              return -1;
-          }
+          return await this.googleService.countTokens(
+              keyConfig.key,
+              keyConfig.model || 'gemini-2.5-flash',
+              history,
+              newMessage
+          );
       } finally {
           this._isCallInProgress = false;
       }
