@@ -58,7 +58,7 @@ export class OpenAIService {
       if (!response.ok) {
         const errorBody = await response.text(); // Get detailed error from API
         const error = new Error(`OpenAI API Error: ${response.status} ${response.statusText} - ${errorBody}`);
-        (error as any).status = response.status; // Attach status for GeminiService to extract
+        (error as any).status = response.status; // Attach status for LLMService to extract
         throw error;
       }
       
@@ -75,7 +75,9 @@ export class OpenAIService {
       return [];
     } catch (error: any) {
       if (error instanceof TypeError) { // Network error, CORS, etc.
-          throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
+          const netErr = new Error(t('error.fetch_failed', 'en')); 
+          (netErr as any).status = 0;
+          throw netErr;
       }
       throw error; // Re-throw other specific API errors
     }
@@ -132,9 +134,9 @@ export class OpenAIService {
 
         if (!response.ok) {
             const errText = await response.text();
-            // Pass status code along to GeminiService for better error code extraction
+            // Pass status code along to LLMService for better error code extraction
             const error = new Error(`OpenAI Error ${response.status}: ${errText}`);
-            (error as any).status = response.status; // Attach status for GeminiService to extract
+            (error as any).status = response.status; // Attach status for LLMService to extract
             throw error;
         }
 
@@ -181,7 +183,9 @@ export class OpenAIService {
         }
     } catch (error: any) {
         if (error instanceof TypeError) { // Network error, CORS, etc.
-            throw new Error(t('error.fetch_failed', 'en')); // Re-throw with translated generic error
+            const netErr = new Error(t('error.fetch_failed', 'en')); 
+            (netErr as any).status = 0;
+            throw netErr;
         }
         throw error; // Re-throw other specific API errors
     }

@@ -64,9 +64,17 @@ export class OllamaService {
       })).sort((a: ModelInfo, b: ModelInfo) => a.name.localeCompare(b.name));
     } catch (error: any) {
       console.error("Ollama list models failed:", error);
+      
+      // Map status_code to status for consistent error handling in LLMService
+      if (error.status_code) {
+          (error as any).status = error.status_code;
+      }
+
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           // Provide a more specific hint if it looks like a Mixed Content or CORS issue
-          throw new Error("Connection failed. Please check if the Ollama Cloud endpoint is reachable.");
+          const netErr = new Error("Connection failed. Please check if the Ollama Cloud endpoint is reachable.");
+          (netErr as any).status = 0; // Network error
+          throw netErr;
       }
       throw error;
     }
@@ -137,9 +145,17 @@ export class OllamaService {
       if (error.name === 'AbortError' || abortSignal?.aborted) {
          throw new Error("Aborted by user");
       }
+      
+      // Map status_code to status for consistent error handling in LLMService
+      if (error.status_code) {
+          (error as any).status = error.status_code;
+      }
+
       // Handle connection refused or other network errors generically
       if (error instanceof TypeError || error.message?.includes('Failed to fetch')) {
-         throw new Error("Network Error: Failed to fetch. Check connection.");
+         const netErr = new Error("Network Error: Failed to fetch. Check connection.");
+         (netErr as any).status = 0;
+         throw netErr;
       }
       throw error;
     }
