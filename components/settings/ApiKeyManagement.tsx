@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, ToggleRight, Trash2, Edit2, Box, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, Trash2, Edit2, Box, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo, KeyGroup } from '../../types';
 import { LLMService } from '../../services/llmService';
@@ -37,12 +38,13 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   onUpdateKnownModels
 }) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [draggedGroupIndex, setDraggedGroupIndex] = useState<number | null>(null);
   const [isBatchImporting, setIsBatchImporting] = useState(false);
   const [isBatchTesting, setIsBatchTesting] = useState(false);
   const [batchKeysInput, setBatchKeysInput] = useState('');
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   
   // 导入文件的 input ref
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -76,17 +78,18 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
 
   /**
    * 切换分组折叠状态
-   * Toggle the collapsed state of a key group.
+   * Toggle the expanded state of a key group.
+   * Default state is COLLAPSED (not in set).
    * @param groupId - The ID of the group to toggle.
    */
-  const toggleGroupCollapse = (groupId: string) => {
-    const next = new Set(collapsedGroups);
+  const toggleGroupExpansion = (groupId: string) => {
+    const next = new Set(expandedGroups);
     if (next.has(groupId)) {
         next.delete(groupId);
     } else {
         next.add(groupId);
     }
-    setCollapsedGroups(next);
+    setExpandedGroups(next);
   };
 
   /**
@@ -299,10 +302,13 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
    */
   const handleAddGroup = () => {
     const name = newGroupName.trim() || `Group ${(settings.keyGroups?.length || 0) + 1}`;
-    const newGroup: KeyGroup = { id: uuidv4(), name };
+    // Initialize isActive to true
+    const newGroup: KeyGroup = { id: uuidv4(), name, isActive: true };
     onUpdateSettings({ ...settings, keyGroups: [...(settings.keyGroups || []), newGroup] });
     setNewGroupName('');
     onShowToast(t('msg.group_added', lang), 'success');
+    // Auto-expand the new group
+    setExpandedGroups(new Set(expandedGroups).add(newGroup.id));
   };
 
   /**
@@ -333,25 +339,27 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   };
 
   /**
-   * 切换分组内所有密钥的激活状态
-   * Activate or deactivate all keys within a specific group.
+   * 切换分组的激活状态
+   * Toggles whether the group is active or not. Does not affect keys internally.
    * @param groupId - The ID of the group.
-   * @param currentState - The current active state to toggle from.
    */
-  const toggleGroupActive = (groupId: string | undefined, currentState: boolean) => {
-      const updatedKeys = keys.map(k => {
-          if (k.groupId === groupId) return { ...k, isActive: !currentState };
-          return k;
+  const toggleGroupEnabled = (groupId: string) => {
+      const updatedGroups = (settings.keyGroups || []).map(g => {
+          if (g.id === groupId) {
+              return { ...g, isActive: g.isActive === undefined ? false : !g.isActive };
+          }
+          return g;
       });
-      onUpdateKeys(updatedKeys);
+      onUpdateSettings({ ...settings, keyGroups: updatedGroups });
   };
 
-  // --- Drag and Drop Logic ---
+  // --- Drag and Drop Logic for KEYS ---
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.setData('type', 'key');
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -361,14 +369,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    if (draggedIndex === null) return;
+    const type = e.dataTransfer.getData('type');
+    if (type !== 'key' || draggedIndex === null) return;
     
     const newKeys = [...keys];
     // Remove from old position
     const [movedItem] = newKeys.splice(draggedIndex, 1);
     
     // If grouping is enabled, adopt the group of the target key
-    // This allows moving keys between groups by dragging
     if (settings.enableKeyGrouping) {
         const targetKey = keys[targetIndex];
         if (targetKey) {
@@ -386,19 +394,47 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
       setDraggedIndex(null);
   };
 
+  // --- Drag and Drop Logic for GROUPS ---
+
+  const handleGroupDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedGroupIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.setData('type', 'group');
+    e.stopPropagation(); // Prevent bubbling up
+  };
+
+  const handleGroupDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedGroupIndex === null || draggedGroupIndex === index) return;
+  };
+
+  const handleGroupDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const type = e.dataTransfer.getData('type');
+    if (type !== 'group' || draggedGroupIndex === null) return;
+
+    const currentGroups = settings.keyGroups || [];
+    const newGroups = [...currentGroups];
+    const [movedGroup] = newGroups.splice(draggedGroupIndex, 1);
+    newGroups.splice(targetIndex, 0, movedGroup);
+
+    onUpdateSettings({ ...settings, keyGroups: newGroups });
+    setDraggedGroupIndex(null);
+  };
+
   // --- Rendering Helpers ---
 
   /**
    * 渲染密钥列表
    * Render the list of key config cards, filtered by group.
-   * @param filteredKeys - Array of keys to render.
-   * @param groupId - Optional Group ID context.
-   * @param showContextualAddButton - Whether to show the "+ Add Key" button at the bottom of the list.
    */
   const renderKeyList = (filteredKeys: KeyConfig[], groupId?: string, showContextualAddButton: boolean = true) => {
       return (
           <div className="space-y-2">
-            {filteredKeys.map((keyConfig, index) => {
+            {filteredKeys.map((keyConfig) => {
                 // Find actual index in main keys array for Drag & Drop
                 const actualIndex = keys.findIndex(k => k.id === keyConfig.id);
                 
@@ -607,23 +643,38 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                     </div>
 
                     {/* Render Groups */}
-                    {(settings.keyGroups || []).map(group => {
+                    {(settings.keyGroups || []).map((group, groupIdx) => {
                         const groupKeys = keys.filter(k => k.groupId === group.id);
-                        const allActive = groupKeys.length > 0 && groupKeys.every(k => k.isActive);
-                        const someActive = groupKeys.some(k => k.isActive);
-                        const isCollapsed = collapsedGroups.has(group.id);
+                        const isExpanded = expandedGroups.has(group.id);
+                        const isGroupActive = group.isActive !== false; // Default to true
 
                         return (
-                            <div key={group.id} className="border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/30 dark:bg-gray-900/20">
+                            <div 
+                                key={group.id} 
+                                className="border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50/30 dark:bg-gray-900/20"
+                                draggable
+                                onDragStart={(e) => handleGroupDragStart(e, groupIdx)}
+                                onDragOver={(e) => handleGroupDragOver(e, groupIdx)}
+                                onDrop={(e) => handleGroupDrop(e, groupIdx)}
+                                onDragEnd={() => setDraggedGroupIndex(null)}
+                            >
                                 <div 
-                                    className="bg-gray-100/50 dark:bg-gray-800/50 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-pointer"
-                                    onClick={() => toggleGroupCollapse(group.id)}
+                                    className="bg-gray-100/50 dark:bg-gray-800/50 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                                    onClick={() => toggleGroupExpansion(group.id)}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <div className="text-gray-400">
-                                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                         {/* Drag Handle */}
+                                        <div 
+                                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-move"
+                                            onMouseDown={(e) => e.stopPropagation()}
+                                        >
+                                            <GripVertical className="w-4 h-4" />
                                         </div>
-                                        <Folder className="w-4 h-4 text-gray-500" />
+
+                                        <div className="text-gray-400">
+                                            {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </div>
+                                        <Folder className={`w-4 h-4 ${isGroupActive ? 'text-gray-500' : 'text-gray-400 opacity-50'}`} />
                                         {editingGroupId === group.id ? (
                                             <input 
                                                 autoFocus
@@ -634,19 +685,23 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                                 className="bg-white dark:bg-gray-900 border border-primary-500 rounded px-2 py-0.5 text-sm font-semibold text-gray-800 dark:text-gray-200 outline-none w-40"
                                             />
                                         ) : (
-                                            <h4 className="font-semibold text-sm text-gray-700 dark:text-gray-300">{group.name}</h4>
+                                            <h4 className={`font-semibold text-sm ${isGroupActive ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-500 line-through'}`}>{group.name}</h4>
                                         )}
                                         <span className="text-xs text-gray-400 font-mono bg-white dark:bg-gray-900 px-1.5 rounded">{groupKeys.length}</span>
                                     </div>
                                     
                                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                         <button 
-                                            onClick={() => toggleGroupActive(group.id, allActive)}
-                                            className={`p-1.5 rounded-lg transition-colors ${allActive ? 'text-green-600 bg-green-50 dark:bg-green-900/20' : someActive ? 'text-yellow-600 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 bg-gray-200 dark:bg-gray-800'}`}
-                                            title={t('action.toggle_group', lang)}
-                                        >
-                                            <ToggleRight className="w-4 h-4" />
-                                        </button>
+                                        {/* Large Group Toggle Switch */}
+                                        <label className="relative inline-flex items-center cursor-pointer mr-2" onClick={e => e.stopPropagation()}>
+                                            <input 
+                                                type="checkbox" 
+                                                className="sr-only peer"
+                                                checked={isGroupActive}
+                                                onChange={() => toggleGroupEnabled(group.id)}
+                                            />
+                                            <div className="w-12 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                        </label>
+
                                         <button 
                                             onClick={() => setEditingGroupId(group.id)}
                                             className="p-1.5 text-gray-400 hover:text-primary-500 transition-colors"
@@ -663,8 +718,8 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                         </button>
                                     </div>
                                 </div>
-                                {!isCollapsed && (
-                                    <div className="p-3 animate-fade-in-up">
+                                {isExpanded && (
+                                    <div className={`p-3 animate-fade-in-up ${!isGroupActive ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
                                         {renderKeyList(groupKeys, group.id)}
                                     </div>
                                 )}

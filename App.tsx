@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -263,8 +264,18 @@ const App: React.FC = () => {
     setSettings(loadedSettings);
     setKnownModels(loadedKnownModels);
     
-    // Init Service
-    setLlmService(new LLMService(initialKeys, (id, errorCode) => {
+    // Init Service - calculate effective keys (masking inactive groups)
+    const effectiveKeys = initialKeys.map(k => {
+        if (!k.groupId) return k;
+        const group = loadedSettings.keyGroups?.find(g => g.id === k.groupId);
+        // If group exists and is explicitly inactive (false), disable key for the service
+        if (group && group.isActive === false) {
+            return { ...k, isActive: false };
+        }
+        return k;
+    });
+
+    setLlmService(new LLMService(effectiveKeys, (id, errorCode) => {
         setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
         // Add toast with error code
         addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
@@ -315,19 +326,31 @@ const App: React.FC = () => {
     setMessages([]);
   };
 
-  // --- Persistence ---
+  // --- Persistence & Key Updates ---
   useEffect(() => {
+    // Determine effective keys to pass to LLMService based on Group status
+    const effectiveKeys = apiKeys.map(k => {
+        if (!k.groupId) return k;
+        const group = settings.keyGroups?.find(g => g.id === k.groupId);
+        // If group exists and is explicitly inactive (false), disable key for the service
+        // We use boolean logic: isActive = key.isActive AND (group.isActive !== false)
+        if (group && group.isActive === false) {
+            return { ...k, isActive: false };
+        }
+        return k;
+    });
+
     if (llmService) {
-      llmService.updateKeys(apiKeys);
+      llmService.updateKeys(effectiveKeys);
     } else {
-       setLlmService(new LLMService(apiKeys, (id, errorCode) => {
+       // Should rely on initial effect for creation, but just in case
+       setLlmService(new LLMService(effectiveKeys, (id, errorCode) => {
            setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
-           // Add toast with error code
            addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
        }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
-  }, [apiKeys, llmService]);
+  }, [apiKeys, llmService, settings.keyGroups]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));

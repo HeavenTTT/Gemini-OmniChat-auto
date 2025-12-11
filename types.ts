@@ -31,6 +31,7 @@ export type ModelProvider = 'google' | 'openai' | 'ollama';
 export interface KeyGroup {
   id: string;
   name: string;
+  isActive?: boolean; // Controls whether the group is enabled during polling
 }
 
 export interface KeyConfig {
