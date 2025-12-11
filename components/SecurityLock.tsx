@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Lock, KeyRound, HelpCircle, ArrowRight } from 'lucide-react';
+import { KeyRound, HelpCircle, ArrowRight } from 'lucide-react';
 import { SecurityConfig, Language, Theme } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';

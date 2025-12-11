@@ -1,9 +1,7 @@
-
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Key, RotateCw, RefreshCw, Server, ChevronDown, ChevronUp, Network, Copy, Download, Trash2, GripVertical, Cloud } from 'lucide-react';
+import { Key, RotateCw, RefreshCw, ChevronDown, ChevronUp, Copy, Download, Trash2, GripVertical, Cloud, Sparkles, Zap, Network } from 'lucide-react';
 import { KeyConfig, Language, ModelProvider, ModelInfo, KeyGroup } from '../../types';
 import { LLMService } from '../../services/llmService';
 import { t } from '../../utils/i18n';
@@ -182,9 +180,9 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
     const getProviderIcon = () => {
         switch (config.provider) {
-            case 'openai': return <Server className="w-4 h-4" />;
+            case 'openai': return <Zap className="w-4 h-4" />;
             case 'ollama': return <Cloud className="w-4 h-4" />;
-            default: return <Network className="w-4 h-4" />;
+            default: return <Sparkles className="w-4 h-4" />;
         }
     };
 
@@ -335,7 +333,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                          {config.provider === 'openai' && (
                             <div className="flex items-center gap-2 group flex-[2]">
                                 <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md`}>
-                                    <Server className="w-3.5 h-3.5 text-gray-500" />
+                                    <Zap className="w-3.5 h-3.5 text-gray-500" />
                                 </div>
                                 <input 
                                     type="text" 

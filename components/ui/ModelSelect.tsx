@@ -3,7 +3,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, Box } from 'lucide-react';
+import { ChevronDown, Check, Bot } from 'lucide-react';
 
 interface ModelSelectProps {
   value: string;
@@ -83,7 +83,7 @@ export const ModelSelect: React.FC<ModelSelectProps> = ({
                             onClick={() => handleSelect(option)}
                             className="w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-200 flex items-center gap-2 group transition-colors"
                         >
-                           <Box className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500" />
+                           <Bot className="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500" />
                            <span className="flex-1 truncate font-mono">{option}</span>
                            {value === option && <Check className="w-3.5 h-3.5 text-primary-500" />}
                         </button>
