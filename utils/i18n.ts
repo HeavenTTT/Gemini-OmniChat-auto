@@ -1,5 +1,4 @@
 
-
 import { Language } from '../types';
 
 type Translations = {
@@ -71,7 +70,7 @@ const translations: Translations = {
     'input.title_placeholder': 'e.g. Coding Assistant',
     'input.instruction_placeholder': 'Enter system instruction here...',
     'input.base_url_placeholder': 'https://api.openai.com/v1',
-    'input.ollama_url_placeholder': 'http://localhost:11434',
+    'input.ollama_url_placeholder': 'Empty for Ollama Cloud (Proxy) or http://localhost:11434',
     'input.prompt_title_default': 'New Prompt',
     'input.prompt_title_placeholder': 'Prompt Title',
     'input.apikey_placeholder': 'Paste your API Key here...',
@@ -371,7 +370,7 @@ const translations: Translations = {
     'input.title_placeholder': '例如：代码助手',
     'input.instruction_placeholder': '在此输入系统提示词...',
     'input.base_url_placeholder': 'https://api.openai.com/v1',
-    'input.ollama_url_placeholder': 'http://localhost:11434',
+    'input.ollama_url_placeholder': '留空以使用 Ollama Cloud (代理) 或 http://localhost:11434',
     'input.prompt_title_default': '新提示词',
     'input.prompt_title_placeholder': '提示词标题',
     'input.apikey_placeholder': '在此粘贴您的 API Key...',
@@ -672,7 +671,7 @@ const translations: Translations = {
     'input.title_placeholder': '例：コーディングアシスタント',
     'input.instruction_placeholder': 'システムプロンプトをここに入力...',
     'input.base_url_placeholder': 'https://api.openai.com/v1',
-    'input.ollama_url_placeholder': 'http://localhost:11434',
+    'input.ollama_url_placeholder': 'Ollama Cloud (Proxy) または http://localhost:11434 の場合は空にしてください',
     'input.prompt_title_default': '新しいプロンプト',
     'input.prompt_title_placeholder': 'プロンプトのタイトル',
     'input.apikey_placeholder': 'APIキーをここに貼り付け...',

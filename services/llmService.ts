@@ -54,8 +54,8 @@ export class LLMService {
             if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
             return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
         } else if (keyConfig.provider === 'ollama') {
-            if (!keyConfig.baseUrl) throw new Error("Base URL is required for Ollama provider");
-            return await this.ollamaService.listModels(keyConfig.baseUrl, keyConfig.key);
+            // Allow empty baseUrl (defaults to /ollama-proxy)
+            return await this.ollamaService.listModels(keyConfig.baseUrl || '', keyConfig.key);
         } else {
             // Google Implementation
             return await this.googleService.listModels(keyConfig.key);
@@ -86,8 +86,8 @@ export class LLMService {
                       modelToUse
                   );
               } else if (keyConfig.provider === 'ollama') {
-                  if (!keyConfig.baseUrl) return false;
-                  return await this.ollamaService.testConnection(keyConfig.baseUrl, keyConfig.key);
+                  // Allow empty baseUrl (defaults to /ollama-proxy)
+                  return await this.ollamaService.testConnection(keyConfig.baseUrl || '', keyConfig.key);
               } else {
                   return await this.googleService.testConnection(keyConfig.key, modelToUse);
               }
@@ -194,9 +194,9 @@ export class LLMService {
                         abortSignal
                     );
                 } else if (keyConfig.provider === 'ollama') {
-                    if (!keyConfig.baseUrl) throw new Error("Base URL required for Ollama");
+                    // Allow empty baseUrl
                     text = await this.ollamaService.streamChat(
-                        keyConfig.baseUrl,
+                        keyConfig.baseUrl || '',
                         modelToUse,
                         validHistory,
                         newMessage,

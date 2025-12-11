@@ -12,6 +12,15 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        proxy: {
+          // Ollama Cloud 代理
+          // http://localhost:3000/ollama-proxy/api/tags -> https://ollama.com/api/tags
+          '/ollama-proxy': {
+            target: 'https://ollama.com',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/ollama-proxy/, ''),
+          }
+        }
       },
       plugins: [react()],
       define: {

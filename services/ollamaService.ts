@@ -1,4 +1,5 @@
 
+
 import { Ollama } from 'ollama/browser';
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n";
@@ -11,16 +12,12 @@ export class OllamaService {
   
   /**
    * Creates a new Ollama client instance.
-   * We create a new instance per request to ensure proper configuration (Host/Key) 
-   * and to allow safe aborting of specific requests without affecting others.
+   * Automatically detects if the Base URL should use a local proxy to avoid CORS.
    */
-  private getClient(baseUrl: string, apiKey?: string): Ollama {
-    // Robustly clean the URL: remove trailing slash and ensure protocol
-    let host = baseUrl.trim().replace(/\/$/, '');
-    if (!host.match(/^https?:\/\//)) {
-        host = `http://${host}`;
-    }
-
+  private getClient(baseUrl?: string, apiKey?: string): Ollama {
+    // Automatically determine host based on current origin
+    const currentOrigin = window.location.origin;
+    const host = `${currentOrigin}/ollama-proxy`;
     const config: { host: string; headers?: Record<string, string> } = {
       host: host
     };
@@ -67,7 +64,8 @@ export class OllamaService {
     } catch (error: any) {
       console.error("Ollama list models failed:", error);
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-          throw new Error("Network Error: Failed to fetch. Ensure Ollama is running (OLLAMA_ORIGINS=\"*\") or check CORS.");
+          // Provide a more specific hint if it looks like a Mixed Content or CORS issue
+          throw new Error("Connection failed. If using HTTPS, ensure you are using the local proxy (http://localhost:11434) or a secure endpoint.");
       }
       throw error;
     }

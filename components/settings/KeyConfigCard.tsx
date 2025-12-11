@@ -206,7 +206,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
 
     const getBaseUrlPlaceholder = () => {
         if (config.provider === 'openai') return t('input.base_url_placeholder', lang);
-        if (config.provider === 'ollama') return t('input.ollama_url_placeholder', lang);
+        // Ollama no longer has a placeholder as the input is hidden
         return '';
     };
 
@@ -255,7 +255,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 </div>
                 <div className="text-[10px] text-gray-500 truncate flex gap-2">
                     <span>{getProviderLabel()}</span>
-                    {(config.provider === 'openai' || config.provider === 'ollama') && config.baseUrl && <span>• {config.baseUrl}</span>}
+                    {config.provider === 'openai' && config.baseUrl && <span>• {config.baseUrl}</span>}
                 </div>
             </div>
 
@@ -301,7 +301,6 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                     const newProvider = e.target.value as ModelProvider;
                                     let newBaseUrl = '';
                                     if (newProvider === 'openai') newBaseUrl = 'https://api.openai.com/v1';
-                                    if (newProvider === 'ollama') newBaseUrl = 'http://localhost:11434';
                                     
                                     onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
                                 }}
@@ -332,7 +331,8 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             </div>
                         )}
 
-                         {(config.provider === 'openai' || config.provider === 'ollama') && (
+                         {/* Only show Base URL for OpenAI */}
+                         {config.provider === 'openai' && (
                             <div className="flex items-center gap-2 group flex-[2]">
                                 <div className={`p-1.5 bg-gray-100 dark:bg-gray-800 rounded-md`}>
                                     <Server className="w-3.5 h-3.5 text-gray-500" />
