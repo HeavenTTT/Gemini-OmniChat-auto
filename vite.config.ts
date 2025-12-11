@@ -10,14 +10,15 @@ export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
       server: {
-        port: 3000,
-        host: '0.0.0.0',
+        // port: 3000,
+        // host: '0.0.0.0',
         proxy: {
           // Ollama Cloud 代理
           // http://localhost:3000/ollama-proxy/api/tags -> https://ollama.com/api/tags
           '/ollama-proxy': {
             target: 'https://ollama.com',
             changeOrigin: true,
+            // Use regex to remove the prefix safely
             rewrite: (path) => path.replace(/^\/ollama-proxy/, ''),
           }
         }

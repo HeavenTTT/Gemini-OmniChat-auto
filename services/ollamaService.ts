@@ -1,29 +1,28 @@
-
-
 import { Ollama } from 'ollama/browser';
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n";
 
 /**
  * Service to handle Ollama API interactions using the official ollama-js library.
- * Supports both local instances and Ollama Cloud.
+ * Configured to always use the local proxy to avoid Mixed Content/CORS issues.
  */
 export class OllamaService {
   
   /**
    * Creates a new Ollama client instance.
-   * Automatically detects if the Base URL should use a local proxy to avoid CORS.
+   * Forces usage of the local proxy path (/ollama-proxy) derived from window.location.origin.
    */
-  private getClient(baseUrl?: string, apiKey?: string): Ollama {
-    // Automatically determine host based on current origin
+  private getClient(apiKey?: string): Ollama {
+    // Automatically determine host based on current origin to ensure correct proxying
+    // This handles both http (localhost) and https (production) correctly via the proxy
     const currentOrigin = window.location.origin;
     const host = `${currentOrigin}/ollama-proxy`;
+    
     const config: { host: string; headers?: Record<string, string> } = {
       host: host
     };
     
-    // If API Key is provided (e.g. for Ollama Cloud or protected instances),
-    // add it as a Bearer token.
+    // If API Key is provided (e.g. for Ollama Cloud), add it as a Bearer token.
     if (apiKey && apiKey.trim()) {
       config.headers = { Authorization: 'Bearer ' + apiKey.trim() };
     }
@@ -33,10 +32,11 @@ export class OllamaService {
 
   /**
    * Tests the connection by attempting to list models.
+   * Note: baseUrl argument is preserved for interface compatibility but ignored.
    */
   public async testConnection(baseUrl: string, apiKey?: string): Promise<boolean> {
     try {
-      const client = this.getClient(baseUrl, apiKey);
+      const client = this.getClient(apiKey);
       await client.list();
       return true;
     } catch (e) {
@@ -47,10 +47,11 @@ export class OllamaService {
 
   /**
    * Fetches available models from the Ollama endpoint.
+   * Note: baseUrl argument is preserved for interface compatibility but ignored.
    */
   public async listModels(baseUrl: string, apiKey?: string): Promise<ModelInfo[]> {
     try {
-      const client = this.getClient(baseUrl, apiKey);
+      const client = this.getClient(apiKey);
       const response = await client.list();
       
       // Map Ollama models to App's ModelInfo structure
@@ -65,7 +66,7 @@ export class OllamaService {
       console.error("Ollama list models failed:", error);
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           // Provide a more specific hint if it looks like a Mixed Content or CORS issue
-          throw new Error("Connection failed. If using HTTPS, ensure you are using the local proxy (http://localhost:11434) or a secure endpoint.");
+          throw new Error("Connection failed. Please check if the Ollama Cloud endpoint is reachable.");
       }
       throw error;
     }
@@ -75,7 +76,7 @@ export class OllamaService {
    * Streams chat completion from Ollama API using the library's async generator.
    */
   public async streamChat(
-    baseUrl: string,
+    baseUrl: string, // Ignored
     modelId: string,
     history: Message[],
     newMessage: string,
@@ -85,7 +86,7 @@ export class OllamaService {
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal
   ): Promise<string> {
-    const client = this.getClient(baseUrl, apiKey);
+    const client = this.getClient(apiKey);
 
     // Map App's history to Ollama's expected message format
     // App uses 'model', Ollama uses 'assistant'
@@ -138,7 +139,7 @@ export class OllamaService {
       }
       // Handle connection refused or other network errors generically
       if (error instanceof TypeError || error.message?.includes('Failed to fetch')) {
-         throw new Error("Network Error: Failed to fetch. Check CORS/Server.");
+         throw new Error("Network Error: Failed to fetch. Check connection.");
       }
       throw error;
     }
