@@ -7,7 +7,7 @@
 <p>The fastest path from prompt to production with Gemini.</p>
 <a href="https://aistudio.google.com/apps">Start building</a>
 <h1>Gemini OmniChat</h1>
-<p>A high-performance chat interface for Google Gemini API.</p>
+<p>A high-performance, multi-provider chat interface (Gemini, OpenAI, Ollama) with robust key management.</p>
 
 <p>
   <strong>🇺🇸 English</strong> ｜ <a href="./README_zh.md">🇨🇳 简体中文</a>
@@ -29,13 +29,28 @@
 
 ## 🚀 Key Features
 
-*   **Multi-API Key Rotation**: Handles rate limits by rotating keys.
-*   **Markdown Support**: Full rendering with code highlighting.
-*   **Chat History**: Auto-save, export, and import JSON.
-*   **Themes**: Day, Night, Twilight, Sky, Pink.
-*   **Security**: Optional password/question lock.
-*   **Models**: Auto-fetch available models.
-*   **Script Filters (Middleware)**: Upload JS/TS files to intercept and modify messages.
+### Core Connectivity
+*   **Multi-Provider Support**: Seamlessly switch between **Google Gemini**, **OpenAI Compatible** endpoints (including local LLMs like vLLM/LM Studio), and **Ollama** (supports Ollama Cloud/Proxy).
+*   **High Availability Key Rotation**: Configure multiple API keys with polling strategies to handle rate limits gracefully.
+*   **Key Grouping**: Organize API keys into named groups for bulk activation/deactivation and management.
+
+### Advanced AI Capabilities
+*   **Thinking Model Support**: Native UI support for Gemini 2.5 "Thinking" models, visualizing `<think>` blocks with collapsible "Thought Process" sections.
+*   **Thinking Budget Control**: Adjust the thinking token budget to control reasoning depth.
+*   **System Prompts Management**: Create, edit, and toggle multiple system instructions. Includes a full-screen editor.
+*   **Context Control**: Configurable history context limits to manage token usage.
+
+### Rich Chat Experience
+*   **Markdown & Math**: Full rendering support for Markdown, Code Blocks (with syntax highlighting), and LaTeX math equations.
+*   **Message Editing**: Edit user prompts or AI responses to steer the conversation.
+*   **Regeneration**: Regenerate responses from any point in the conversation history.
+*   **Stats Display**: Real-time display of execution time and token usage (estimated vs exact).
+
+### UI & Customization
+*   **Themes**: 10+ themes including VSCode Light/Dark, Twilight, Panda, and localized Kirby mascot adaptation.
+*   **Chat History**: Auto-save sessions, export/import as JSON, and auto-summarize titles.
+*   **Security Lock**: Optional password or security question protection for privacy.
+*   **Script Filters (Middleware)**: Upload JS/TS files to intercept/modify messages (Input/Output) locally in the browser.
 
 ## 🛠 Getting Started
 
@@ -84,6 +99,9 @@ return input;
 ## 📦 Deployment
 
 Optimized for Vercel. Push to GitHub and import to Vercel.
+
+**Note on Ollama:**
+This project includes a proxy rewrite in `vercel.json` (`/ollama-proxy`) to help bypass Mixed Content issues when connecting to Ollama instances (e.g. Ollama Cloud) from a secure HTTPS deployment.
 
 ---
 <div align="center">

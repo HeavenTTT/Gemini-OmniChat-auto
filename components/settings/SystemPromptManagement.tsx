@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState } from 'react';
@@ -215,7 +213,9 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
                 title={settings.systemPrompts.find(p => p.id === editingPromptId)?.title || 'Editor'}
                 initialValue={editingPromptContent}
                 onSave={(val) => {
-                    setEditingPromptContent(val);
+                    handleUpdatePrompt(editingPromptId, { content: val });
+                    setEditingPromptId(null);
+                    setEditingPromptContent('');
                     setIsFullEditorOpen(false);
                 }}
                 lang={lang}
