@@ -1,5 +1,15 @@
 {
   "name": "Gemini OmniChat",
   "description": "A high-performance chat interface supporting multiple API key rotation (polling) for higher reliability and rate limit handling. Features Markdown rendering and model selection.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "rewrites": [
+    {
+      "source": "/ollama-proxy/:match*",
+      "destination": "https://ollama.com/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
