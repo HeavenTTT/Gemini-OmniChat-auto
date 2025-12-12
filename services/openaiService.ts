@@ -1,4 +1,5 @@
 
+
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n"; // Import t for translations
 
@@ -56,9 +57,18 @@ export class OpenAIService {
       });
       
       if (!response.ok) {
-        const errorBody = await response.text(); // Get detailed error from API
-        const error = new Error(`OpenAI API Error: ${response.status} ${response.statusText} - ${errorBody}`);
-        (error as any).status = response.status; // Attach status for LLMService to extract
+        let errorMsg = response.statusText;
+        try {
+            const errorBody = await response.json();
+            if (errorBody.error?.message) errorMsg = errorBody.error.message;
+        } catch {
+            // fallback to text if json parse fails
+            const textBody = await response.text();
+            if (textBody) errorMsg = textBody;
+        }
+
+        const error = new Error(`OpenAI API Error: ${response.status} - ${errorMsg}`);
+        (error as any).status = response.status; 
         throw error;
       }
       
@@ -74,12 +84,12 @@ export class OpenAIService {
       }
       return [];
     } catch (error: any) {
-      if (error instanceof TypeError) { // Network error, CORS, etc.
-          const netErr = new Error(t('error.fetch_failed', 'en')); 
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) { 
+          const netErr = new Error("Network Error"); 
           (netErr as any).status = 0;
           throw netErr;
       }
-      throw error; // Re-throw other specific API errors
+      throw error; 
     }
   }
 
@@ -133,10 +143,17 @@ export class OpenAIService {
         });
 
         if (!response.ok) {
-            const errText = await response.text();
-            // Pass status code along to LLMService for better error code extraction
-            const error = new Error(`OpenAI Error ${response.status}: ${errText}`);
-            (error as any).status = response.status; // Attach status for LLMService to extract
+            let errorMsg = response.statusText;
+            try {
+                const errorBody = await response.json();
+                if (errorBody.error?.message) errorMsg = errorBody.error.message;
+            } catch {
+                const textBody = await response.text();
+                if (textBody) errorMsg = textBody;
+            }
+
+            const error = new Error(errorMsg);
+            (error as any).status = response.status; 
             throw error;
         }
 
@@ -182,12 +199,12 @@ export class OpenAIService {
           return data.choices?.[0]?.message?.content || "";
         }
     } catch (error: any) {
-        if (error instanceof TypeError) { // Network error, CORS, etc.
-            const netErr = new Error(t('error.fetch_failed', 'en')); 
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            const netErr = new Error("Network Error"); 
             (netErr as any).status = 0;
             throw netErr;
         }
-        throw error; // Re-throw other specific API errors
+        throw error; 
     }
   }
 }

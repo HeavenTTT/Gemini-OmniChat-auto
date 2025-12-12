@@ -73,6 +73,15 @@
   --box-shadow-rgba: 0, 0, 0, 0.2;
 }
 
+/* Chocolate Theme */
+.theme-chocolate {
+  --color-foreground-rgb: 245, 235, 225;
+  --color-background-start-rgb: 62, 39, 35; /* Dark Brown */
+  --color-background-end-rgb: 45, 25, 20; /* Deep Coffee */
+  --color-theme-primary-rgb: 210, 105, 30; /* Chocolate/Caramel */
+  --box-shadow-rgba: 40, 20, 10, 0.4;
+}
+
 /* VSCode Light Theme */
 .theme-vscode-light {
   --color-foreground-rgb: 40, 40, 40;

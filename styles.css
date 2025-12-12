@@ -47,6 +47,7 @@ body {
 
 .theme-dark ::-webkit-scrollbar-thumb,
 .theme-twilight ::-webkit-scrollbar-thumb,
+.theme-chocolate ::-webkit-scrollbar-thumb,
 .theme-vscode-dark ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -57,6 +58,7 @@ body {
 
 .theme-dark ::-webkit-scrollbar-thumb:hover,
 .theme-twilight ::-webkit-scrollbar-thumb:hover,
+.theme-chocolate ::-webkit-scrollbar-thumb:hover,
 .theme-vscode-dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.4);
 }

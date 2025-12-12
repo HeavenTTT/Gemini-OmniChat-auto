@@ -1,4 +1,5 @@
 
+
 import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
@@ -157,6 +158,30 @@ export class LLMService {
   }
 
   /**
+   * Helper to map raw error objects/codes to user-friendly messages
+   */
+  private getErrorMessage(error: any, lang: Language): string {
+      const status = error.status || error.statusCode;
+      const msg = error.message?.toLowerCase() || '';
+
+      if (status === 401 || msg.includes('401') || msg.includes('invalid api key')) return t('error.invalid_api_key', lang);
+      if (status === 402 || msg.includes('402') || msg.includes('billing')) return t('error.billing_required', lang);
+      if (status === 403 || msg.includes('403') || msg.includes('permission denied')) return t('error.permission_denied', lang);
+      if (status === 404 || msg.includes('404') || msg.includes('not found')) return t('error.model_not_found', lang);
+      if (status === 429 || msg.includes('429') || msg.includes('quota') || msg.includes('rate limit')) return t('error.quota_exceeded', lang);
+      if (status === 400 || msg.includes('400')) {
+          if (msg.includes('safety') || error.isSafety) return t('error.safety_block', lang);
+          if (msg.includes('context')) return t('error.context_length_exceeded', lang);
+          return t('error.bad_request', lang);
+      }
+      if (status === 500 || status === 502 || status === 503 || msg.includes('500')) return t('error.server_error', lang);
+      if (status === 0 || msg.includes('network') || msg.includes('fetch')) return t('error.network_issue', lang);
+      if (msg.includes('refused')) return t('error.connection_refused', lang);
+      
+      return error.message || t('error.unexpected_error', lang);
+  }
+
+  /**
    * Streams chat response using the next available key and its specific configuration.
    * Handles retries on failure and switches keys automatically.
    */
@@ -177,15 +202,21 @@ export class LLMService {
     this._isCallInProgress = true;
 
     try {
-        const maxRetries = this.keys.filter(k => k.isActive).length * 2 || 2;
+        const activeKeysCount = this.keys.filter(k => k.isActive).length;
+        // Retry logic: Try at least 2 times per key to handle transient network blips, 
+        // but avoid infinite loops. Limit total attempts relative to key count.
+        const maxRetries = Math.max(activeKeysCount * 2, 2); 
         let attempts = 0;
         const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+        
+        let lastError: any = null;
 
         while (attempts < maxRetries) {
             let keyConfig: KeyConfig;
             try {
                 keyConfig = this.getNextAvailableKey(lang);
             } catch (e: any) {
+                // If getNextAvailableKey throws (e.g. no active keys), stop immediately
                 throw e;
             }
 
@@ -243,25 +274,37 @@ export class LLMService {
             } catch (error: any) {
                 if (abortSignal?.aborted) throw new Error("Aborted by user");
                 
-                // Extract Error Code
+                lastError = error;
+
+                // Extract Error Code for internal tracking/display
                 let errorCode = 'Error';
-                if (error.status) { // e.g., from Gemini API client, or raw response status
-                    errorCode = error.status.toString();
-                } else if (error.statusCode) { // e.g., from some libraries
-                    errorCode = error.statusCode.toString();
+                let statusCode = error.status || error.statusCode;
+
+                if (statusCode) {
+                    errorCode = statusCode.toString();
                 } else {
                      const match = error.message?.match(/\b\d{3}\b/);
-                     if (match) errorCode = match[0];
-                     else if (error.message?.includes("429")) errorCode = "429";
-                     else if (error.message?.includes(t('error.fetch_failed', 'en'))) errorCode = "Network"; // Specific code for network errors
+                     if (match) {
+                         errorCode = match[0];
+                         statusCode = parseInt(errorCode);
+                     }
+                     else if (error.message?.includes("Network")) errorCode = "Network";
                 }
 
-                // Identify if error is fatal (should disable key) or transient (rate limit)
-                let isFatal = true;
-                // 429: Too Many Requests / Resource Exhausted
-                if (errorCode === '429' || error.message?.toLowerCase().includes('resource exhausted') || error.message?.toLowerCase().includes('quota')) {
-                    isFatal = false;
-                    errorCode = '429';
+                // Determine if fatal
+                // 401 (Invalid Key), 403 (Permission), 404 (Model Not Found), 400 (Bad Request) are usually configuration errors -> Disable Key
+                // 429 (Rate Limit), 500+ (Server), 0 (Network) are transient -> Keep Active but Rate Limit
+                let isFatal = false;
+                if ([400, 401, 402, 403, 404].includes(statusCode)) {
+                    isFatal = true;
+                }
+                
+                // Specific check for Safety Block (400) - usually prompt specific, not key specific, but treated as error
+                if (error.isSafety) {
+                    isFatal = false; // Don't disable key for safety blocks
+                    // But we should probably throw immediately for safety blocks as rotating won't help?
+                    // Actually, let's stop retrying if it's a safety block
+                    throw new Error(this.getErrorMessage(error, lang));
                 }
 
                 // Notify App
@@ -269,7 +312,7 @@ export class LLMService {
                     this.onKeyError(keyConfig.id, errorCode, isFatal);
                 }
                 
-                // Mark inactive or rate-limited locally to avoid reusing in this immediate retry loop
+                // Mark inactive or rate-limited locally
                 const localKey = this.keys.find(k => k.id === keyConfig.id);
                 if (localKey) {
                     if (isFatal) {
@@ -281,10 +324,21 @@ export class LLMService {
                     localKey.lastErrorCode = errorCode;
                 }
 
+                // If we ran out of active keys after this failure, stop
+                if (this.keys.filter(k => k.isActive).length === 0) {
+                     break; 
+                }
+
                 attempts++;
                 continue;
             }
         }
+        
+        // If we exhausted retries or keys
+        if (lastError) {
+            throw new Error(this.getErrorMessage(lastError, lang));
+        }
+        
         throw new Error(t('error.all_keys_failed', lang));
     } finally {
         this._isCallInProgress = false;

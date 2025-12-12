@@ -69,7 +69,7 @@ export interface SystemPrompt {
   isActive: boolean;
 }
 
-export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda' | 'vscode-light' | 'vscode-dark';
+export type Theme = 'light' | 'dark' | 'twilight' | 'sky' | 'pink' | 'sunrise' | 'lime' | 'panda' | 'chocolate' | 'vscode-light' | 'vscode-dark';
 export type Language = 'en' | 'zh' | 'ja';
 export type TextWrappingMode = 'default' | 'forced' | 'auto';
 export type AvatarVisibility = 'always' | 'user-only' | 'model-only' | 'never';

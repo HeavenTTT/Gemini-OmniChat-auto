@@ -1,3 +1,5 @@
+
+
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -60,20 +62,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-chocolate', 'theme-vscode-light', 'theme-vscode-dark');
     
     root.classList.add(`theme-${localSettings.theme}`);
-    if (['dark', 'twilight', 'vscode-dark'].includes(localSettings.theme)) {
+    if (['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(localSettings.theme)) {
         root.classList.add('dark');
     }
   }, [localSettings.theme, isOpen]);
 
   const handleCloseOrCancel = () => {
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-chocolate', 'theme-vscode-light', 'theme-vscode-dark');
     
     root.classList.add(`theme-${settings.theme}`);
-    if (['dark', 'twilight', 'vscode-dark'].includes(settings.theme)) {
+    if (['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme)) {
         root.classList.add('dark');
     }
     onClose();

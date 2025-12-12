@@ -377,9 +377,9 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
     const root = document.documentElement;
-    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-vscode-light', 'theme-vscode-dark');
+    root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-chocolate', 'theme-vscode-light', 'theme-vscode-dark');
     root.classList.add(`theme-${settings.theme}`);
-    if (['dark', 'twilight', 'vscode-dark'].includes(settings.theme)) root.classList.add('dark');
+    if (['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme)) root.classList.add('dark');
   }, [settings]);
 
   useEffect(() => {
@@ -787,7 +787,7 @@ const App: React.FC = () => {
   const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
   
   if (isLocked) return (
-    <div className={`${settings.theme === 'dark' || settings.theme === 'twilight' || settings.theme === 'vscode-dark' ? 'dark' : ''}`}>
+    <div className={`${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark' : ''}`}>
         <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950"></div>}>
             <SecurityLock 
                 config={settings.security} 
@@ -801,7 +801,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`flex h-screen font-sans ${settings.theme === 'dark' || settings.theme === 'twilight' || settings.theme === 'vscode-dark' ? 'dark' : ''}`}>
+    <div className={`flex h-screen font-sans ${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark' : ''}`}>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <CustomDialog config={dialog} onClose={closeDialog} lang={settings.language} />
 
