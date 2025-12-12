@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -127,7 +125,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <div className="p-3 md:p-4 pb-2 bg-transparent">
       <div className={`${containerClass} mx-auto`}>
-        <div className="relative flex items-center bg-white/60 dark:bg-gray-900/60 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
+        <div className="relative flex items-center glass-panel rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
           <textarea 
             ref={textareaRef}
             value={input} 
@@ -145,7 +143,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
              <button 
               onClick={isLoading ? onStop : onSend} 
               disabled={(!input.trim() && !isLoading) || isDisabled} 
-              className={`p-2 rounded-xl flex items-center justify-center transition-all ${isLoading ? 'bg-red-500 text-white hover:bg-red-600 shadow-md' : (input.trim() && !isDisabled ? 'bg-primary-600 text-white shadow-lg hover:bg-primary-500' : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed')}`} 
+              className={`p-2 rounded-xl flex items-center justify-center transition-all border-none ${isLoading ? 'bg-red-500 text-white hover:bg-red-600 shadow-md' : (input.trim() && !isDisabled ? 'bg-primary-600 text-white shadow-lg hover:bg-primary-500' : 'bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed')}`} 
               title={isLoading ? t('action.stop', language) : t('action.send', language)}
             >
               {isLoading ? <Square className="w-5 h-5 fill-current" /> : <Send className="w-5 h-5" />}

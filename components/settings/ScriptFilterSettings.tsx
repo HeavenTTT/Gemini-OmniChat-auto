@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useRef } from 'react';
@@ -94,16 +92,16 @@ export const ScriptFilterSettings: React.FC<ScriptFilterSettingsProps> = ({
     const code = type === 'input' ? settings.scripts?.inputFilterCode : settings.scripts?.outputFilterCode;
 
     return (
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm space-y-3">
+      <div className="card-standard p-4 space-y-3">
         <div className="flex justify-between items-center">
             <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200 flex items-center gap-2">
                 {type === 'input' ? <FileText className="w-4 h-4 text-blue-500" /> : <Code className="w-4 h-4 text-green-500" />}
                 {title}
             </h4>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className={`toggle-switch-label ${!code ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <input 
                     type="checkbox" 
-                    className="sr-only peer"
+                    className="toggle-checkbox"
                     checked={!!isEnabled}
                     disabled={!code}
                     onChange={(e) => {
@@ -117,7 +115,7 @@ export const ScriptFilterSettings: React.FC<ScriptFilterSettingsProps> = ({
                         });
                     }}
                 />
-                <div className={`w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600 ${!code ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                <div className="toggle-slider"></div>
             </label>
         </div>
 

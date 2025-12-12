@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect, useCallback } from 'react';
@@ -180,9 +178,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setConfirmDeleteId(null);
   };
 
-  // Calculate styles for loading bubble to match ChatMessage model bubbles
+  // Calculate dynamic background color for loading bubble based on transparency
+  // Note: structure and basic styles are now in CSS .loading-bubble
   const borderAlpha = 0.5 + (bubbleTransparency / 100) * 0.5;
-  const loadingBubbleStyle = {
+  const dynamicStyle = {
       backgroundColor: `rgba(var(--color-theme-primary-rgb), ${(bubbleTransparency / 100) * 0.15})`,
       borderColor: isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`
   };
@@ -251,12 +250,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     </div>
                 )}
                 <div 
-                    className="px-4 py-3 rounded-2xl rounded-tl-sm flex items-center gap-1.5 shadow-sm border backdrop-blur-sm"
-                    style={loadingBubbleStyle}
+                    className="loading-bubble"
+                    style={dynamicStyle}
                 >
-                    <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-1.5 h-1.5 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="typing-dot" style={{ animationDelay: '0ms' }}></div>
+                    <div className="typing-dot" style={{ animationDelay: '150ms' }}></div>
+                    <div className="typing-dot" style={{ animationDelay: '300ms' }}></div>
                     {showResponseTimer && <LoadingTimer />}
                 </div>
             </div>

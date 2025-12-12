@@ -302,7 +302,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                     
                                     onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
                                 }}
-                                className={`appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20`}
+                                className="input-standard"
                                 aria-label={t('settings.model_provider_select', lang)}
                             >
                                 <option value="google">Google Gemini</option>
@@ -317,7 +317,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                 <select
                                     value={config.groupId || ''}
                                     onChange={(e) => onUpdate({ groupId: e.target.value || undefined })} // Empty string means undefined (unassigned)
-                                    className={`appearance-none w-full bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs py-2 pl-3 pr-8 outline-none font-semibold text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-primary-500/20`}
+                                    className="input-standard"
                                     aria-label={t('label.group', lang)}
                                 >
                                     <option value="">{t('label.no_group', lang)}</option>
@@ -385,12 +385,12 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                         
                         <button 
                             onClick={handleExportConfig}
-                            className="px-2 py-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors flex items-center gap-1.5 text-xs font-medium"
+                            className="btn-icon-sm flex items-center gap-1.5"
                             title={t('action.export_key', lang)}
                             aria-label={t('action.export_key', lang)}
                         >
                             <Download className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">{t('action.export_key', lang)}</span>
+                            <span className="hidden sm:inline text-xs font-medium">{t('action.export_key', lang)}</span>
                         </button>
 
                          <button 

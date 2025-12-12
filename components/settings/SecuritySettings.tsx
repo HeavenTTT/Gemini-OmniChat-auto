@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -61,16 +60,16 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
     <div className="space-y-4">
         <div className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl border border-gray-200 dark:border-gray-700`}>
         <span className="font-medium text-gray-900 dark:text-white">{t('settings.security', lang)}</span>
-        <label htmlFor="security-toggle" className="relative inline-flex items-center cursor-pointer">
+        <label htmlFor="security-toggle" className="toggle-switch-label">
             <input 
                 id="security-toggle"
                 type="checkbox" 
-                className="sr-only peer"
+                className="toggle-checkbox"
                 checked={settings.security.enabled}
                 onChange={() => updateSecurity({ enabled: !settings.security.enabled })}
                 aria-label={t('settings.enable_security_lock', lang)}
             />
-            <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            <div className="toggle-slider"></div>
         </label>
         </div>
         
@@ -98,7 +97,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                     <input 
                         type="password"
                         placeholder={t('input.password_placeholder', lang)}
-                        className={`w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                        className="input-standard"
                         value={settings.security.password || ''}
                         onChange={e => updateSecurity({ password: e.target.value })}
                         aria-label={t('input.password_field', lang)}
@@ -114,7 +113,7 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                             min="60"
                             step="60"
                             placeholder="86400"
-                            className={`w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-900 dark:text-white`}
+                            className="input-standard"
                             value={settings.security.lockoutDurationSeconds || ''}
                             onChange={e => updateSecurity({ lockoutDurationSeconds: parseInt(e.target.value) || undefined })}
                             aria-label={t('settings.lockout_duration_input', lang)}
@@ -128,14 +127,14 @@ export const SecuritySettings: React.FC<SecuritySettingsProps> = ({
                         <h4 className="text-xs font-semibold text-primary-800 dark:text-primary-300 uppercase mb-3">{t('action.add_question', lang)}</h4>
                         <div className="flex flex-col md:flex-row gap-3">
                             <input 
-                                className={`flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500`}
+                                className="input-standard"
                                 placeholder={t('input.question', lang)}
                                 value={newQuestion.q}
                                 onChange={e => setNewQuestion({...newQuestion, q: e.target.value})}
                                 aria-label={t('input.security_question_field', lang)}
                             />
                             <input 
-                                className={`flex-1 p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm outline-none focus:border-primary-500`}
+                                className="input-standard"
                                 placeholder={t('input.answer', lang)}
                                 value={newQuestion.a}
                                 onChange={e => setNewQuestion({...newQuestion, a: e.target.value})}

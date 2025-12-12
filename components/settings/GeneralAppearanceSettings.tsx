@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React from 'react';
@@ -30,7 +28,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                 id="language-select"
                 value={settings.language}
                 onChange={(e) => onUpdateSettings({...settings, language: e.target.value as Language})}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                className="input-standard"
                 aria-label={t('settings.language_select', lang)}
                 >
                 <option value="en">English</option>
@@ -44,7 +42,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                 id="theme-select"
                 value={settings.theme}
                 onChange={(e) => onUpdateSettings({...settings, theme: e.target.value as Theme})}
-                className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                className="input-standard"
                 aria-label={t('settings.theme_select', lang)}
                 >
                 <option value="light">{t('theme.light', lang)}</option>
@@ -75,7 +73,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                         type="range" min="12" max="24" step="1"
                         value={settings.fontSize}
                         onChange={(e) => onUpdateSettings({...settings, fontSize: parseInt(e.target.value)})}
-                        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
+                        className="slider-standard"
                         aria-label={t('settings.font_size_slider', lang)}
                         />
                     </div>
@@ -91,7 +89,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                         type="range" min="0" max="100" step="5"
                         value={settings.bubbleTransparency}
                         onChange={(e) => onUpdateSettings({...settings, bubbleTransparency: parseInt(e.target.value)})}
-                        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary-600`}
+                        className="slider-standard"
                         aria-label={t('settings.bubble_transparency_slider', lang)}
                         />
                     </div>
@@ -100,71 +98,71 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
                             <label htmlFor="show-model-name-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_model_name', lang)}</label>
-                            <label htmlFor="show-model-name-toggle" className="relative inline-flex items-center cursor-pointer">
+                            <label htmlFor="show-model-name-toggle" className="toggle-switch-label">
                                 <input 
                                     id="show-model-name-toggle"
                                     type="checkbox" 
-                                    className="sr-only peer"
+                                    className="toggle-checkbox"
                                     checked={settings.showModelName}
                                     onChange={(e) => onUpdateSettings({...settings, showModelName: e.target.checked})}
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                <div className="toggle-slider"></div>
                             </label>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <label htmlFor="show-token-usage-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_token_usage', lang)}</label>
-                            <label htmlFor="show-token-usage-toggle" className="relative inline-flex items-center cursor-pointer">
+                            <label htmlFor="show-token-usage-toggle" className="toggle-switch-label">
                                 <input 
                                     id="show-token-usage-toggle"
                                     type="checkbox" 
-                                    className="sr-only peer"
+                                    className="toggle-checkbox"
                                     checked={settings.showTokenUsage}
                                     onChange={(e) => onUpdateSettings({...settings, showTokenUsage: e.target.checked})}
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                <div className="toggle-slider"></div>
                             </label>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <label htmlFor="show-response-timer-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_response_timer', lang)}</label>
-                            <label htmlFor="show-response-timer-toggle" className="relative inline-flex items-center cursor-pointer">
+                            <label htmlFor="show-response-timer-toggle" className="toggle-switch-label">
                                 <input 
                                     id="show-response-timer-toggle"
                                     type="checkbox" 
-                                    className="sr-only peer"
+                                    className="toggle-checkbox"
                                     checked={settings.showResponseTimer}
                                     onChange={(e) => onUpdateSettings({...settings, showResponseTimer: e.target.checked})}
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                <div className="toggle-slider"></div>
                             </label>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <label htmlFor="smooth-animation-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.smooth_animation', lang)}</label>
-                            <label htmlFor="smooth-animation-toggle" className="relative inline-flex items-center cursor-pointer">
+                            <label htmlFor="smooth-animation-toggle" className="toggle-switch-label">
                                 <input 
                                     id="smooth-animation-toggle"
                                     type="checkbox" 
-                                    className="sr-only peer"
+                                    className="toggle-checkbox"
                                     checked={settings.smoothAnimation}
                                     onChange={(e) => onUpdateSettings({...settings, smoothAnimation: e.target.checked})}
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                <div className="toggle-slider"></div>
                             </label>
                         </div>
 
                         <div className="flex items-center justify-between">
                             <label htmlFor="kirby-color-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.kirby_theme_color', lang)}</label>
-                            <label htmlFor="kirby-color-toggle" className="relative inline-flex items-center cursor-pointer">
+                            <label htmlFor="kirby-color-toggle" className="toggle-switch-label">
                                 <input 
                                     id="kirby-color-toggle"
                                     type="checkbox" 
-                                    className="sr-only peer"
+                                    className="toggle-checkbox"
                                     checked={settings.kirbyThemeColor}
                                     onChange={(e) => onUpdateSettings({...settings, kirbyThemeColor: e.target.checked})}
                                 />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                <div className="toggle-slider"></div>
                             </label>
                         </div>
                     </div>
@@ -177,7 +175,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                             id="text-wrapping-select"
                             value={settings.textWrapping}
                             onChange={(e) => onUpdateSettings({...settings, textWrapping: e.target.value as TextWrappingMode})}
-                            className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                            className="input-standard"
                             aria-label={t('settings.text_wrapping_select', lang)}
                             >
                             <option value="default">{t('wrap.default', lang)}</option>
@@ -192,7 +190,7 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                             id="avatar-visibility-select"
                             value={settings.avatarVisibility}
                             onChange={(e) => onUpdateSettings({...settings, avatarVisibility: e.target.value as AvatarVisibility})}
-                            className={`w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all`}
+                            className="input-standard"
                             aria-label={t('settings.avatar_visibility', lang)}
                             >
                             <option value="always">{t('avatar.always', lang)}</option>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useRef } from 'react';
@@ -42,7 +41,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           
           <button 
             onClick={onNewChat} 
-            className="flex items-center gap-2 w-full bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-4 py-3 rounded-lg transition-all border border-primary-200 dark:border-primary-800 mb-6 shadow-sm"
+            className="flex items-center gap-2 w-full bg-primary-50 dark:bg-primary-900/20 hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400 px-4 py-3 rounded-lg transition-all border border-primary-200 dark:border-primary-800 mb-6 shadow-sm cursor-pointer"
             aria-label={t('action.create_new_chat', language)}
           >
             <Plus className="w-5 h-5" /><span className="font-medium">{t('action.new_chat', language)}</span>
@@ -68,7 +67,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
              <button 
                 onClick={() => { onOpenSettings(); onClose(); }} 
-                className="flex items-center gap-3 w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors"
+                className="btn-secondary w-full justify-start"
                 aria-label={t('action.open_settings', language)}
              >
                <Settings className="w-5 h-5" />{t('action.settings', language)}

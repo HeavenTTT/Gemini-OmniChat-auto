@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -38,7 +37,7 @@ export const ModelList: React.FC<ModelListProps> = ({ models, lang }) => {
         <input 
           type="text" 
           placeholder={t('action.search_models', lang)} 
-          className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all text-gray-800 dark:text-gray-200"
+          className="input-standard pl-10"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />

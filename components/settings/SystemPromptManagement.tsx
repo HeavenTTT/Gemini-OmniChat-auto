@@ -138,7 +138,7 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
                            {editingPromptId !== prompt.id && (
                             <button 
                                 onClick={() => startEditingPromptContent(prompt)}
-                                className="p-1.5 rounded-lg bg-gray-50 text-gray-500 hover:bg-gray-100 dark:bg-gray-700/50 dark:hover:bg-gray-700 transition-colors"
+                                className="btn-icon-sm"
                                 title={t('action.edit', lang)}
                                 aria-label={t('action.edit_prompt', lang)}
                             >
@@ -179,7 +179,7 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
                         <div className="flex justify-end gap-2 mt-2">
                             <button 
                                 onClick={cancelPromptContentEdit} 
-                                className={`p-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm`}
+                                className="btn-secondary"
                                 title={t('action.cancel', lang)}
                                 aria-label={t('action.cancel_edit_prompt', lang)}
                             >
@@ -187,7 +187,7 @@ export const SystemPromptManagement: React.FC<SystemPromptManagementProps> = ({
                             </button>
                             <button 
                                 onClick={() => savePromptContent(prompt.id)} 
-                                className={`px-4 py-2 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1`}
+                                className="btn-primary"
                                 aria-label={t('action.save_prompt_edit', lang)}
                             >
                                 <Save className="w-4 h-4"/>{t('action.confirm', lang)}

@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
@@ -439,7 +437,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     {msg.isError ? (
                     <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
                     ) : (
-                    <div className={`prose prose-sm max-w-none leading-relaxed dark:prose-invert ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
+                    /* Markdown Body Wrapper */
+                    <div className={`markdown-body ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
                         {/* Render Thought Blocks if present */}
                         {thoughts.length > 0 && (
                             <div className="mb-3 flex flex-col gap-2">
@@ -458,11 +457,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                     const isInline = !match && !String(children).includes('\n'); 
                                     
                                     if (isInline) {
+                                      // Keep inline code somewhat standard but styled via class usually
+                                      // Here we keep minimal JSX for logic, but styles could be fully external
                                       return (
-                                        <code 
-                                          className="bg-primary-100 dark:bg-primary-900/40 px-1.5 py-0.5 rounded text-primary-800 dark:text-primary-200 text-xs font-mono border border-primary-200 dark:border-primary-800/50" 
-                                          {...props}
-                                        >
+                                        <code className={className} {...props}>
                                           {children}
                                         </code>
                                       );
@@ -478,66 +476,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                       />
                                     );
                                 },
-                                table({children}) {
-                                    return <div className="overflow-x-auto my-4 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-white/50 dark:bg-black/20"><table className="w-full text-left text-sm border-collapse">{children}</table></div>;
-                                },
-                                thead({children}) {
-                                    return <thead className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300">{children}</thead>;
-                                },
-                                th({children}) {
-                                    return <th className="px-4 py-3 font-semibold text-xs uppercase tracking-wider text-left">{children}</th>;
-                                },
-                                tr({children}) {
-                                    return <tr className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">{children}</tr>;
-                                },
-                                td({children}) {
-                                    return <td className="px-4 py-3 text-gray-600 dark:text-gray-300 align-top">{children}</td>;
-                                },
+                                // Simplified components: Removed table, th, td, tr, blockquote, etc.
+                                // because they are now handled by .markdown-body CSS
                                 a({href, children}) {
                                     return (
                                         <a 
                                             href={href} 
                                             target="_blank" 
                                             rel="noopener noreferrer" 
-                                            className="text-primary-600 dark:text-primary-400 hover:underline hover:text-primary-700 dark:hover:text-primary-300 inline-flex items-center gap-0.5 font-medium transition-colors"
                                         >
                                             {children}
-                                            <ExternalLink className="w-3 h-3 opacity-70" />
+                                            <ExternalLink className="w-3 h-3 inline-block ml-0.5 opacity-70" />
                                         </a>
                                     );
                                 },
-                                blockquote({children}) {
-                                    return <blockquote className="border-l-4 border-primary-300 dark:border-primary-700 pl-4 py-2 my-4 text-gray-600 dark:text-gray-400 italic bg-gray-50/50 dark:bg-gray-800/30 rounded-r">{children}</blockquote>;
-                                },
-                                ul({children}) {
-                                    return <ul className="list-disc pl-6 my-2 space-y-1 text-gray-700 dark:text-gray-300 marker:text-gray-400">{children}</ul>;
-                                },
-                                ol({children}) {
-                                    return <ol className="list-decimal pl-6 my-2 space-y-1 text-gray-700 dark:text-gray-300 marker:text-gray-400">{children}</ol>;
-                                },
-                                li({children}) {
-                                    return <li className="pl-1 leading-relaxed">{children}</li>;
-                                },
-                                h1({children}) {
-                                    return <h1 className="text-2xl font-bold mt-6 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white flex items-center gap-2">{children}</h1>;
-                                },
-                                h2({children}) {
-                                    return <h2 className="text-xl font-bold mt-5 mb-3 text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-800 pb-1">{children}</h2>;
-                                },
-                                h3({children}) {
-                                    return <h3 className="text-lg font-bold mt-4 mb-2 text-gray-900 dark:text-white">{children}</h3>;
-                                },
-                                h4({children}) {
-                                    return <h4 className="text-base font-bold mt-3 mb-2 text-gray-900 dark:text-white">{children}</h4>;
-                                },
-                                hr({}) {
-                                    return <hr className="my-6 border-gray-200 dark:border-gray-700" />;
-                                },
                                 img({src, alt}) {
-                                    return <img src={src} alt={alt} className="max-w-full h-auto rounded-lg my-4 shadow-sm border border-gray-200 dark:border-gray-700 block mx-auto hover:opacity-95 transition-opacity cursor-pointer" loading="lazy" onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} />;
-                                },
-                                del({children}) {
-                                    return <del className="text-gray-400 dark:text-gray-500 line-through decoration-gray-400 dark:decoration-gray-500">{children}</del>;
+                                    return <img src={src} alt={alt} onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} style={{cursor: 'pointer'}} />;
                                 },
                                 input({checked, readOnly}) {
                                     return <input type="checkbox" checked={checked} readOnly={readOnly} className="mr-2 accent-primary-600 rounded w-4 h-4 align-text-bottom cursor-default" />;

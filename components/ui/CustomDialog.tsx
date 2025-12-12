@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -75,7 +74,7 @@ export const CustomDialog: React.FC<CustomDialogProps> = ({ config, onClose, lan
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={config.inputPlaceholder}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg outline-none focus:ring-2 focus:ring-primary-500/50 transition-all text-gray-900 dark:text-white"
+              className="input-standard"
             />
           )}
         </div>

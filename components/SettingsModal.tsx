@@ -167,7 +167,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
             {t('settings.title', lang)}
           </h2>
-          <button onClick={handleCloseOrCancel} className="p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors" aria-label={t('action.close_settings', lang)}>
+          <button onClick={handleCloseOrCancel} className="btn-icon" aria-label={t('action.close_settings', lang)}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -182,7 +182,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     aria-controls={`panel-${tab.id}`}
                     aria-selected={activeTab === tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === tab.id ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                     aria-label={tab.label}
                 >
                     {tab.icon}
@@ -217,14 +217,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                         <button 
                             onClick={handleExportSettings} 
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm`}
+                            className="btn-secondary"
                             aria-label={t('action.export_app_settings', lang)}
                         >
                             <Download className="w-4 h-4" />{t('action.export_settings', lang)}
                         </button>
                         <button 
                             onClick={handleImportTrigger} 
-                            className={`flex items-center justify-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 transition-colors shadow-sm`}
+                            className="btn-secondary"
                             aria-label={t('action.import_app_settings', lang)}
                         >
                             <Upload className="w-4 h-4" />{t('action.import_settings', lang)}
@@ -307,14 +307,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="md:p-5 px-4 py-3 border-t border-gray-200 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-b-2xl flex justify-end gap-3 flex-shrink-0">
           <button 
             onClick={handleCloseOrCancel} 
-            className={`px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors shadow-sm`}
+            className="btn-secondary"
             aria-label={t('action.cancel_changes', lang)}
           >
             {t('action.cancel', lang)}
           </button>
           <button 
             onClick={handleSave} 
-            className={`px-6 py-2.5 text-sm font-medium bg-primary-600 hover:bg-primary-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2`}
+            className="btn-primary"
             aria-label={t('action.save_all_settings', lang)}
           >
             <CheckCircle className="w-4 h-4" />

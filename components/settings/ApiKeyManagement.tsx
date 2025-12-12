@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useState, useRef } from 'react';
@@ -571,7 +569,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   return (
     <div className="space-y-4">
         {/* Header / Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+        <div className="card-standard p-4 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
                  <div className="p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg text-primary-600 dark:text-primary-400">
                     <Key className="w-5 h-5" />
@@ -595,15 +593,15 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                     <label htmlFor="grouping-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">
                         {t('settings.enable_grouping', lang)}
                     </label>
-                    <label htmlFor="grouping-toggle" className="relative inline-flex items-center cursor-pointer">
+                    <label htmlFor="grouping-toggle" className="toggle-switch-label">
                         <input 
                             id="grouping-toggle"
                             type="checkbox" 
-                            className="sr-only peer"
+                            className="toggle-checkbox"
                             checked={settings.enableKeyGrouping || false}
                             onChange={(e) => onUpdateSettings({...settings, enableKeyGrouping: e.target.checked})}
                         />
-                        <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                        <div className="toggle-slider"></div>
                     </label>
                  </div>
 
@@ -632,7 +630,7 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             value={newGroupName}
                             onChange={(e) => setNewGroupName(e.target.value)}
                             placeholder={t('input.group_name_placeholder', lang)}
-                            className="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary-500"
+                            className="input-standard"
                         />
                         <button 
                             onClick={handleAddGroup}
@@ -692,14 +690,14 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                                     
                                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                                         {/* Large Group Toggle Switch */}
-                                        <label className="relative inline-flex items-center cursor-pointer mr-2" onClick={e => e.stopPropagation()}>
+                                        <label className="toggle-switch-label mr-2" onClick={e => e.stopPropagation()}>
                                             <input 
                                                 type="checkbox" 
-                                                className="sr-only peer"
+                                                className="toggle-checkbox"
                                                 checked={isGroupActive}
                                                 onChange={() => toggleGroupEnabled(group.id)}
                                             />
-                                            <div className="w-12 h-7 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                                            <div className="toggle-slider"></div>
                                         </label>
 
                                         <button 

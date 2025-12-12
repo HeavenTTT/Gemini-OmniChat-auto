@@ -85,21 +85,8 @@ export const LargeTextEditor: React.FC<LargeTextEditorProps> = ({
 
       {/* 2. Rainbow Dynamic Gradient Background - Rendered Second */}
       <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-         <div 
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200vmax] h-[200vmax]"
-            style={{ 
-                background: 'conic-gradient(from 0deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #6366f1, #a855f7, #ec4899, #ef4444)',
-                animation: 'spin-centered 8s linear infinite'
-            }}
-         />
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200vmax] h-[200vmax] rainbow-background" />
       </div>
-
-      <style>{`
-        @keyframes spin-centered {
-            from { transform: translate(-50%, -50%) rotate(0deg); }
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 

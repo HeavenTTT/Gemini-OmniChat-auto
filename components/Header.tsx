@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import React, { useRef } from 'react';
@@ -69,30 +67,30 @@ export const Header: React.FC<HeaderProps> = ({
       <button
           onClick={onClearChat}
           disabled={!hasMessages}
-          className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="btn-icon hover:text-red-600 dark:hover:text-red-400 gap-1"
           title={t('action.clear_chat', language)}
           aria-label={t('action.clear_chat', language)}
       >
           <Eraser className="w-5 h-5" />
-          <span className="hidden md:inline">{t('action.clear', language)}</span>
+          <span className="hidden md:inline text-sm font-medium">{t('action.clear', language)}</span>
       </button>
       <button 
         onClick={onSaveChat} 
-        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1"
+        className="btn-icon hover:text-primary-600 dark:hover:text-primary-400 gap-1"
         title={t('action.save', language)}
         aria-label={t('action.save_current_chat', language)}
       >
         <Download className="w-5 h-5" />
-        <span className="hidden md:inline">{t('action.save', language)}</span>
+        <span className="hidden md:inline text-sm font-medium">{t('action.save', language)}</span>
       </button>
       <button 
         onClick={handleLoadTrigger} 
-        className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex items-center gap-1"
+        className="btn-icon hover:text-primary-600 dark:hover:text-primary-400 gap-1"
         title={t('action.load', language)}
         aria-label={t('action.load_chat_file', language)}
       >
         <Upload className="w-5 h-5" />
-        <span className="hidden md:inline">{t('action.load', language)}</span>
+        <span className="hidden md:inline text-sm font-medium">{t('action.load', language)}</span>
       </button>
       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" aria-label={t('action.select_chat_file', language)} />
     </div>
@@ -114,7 +112,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button 
             onClick={onSummarize} 
             disabled={isSummarizing || !hasMessages} 
-            className="p-1.5 text-gray-400 hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" 
+            className="btn-icon-sm disabled:opacity-30 disabled:cursor-not-allowed hover:text-primary-500 dark:hover:text-primary-400" 
             title={t('action.summarize', language)}
             aria-label={t('action.summarize_chat_title', language)}
           >
@@ -161,7 +159,7 @@ export const Header: React.FC<HeaderProps> = ({
           <ActionButtons />
           <button 
             onClick={onNewChat} 
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" 
+            className="btn-icon text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" 
             title={t('action.new_chat', language)}
             aria-label={t('action.create_new_chat', language)}
           >
@@ -169,7 +167,7 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
           <button 
             onClick={onOpenSettings} 
-            className="p-2 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" 
+            className="btn-icon text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white" 
             title={t('action.settings', language)}
             aria-label={t('action.open_settings', language)}
           >
