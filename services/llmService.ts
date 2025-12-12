@@ -18,9 +18,9 @@ export class LLMService {
   private openAIService: OpenAIService;
   private googleService: GoogleService;
   private ollamaService: OllamaService;
-  private onKeyError?: (id: string, errorCode?: string) => void;
+  private onKeyError?: (id: string, errorCode?: string, isFatal?: boolean) => void;
 
-  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string) => void) {
+  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string, isFatal?: boolean) => void) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
     this.googleService = new GoogleService();
@@ -110,32 +110,45 @@ export class LLMService {
       throw new Error(t('error.no_active_keys', lang));
     }
 
-    // Simple round-robin strategy across ALL active keys
-    const currentKey = activeKeys[this.keyIndex % activeKeys.length];
+    // Attempt to find a usable key (not rate limited recently)
+    const attempts = activeKeys.length;
+    let selectedKey: KeyConfig | null = null;
     
-    // Check usage limits (Poll Count)
-    if (this.keyUsageCount >= (currentKey.usageLimit || 1)) {
-        this.keyIndex = (this.keyIndex + 1) % activeKeys.length;
-        this.keyUsageCount = 0;
-    }
-    
-    const selectedKey = activeKeys[this.keyIndex % activeKeys.length];
-    
-    // Check rate limits (basic check: skip if limited < 60s ago)
-    if (selectedKey.isRateLimited && Date.now() - selectedKey.lastUsed < 60000) {
-        // Find next non-limited key
-        for (let i = 1; i < activeKeys.length; i++) {
-            const nextIdx = (this.keyIndex + i) % activeKeys.length;
-            const k = activeKeys[nextIdx];
-            if (!k.isRateLimited || Date.now() - k.lastUsed > 60000) {
-                this.keyIndex = nextIdx;
-                this.keyUsageCount = 0;
-                return k;
-            }
+    // Check next N keys starting from current index
+    for (let i = 0; i < attempts; i++) {
+        const idx = (this.keyIndex + i) % activeKeys.length;
+        const candidate = activeKeys[idx];
+
+        // Check if rate limited and within cooldown period (60s)
+        if (candidate.isRateLimited && Date.now() - candidate.lastUsed < 60000) {
+            continue; // Skip this key
         }
+
+        // Key is good to use (or at least we should try)
+        // Check poll usage limit
+        if (i === 0 && this.keyUsageCount >= (candidate.usageLimit || 1)) {
+             // Current key exhausted usage limit, force rotate to next
+             continue; 
+        }
+
+        selectedKey = candidate;
+        // Update global index to point to this selected key
+        this.keyIndex = idx;
+        break;
     }
 
+    // If all keys are rate limited, fallback to the one with oldest usage or just current rotation
+    if (!selectedKey) {
+        // Fallback: Just rotate to next to try anyway
+        this.keyIndex = (this.keyIndex + 1) % activeKeys.length;
+        selectedKey = activeKeys[this.keyIndex];
+    }
+    
+    // Reset usage count if we switched indices from original
+    // (Note: this logic is simplified; strict round robin tracks index persistently)
+    // Here we just increment usage for the selected key.
     this.keyUsageCount++;
+    
     return selectedKey;
   }
 
@@ -243,15 +256,28 @@ export class LLMService {
                      else if (error.message?.includes(t('error.fetch_failed', 'en'))) errorCode = "Network"; // Specific code for network errors
                 }
 
-                // Auto-deactivate key on error if callback provided
+                // Identify if error is fatal (should disable key) or transient (rate limit)
+                let isFatal = true;
+                // 429: Too Many Requests / Resource Exhausted
+                if (errorCode === '429' || error.message?.toLowerCase().includes('resource exhausted') || error.message?.toLowerCase().includes('quota')) {
+                    isFatal = false;
+                    errorCode = '429';
+                }
+
+                // Notify App
                 if (this.onKeyError) {
-                    this.onKeyError(keyConfig.id, errorCode);
+                    this.onKeyError(keyConfig.id, errorCode, isFatal);
                 }
                 
-                // Mark inactive locally to avoid reusing in this loop
+                // Mark inactive or rate-limited locally to avoid reusing in this immediate retry loop
                 const localKey = this.keys.find(k => k.id === keyConfig.id);
                 if (localKey) {
-                    localKey.isActive = false;
+                    if (isFatal) {
+                        localKey.isActive = false;
+                    } else {
+                        localKey.isRateLimited = true;
+                        localKey.lastUsed = Date.now();
+                    }
                     localKey.lastErrorCode = errorCode;
                 }
 

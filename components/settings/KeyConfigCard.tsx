@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -257,9 +258,13 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 </div>
             </div>
 
-             {/* Error Code Badge - Displayed when inactive due to error */}
-             {config.lastErrorCode && !config.isActive && (
-                 <span className="text-[10px] font-bold text-red-500 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded border border-red-200 dark:border-red-800 mr-2" title="Last Error Code">
+             {/* Error Code Badge - Displayed when inactive OR rate limited */}
+             {config.lastErrorCode && (
+                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border mr-2 ${
+                     !config.isActive 
+                     ? 'text-red-500 bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-800' // Fatal Error (Disabled)
+                     : 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800' // Rate Limited (Active)
+                 }`} title="Last Error Code">
                      {config.lastErrorCode}
                  </span>
              )}

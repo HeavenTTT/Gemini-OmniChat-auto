@@ -268,17 +268,30 @@ const App: React.FC = () => {
     const effectiveKeys = initialKeys.map(k => {
         if (!k.groupId) return k;
         const group = loadedSettings.keyGroups?.find(g => g.id === k.groupId);
-        // If group exists and is explicitly inactive (false), disable key for the service
         if (group && group.isActive === false) {
             return { ...k, isActive: false };
         }
         return k;
     });
 
-    setLlmService(new LLMService(effectiveKeys, (id, errorCode) => {
-        setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
-        // Add toast with error code
-        addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+    setLlmService(new LLMService(effectiveKeys, (id, errorCode, isFatal = true) => {
+        setApiKeys(prev => prev.map(k => {
+            if (k.id !== id) return k;
+            if (isFatal) {
+                // Permanently disable on fatal error
+                return { ...k, isActive: false, lastErrorCode: errorCode };
+            } else {
+                // Temporarily mark rate limited but keep active for future polling
+                return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
+            }
+        }));
+        
+        if (isFatal) {
+            addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+        } else {
+            // Optional: notify about rotation/rate limit
+            // addToast(`${t('msg.rate_limited', loadedSettings.language)} ${errorCode ? ` (${errorCode})` : ''}`, 'info');
+        }
     }));
 
     // Security
@@ -343,10 +356,19 @@ const App: React.FC = () => {
     if (llmService) {
       llmService.updateKeys(effectiveKeys);
     } else {
-       // Should rely on initial effect for creation, but just in case
-       setLlmService(new LLMService(effectiveKeys, (id, errorCode) => {
-           setApiKeys(prev => prev.map(k => k.id === id ? { ...k, isActive: false, lastErrorCode: errorCode } : k));
-           addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+       // Fallback Init
+       setLlmService(new LLMService(effectiveKeys, (id, errorCode, isFatal = true) => {
+           setApiKeys(prev => prev.map(k => {
+                if (k.id !== id) return k;
+                if (isFatal) {
+                    return { ...k, isActive: false, lastErrorCode: errorCode };
+                } else {
+                    return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
+                }
+           }));
+           if (isFatal) {
+              addToast(`${t('error.key_auto_disabled', settings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+           }
        }));
     }
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
