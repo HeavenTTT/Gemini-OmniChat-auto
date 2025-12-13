@@ -1,7 +1,15 @@
+
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect, useCallback } from 'react';
-import { Message, Language, TextWrappingMode, Theme, Role, AvatarVisibility } from '../types';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 import { ChatMessage } from './ChatMessage';

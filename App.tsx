@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -431,10 +430,9 @@ const App: React.FC = () => {
     const startTime = Date.now();
 
     try {
-      const combinedSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
+      const systemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
 
       // CRITICAL FIX: Ensure history passed to API does NOT contain the new user message.
-      // Even if historyBefore somehow included it (due to state updates), we filter it out by ID to be absolutely safe.
       let historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
 
       // Apply "Strip Thoughts" if enabled
@@ -448,7 +446,7 @@ const App: React.FC = () => {
         });
       }
 
-      // Apply History Context Limit (Truncate history sent to model)
+      // Apply History Context Limit
       let contextToSend = historyForApi;
       if (settings.historyContextLimit > 0 && historyForApi.length > settings.historyContextLimit) {
           contextToSend = historyForApi.slice(-settings.historyContextLimit);
@@ -458,10 +456,9 @@ const App: React.FC = () => {
         '', // Global model ignored, uses key config
         contextToSend, 
         userMessage.text, // Explicit prompt text
-        combinedSystemInstruction,
+        systemInstruction,
         settings.generation,
         (chunkText) => {
-           // Apply Output Filter (Streaming)
            let processedChunk = chunkText;
            if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
                processedChunk = executeFilterScript(
@@ -478,8 +475,9 @@ const App: React.FC = () => {
       
       const executionTime = Date.now() - startTime;
 
-      // Apply Output Filter (Final)
       let processedFinalText = fullText;
+
+      // Regular filter logic
       if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
           processedFinalText = executeFilterScript(
               settings.scripts.outputFilterCode,
@@ -502,13 +500,10 @@ const App: React.FC = () => {
       );
     } catch (error: any) {
       if (error.message !== "Aborted by user") {
-          // If concurrent call error, show toast instead of chat message
           if (error.message === "error.call_in_progress") {
              addToast(t('error.call_in_progress', settings.language), 'error');
-             // Remove the placeholder bot message
              setMessages(prev => prev.filter(m => m.id !== tempBotId));
           } else {
-             // Other errors show in chat
              const errorMessage: Message = {
                 id: uuidv4(),
                 role: Role.MODEL,
@@ -542,7 +537,6 @@ const App: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    // Prevent race conditions with isProcessingRef
     if (isLoading || !llmService || isProcessingRef.current) {
         if (isLoading) addToast(t('error.call_in_progress', settings.language), 'error');
         return;
@@ -574,12 +568,10 @@ const App: React.FC = () => {
       timestamp: Date.now()
     };
     
-    // Update UI immediately (Optimistic)
     setMessages(prev => [...prev, newMessage]);
     setInput('');
     
     try {
-        // Pass the CURRENT messages (history before new message) and the NEW message object
         await triggerBotResponse(messages, newMessage);
     } finally {
         isProcessingRef.current = false; // Unlock
@@ -593,7 +585,6 @@ const App: React.FC = () => {
       if (!activeKey) return 0;
 
       let contextToSend = messages;
-      // Strip thoughts for token counting if enabled
       if (settings.generation.stripThoughts) {
         contextToSend = messages.map(msg => {
             if (msg.role === Role.MODEL && msg.text.includes('<think>')) {
@@ -637,11 +628,9 @@ const App: React.FC = () => {
     const targetMsg = messages[index];
     
     if (targetMsg.role === Role.USER) {
-       // Regenerate from User Message
        const historyBefore = messages.slice(0, index);
        await triggerBotResponse(historyBefore, targetMsg);
     } else {
-      // Regenerate Model Response
       let userMsgIndex = index - 1;
       while (userMsgIndex >= 0 && messages[userMsgIndex].role !== Role.USER) {
         userMsgIndex--;
@@ -658,17 +647,7 @@ const App: React.FC = () => {
 
   const handleNewChat = () => {
     handleStopGeneration();
-    const newId = uuidv4();
-    const newSession: ChatSession = {
-      id: newId,
-      title: t('msg.new_chat_title', settings.language),
-      messages: [],
-      createdAt: Date.now()
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newId);
-    setMessages([]);
-    setInput('');
+    createNewSession();
     setIsMobileMenuOpen(false);
   };
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -123,8 +124,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   const displayCount = exactTokenCount !== null ? exactTokenCount : tokenEstimate;
 
   return (
-    <div className="p-3 md:p-4 pb-2 bg-transparent">
-      <div className={`${containerClass} mx-auto`}>
+    <div className="p-3 md:p-4 pb-2 bg-transparent flex flex-col items-center">
+      <div className={`${containerClass} w-full`}>
+        
         <div className="relative flex items-center glass-panel rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
           <textarea 
             ref={textareaRef}
