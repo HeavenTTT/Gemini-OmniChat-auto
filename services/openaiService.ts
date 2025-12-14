@@ -102,6 +102,7 @@ export class OpenAIService {
     modelId: string,
     history: Message[],
     newMessage: string,
+    images: string[] | undefined,
     systemInstruction: string | undefined,
     config: GenerationConfig,
     onChunk?: (text: string) => void,
@@ -109,10 +110,29 @@ export class OpenAIService {
   ): Promise<string> {
     const cleanUrl = baseUrl.replace(/\/$/, '');
     
-    const openAIHistory = history.map(msg => ({
-      role: msg.role === Role.USER ? 'user' : 'assistant',
-      content: msg.text
-    }));
+    // Construct history with images support
+    const openAIHistory = history.map(msg => {
+      let content: any = msg.text;
+
+      // Check if message has images
+      if (msg.images && msg.images.length > 0) {
+         content = [];
+         if (msg.text) {
+             content.push({ type: "text", text: msg.text });
+         }
+         msg.images.forEach(img => {
+             content.push({
+                 type: "image_url",
+                 image_url: { url: img }
+             });
+         });
+      }
+
+      return {
+        role: msg.role === Role.USER ? 'user' : 'assistant',
+        content: content
+      };
+    });
 
     // Prepend system instruction
     if (systemInstruction) {
@@ -120,7 +140,21 @@ export class OpenAIService {
     }
 
     // Append current user message
-    openAIHistory.push({ role: 'user', content: newMessage });
+    let newContent: any = newMessage;
+    if (images && images.length > 0) {
+        newContent = [];
+        if (newMessage) {
+            newContent.push({ type: "text", text: newMessage });
+        }
+        images.forEach(img => {
+            newContent.push({
+                type: "image_url",
+                image_url: { url: img }
+            });
+        });
+    }
+
+    openAIHistory.push({ role: 'user', content: newContent });
 
     const requestBody = {
       model: modelId,

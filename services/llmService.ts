@@ -1,5 +1,3 @@
-
-
 import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
@@ -114,6 +112,7 @@ export class LLMService {
     // Attempt to find a usable key (not rate limited recently)
     const attempts = activeKeys.length;
     let selectedKey: KeyConfig | null = null;
+    let selectedIndex = -1;
     
     // Check next N keys starting from current index
     for (let i = 0; i < attempts; i++) {
@@ -126,28 +125,34 @@ export class LLMService {
         }
 
         // Key is good to use (or at least we should try)
-        // Check poll usage limit
+        // Check poll usage limit only if we are considering the current key (i=0)
+        // If we have already exceeded the limit for the current key, we force rotation.
         if (i === 0 && this.keyUsageCount >= (candidate.usageLimit || 1)) {
              // Current key exhausted usage limit, force rotate to next
              continue; 
         }
 
         selectedKey = candidate;
-        // Update global index to point to this selected key
-        this.keyIndex = idx;
+        selectedIndex = idx;
         break;
     }
 
     // If all keys are rate limited, fallback to the one with oldest usage or just current rotation
     if (!selectedKey) {
         // Fallback: Just rotate to next to try anyway
-        this.keyIndex = (this.keyIndex + 1) % activeKeys.length;
-        selectedKey = activeKeys[this.keyIndex];
+        selectedIndex = (this.keyIndex + 1) % activeKeys.length;
+        selectedKey = activeKeys[selectedIndex];
     }
     
-    // Reset usage count if we switched indices from original
-    // (Note: this logic is simplified; strict round robin tracks index persistently)
-    // Here we just increment usage for the selected key.
+    // Update global index and manage usage counter
+    if (this.keyIndex !== selectedIndex) {
+        // We switched keys (either due to usage limit or rate limit)
+        // Reset the usage counter for the new key
+        this.keyIndex = selectedIndex;
+        this.keyUsageCount = 0;
+    }
+    
+    // Increment usage for the selected key
     this.keyUsageCount++;
     
     return selectedKey;
@@ -189,6 +194,7 @@ export class LLMService {
     _ignoredGlobalModelId: string, 
     history: Message[],
     newMessage: string,
+    images: string[] | undefined,
     systemInstruction: string | undefined,
     generationConfig: GenerationConfig,
     onChunk?: (text: string) => void,
@@ -207,7 +213,7 @@ export class LLMService {
         // but avoid infinite loops. Limit total attempts relative to key count.
         const maxRetries = Math.max(activeKeysCount * 2, 2); 
         let attempts = 0;
-        const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+        const validHistory = history.filter(msg => (msg.text && msg.text.trim().length > 0) || (msg.images && msg.images.length > 0));
         
         let lastError: any = null;
 
@@ -224,7 +230,18 @@ export class LLMService {
 
             try {
                 let text = "";
-                if (keyConfig.provider === 'openai') {
+                
+                // --- SPECIAL ROUTE: Image Generation (Imagen models) ---
+                if (keyConfig.provider === 'google' && modelToUse.toLowerCase().includes('imagen')) {
+                     // Google Imagen generation
+                     text = await this.googleService.generateImage(
+                         keyConfig.key,
+                         modelToUse,
+                         newMessage
+                     );
+                } 
+                // --- STANDARD ROUTE: Chat/Vision ---
+                else if (keyConfig.provider === 'openai') {
                     if (!keyConfig.baseUrl) throw new Error(t('error.base_url_required', lang));
                     text = await this.openAIService.streamChat(
                         keyConfig.key,
@@ -232,6 +249,7 @@ export class LLMService {
                         modelToUse,
                         validHistory,
                         newMessage,
+                        images,
                         systemInstruction,
                         generationConfig,
                         onChunk,
@@ -244,6 +262,7 @@ export class LLMService {
                         modelToUse,
                         validHistory,
                         newMessage,
+                        images,
                         systemInstruction,
                         generationConfig,
                         keyConfig.key, // Optional API key
@@ -257,6 +276,7 @@ export class LLMService {
                         modelToUse,
                         validHistory,
                         newMessage,
+                        images,
                         systemInstruction,
                         generationConfig,
                         onChunk,
@@ -320,6 +340,8 @@ export class LLMService {
                     } else {
                         localKey.isRateLimited = true;
                         localKey.lastUsed = Date.now();
+                        // Also force rotation for next attempt
+                        this.keyUsageCount = 10000; 
                     }
                     localKey.lastErrorCode = errorCode;
                 }

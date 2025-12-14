@@ -31,7 +31,8 @@ const ENV_KEY = process.env.API_KEY || '';
 const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
     { name: 'gemini-2.5-flash', inputTokenLimit: 1048576, outputTokenLimit: 8192 },
     { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 },
-    { name: 'gemini-2.5-flash-thinking-preview-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 }
+    { name: 'gemini-2.5-flash-thinking-preview-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 },
+    { name: 'imagen-3.0-generate-001', displayName: 'Imagen 3 (Generate Images)', inputTokenLimit: 0, outputTokenLimit: 0 }
 ];
 
 const App: React.FC = () => {
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   
   const [input, setInput] = useState('');
+  const [inputImages, setInputImages] = useState<string[]>([]); // New: Stores base64 images
   const [isLoading, setIsLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -178,6 +180,10 @@ const App: React.FC = () => {
     if (storedKnownModels) {
         try {
             loadedKnownModels = JSON.parse(storedKnownModels);
+            // Ensure Imagen is present even if loaded from old cache
+            if (!loadedKnownModels.find((m: ModelInfo) => m.name === 'imagen-3.0-generate-001')) {
+                loadedKnownModels.push({ name: 'imagen-3.0-generate-001', displayName: 'Imagen 3 (Generate Images)', inputTokenLimit: 0, outputTokenLimit: 0 });
+            }
         } catch (e) {
             // console.error("Failed to parse known models from storage", e);
         }
@@ -332,7 +338,6 @@ const App: React.FC = () => {
       messages: [],
       createdAt: Date.now()
     };
-    // Fix: Add new session to the list instead of overwriting existing sessions
     setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newId);
     setMessages([]);
@@ -456,6 +461,7 @@ const App: React.FC = () => {
         '', // Global model ignored, uses key config
         contextToSend, 
         userMessage.text, // Explicit prompt text
+        userMessage.images, // Attached images
         systemInstruction,
         settings.generation,
         (chunkText) => {
@@ -542,7 +548,8 @@ const App: React.FC = () => {
         return;
     }
     
-    if (!input.trim()) return;
+    // Allow sending if there's text OR images
+    if (!input.trim() && inputImages.length === 0) return;
 
     if (apiKeys.filter(k => k.isActive).length === 0) {
       setIsSettingsOpen(true);
@@ -565,11 +572,13 @@ const App: React.FC = () => {
       id: uuidv4(),
       role: Role.USER,
       text: processedInput,
+      images: inputImages.length > 0 ? [...inputImages] : undefined, // Attach images
       timestamp: Date.now()
     };
     
     setMessages(prev => [...prev, newMessage]);
     setInput('');
+    setInputImages([]); // Clear images after send
     
     try {
         await triggerBotResponse(messages, newMessage);
@@ -729,7 +738,8 @@ const App: React.FC = () => {
     try {
         const historyText = messages.map(m => `${m.role === Role.USER ? 'User' : 'Model'}: ${m.text}`).join('\n');
         const prompt = t('msg.summarize_prompt', settings.language) + '\n\n' + historyText;
-        const { text } = await llmService.streamChatResponse('', [], prompt, undefined, settings.generation, undefined, undefined, settings.language);
+        // Pass empty array for images in summary
+        const { text } = await llmService.streamChatResponse('', [], prompt, [], undefined, settings.generation, undefined, undefined, settings.language);
         const newTitle = text.trim().replace(/['"]/g, '').replace(/\.$/, '').replace(/\*\*/g, ''); 
         if (newTitle) {
             setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle } : s));
@@ -852,6 +862,8 @@ const App: React.FC = () => {
              <ChatInput 
                 input={input}
                 setInput={setInput}
+                inputImages={inputImages}
+                setInputImages={setInputImages}
                 onSend={handleSendMessage}
                 onStop={handleStopGeneration}
                 isLoading={isLoading}

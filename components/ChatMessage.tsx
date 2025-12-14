@@ -61,7 +61,6 @@ const CodeBlock = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Determine syntax highlighter style based on app theme
   const isDarkTheme = ['dark', 'twilight', 'panda', 'vscode-dark'].includes(theme);
   const style = isDarkTheme ? vscDarkPlus : vs;
 
@@ -143,7 +142,6 @@ interface ThoughtBlockProps {
   lang: Language;
 }
 
-// Thought Block Component
 const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang }) => {
   const [isOpen, setIsOpen] = useState(false); 
 
@@ -195,48 +193,41 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   avatarVisibility
 }) => {
   const [editText, setEditText] = useState(msg.text);
-  
-  // Local buffer state for smooth streaming
   const [displayedText, setDisplayedText] = useState(msg.text);
   const targetTextRef = useRef(msg.text);
   const animationRef = useRef<number>(0);
 
-  // VSCode Theme Logic
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
-  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl'; // Wider container (1.33x)
+  const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
 
-  // Sync target text when prop changes
+  // Detect if the message is a generated image (markdown image with data URI)
+  const isGeneratedImage = useMemo(() => {
+      const trimmed = msg.text.trim();
+      return msg.role === Role.MODEL && trimmed.startsWith('![') && trimmed.includes('(data:image/');
+  }, [msg.text, msg.role]);
+
   useEffect(() => {
     targetTextRef.current = msg.text;
-    
-    // If animation is disabled, or not a model message, or editing, sync immediately
-    if (!smoothAnimation || msg.role !== Role.MODEL || isEditing) {
+    // Disable animation if user preference is off, role is not model, error, editing, OR if it is a generated image
+    if (!smoothAnimation || msg.role !== Role.MODEL || isEditing || isGeneratedImage) {
         setDisplayedText(msg.text);
     }
-  }, [msg.text, msg.role, isEditing, smoothAnimation]);
+  }, [msg.text, msg.role, isEditing, smoothAnimation, isGeneratedImage]);
 
-  // Sync edit text when starting to edit
   useEffect(() => {
     if (isEditing) setEditText(msg.text);
   }, [isEditing, msg.text]);
 
-  // Smooth Text Animation Loop
   useEffect(() => {
-    if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing) return;
+    if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing || isGeneratedImage) return;
 
     const animate = () => {
       setDisplayedText((current) => {
         const target = targetTextRef.current;
-        
-        // If synchronized, stop updates
         if (current === target) return current;
-
-        // If current is longer than target (e.g. deletion/rewrite), sync immediately
         if (current.length > target.length) return target;
 
-        // Determine speed based on buffer size (catch up logic)
         const diff = target.length - current.length;
-        
         let chunk = 2;
         if (diff > 50) chunk = 5;
         if (diff > 100) chunk = 15;
@@ -244,46 +235,36 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
         const nextLen = Math.min(target.length, current.length + chunk);
         const nextText = target.substring(0, nextLen);
-
         return nextText;
       });
-
       animationRef.current = requestAnimationFrame(animate);
     };
 
     animationRef.current = requestAnimationFrame(animate);
-
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [msg.role, msg.isError, isEditing, smoothAnimation]);
+  }, [msg.role, msg.isError, isEditing, smoothAnimation, isGeneratedImage]);
 
-  // Scroll Synchronization
   useLayoutEffect(() => {
-      if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing) {
+      if (isLast && onScrollToBottom && smoothAnimation && msg.role === Role.MODEL && !isEditing && !isGeneratedImage) {
           onScrollToBottom();
       }
-  }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing]);
+  }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing, isGeneratedImage]);
 
-  // Parse Text for Thoughts
   const { thoughts, content } = useMemo(() => {
     if (msg.role !== Role.MODEL || isEditing) {
         return { thoughts: [], content: displayedText };
     }
-    
     const thinkRegex = /<think>([\s\S]*?)(?:<\/think>|$)/g;
     const extractedThoughts: string[] = [];
     let match;
-    
     while ((match = thinkRegex.exec(displayedText)) !== null) {
         extractedThoughts.push(match[1]);
     }
-
     const cleanContent = displayedText.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
-
     return { thoughts: extractedThoughts, content: cleanContent };
   }, [displayedText, msg.role, isEditing]);
-
 
   const cancelEditing = () => { 
     setEditingId(null); 
@@ -334,7 +315,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     }
   };
 
-  // Dynamic opacity
   const effectiveTransparency = isEditing ? 100 : bubbleTransparency;
   const borderAlpha = 0.5 + (effectiveTransparency / 100) * 0.5;
   const shadowAlpha = (100 - effectiveTransparency) / 100;
@@ -350,17 +330,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
        backgroundColor = `rgba(var(--color-theme-primary-rgb), ${(effectiveTransparency / 100) * 0.15})`;
   }
 
-  // Animation class
   const animationClass = smoothAnimation ? 'animate-pop-in' : '';
-
-  const wrapperWidthClass = isEditing 
-      ? 'w-full max-w-full' 
-      : 'max-w-[95%] md:max-w-[85%]'; // Standard constraint
-  
-  // VSCode Themes: No border color
+  const wrapperWidthClass = isEditing ? 'w-full max-w-full' : 'max-w-[95%] md:max-w-[85%]'; 
   const bubbleBorderColor = isVSCodeTheme ? 'transparent' : `rgba(var(--color-theme-primary-rgb), ${borderAlpha})`;
 
-  // Avatar Visibility Logic
   const showAvatar = 
     avatarVisibility === 'always' || 
     (avatarVisibility === 'user-only' && msg.role === Role.USER) ||
@@ -370,14 +343,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     <div className={`flex w-full ${containerClass} mx-auto ${msg.role === Role.USER ? 'justify-end' : 'justify-start'} animate-fade-in-up group`}>
         <div className={`flex gap-3 ${msg.role === Role.USER ? 'flex-row-reverse' : 'flex-row'} ${wrapperWidthClass}`}>
             
-            {/* Avatar */}
             {showAvatar && (
                 <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center mt-0.5 overflow-hidden ${msg.role === Role.USER ? 'bg-primary-600' : 'bg-transparent'} ${msg.isError ? 'bg-red-500' : ''}`}>
                     {msg.role === Role.USER ? <User className="w-5 h-5 text-white" /> : <div className="w-full h-full scale-150"><KirbyIcon theme={theme} isThemed={kirbyThemeColor} /></div>}
                 </div>
             )}
 
-            {/* Message Content Wrapper */}
             <div className={`flex flex-col min-w-0 ${msg.role === Role.USER ? 'items-end' : 'items-start'} w-full`}>
             <div 
                 className={`relative px-3 py-2.5 rounded-2xl shadow-sm backdrop-blur-sm transition-all duration-300 w-full max-w-full origin-bottom-left ${animationClass} ${
@@ -395,6 +366,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     } : {}
                 }
             >
+                {/* Image Grid for Message */}
+                {msg.images && msg.images.length > 0 && !isEditing && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {msg.images.map((img, idx) => (
+                            <div key={idx} className="relative group">
+                                <img 
+                                    src={img} 
+                                    alt="Message Attachment" 
+                                    className="max-h-64 max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                                    onClick={() => window.open(img, '_blank')}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
+
                 {isEditing ? (
                 <div className="w-full min-w-[200px]">
                     <AutoResizeTextarea 
@@ -437,9 +424,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     {msg.isError ? (
                     <div className="flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{msg.text}</span></div>
                     ) : (
-                    /* Markdown Body Wrapper */
                     <div className={`markdown-body ${getWrappingClass()}`} style={{ fontSize: `${fontSize}px` }}>
-                        {/* Render Thought Blocks if present */}
                         {thoughts.length > 0 && (
                             <div className="mb-3 flex flex-col gap-2">
                                 {thoughts.map((thought, idx) => (
@@ -447,67 +432,55 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                 ))}
                             </div>
                         )}
-
-                        <ReactMarkdown 
-                            remarkPlugins={[remarkGfm, remarkMath]} 
-                            rehypePlugins={[rehypeKatex]} 
-                            components={{ 
-                                code({node, className, children, ...props}) { 
-                                    const match = /language-(\w+)/.exec(className || ''); 
-                                    const isInline = !match && !String(children).includes('\n'); 
-                                    
-                                    if (isInline) {
-                                      // Keep inline code somewhat standard but styled via class usually
-                                      // Here we keep minimal JSX for logic, but styles could be fully external
-                                      return (
-                                        <code className={className} {...props}>
-                                          {children}
-                                        </code>
-                                      );
+                        {/* Only render text content if it exists, otherwise images are handled above */}
+                        {(content || (!msg.images || msg.images.length === 0)) && (
+                             <ReactMarkdown 
+                                remarkPlugins={[remarkGfm, remarkMath]} 
+                                rehypePlugins={[rehypeKatex]} 
+                                urlTransform={(value) => value}
+                                components={{ 
+                                    code({node, className, children, ...props}) { 
+                                        const match = /language-(\w+)/.exec(className || ''); 
+                                        const isInline = !match && !String(children).includes('\n'); 
+                                        
+                                        if (isInline) {
+                                          return <code className={className} {...props}>{children}</code>;
+                                        }
+                                        return (
+                                          <CodeBlock 
+                                            language={match ? match[1] : 'text'} 
+                                            value={String(children).replace(/\n$/, '')} 
+                                            theme={theme}
+                                            onShowToast={onShowToast}
+                                            lang={language}
+                                          />
+                                        );
+                                    },
+                                    a({href, children}) {
+                                        return (
+                                            <a href={href} target="_blank" rel="noopener noreferrer">
+                                                {children}
+                                                <ExternalLink className="w-3 h-3 inline-block ml-0.5 opacity-70" />
+                                            </a>
+                                        );
+                                    },
+                                    img({src, alt}) {
+                                        return <img src={src} alt={alt} onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} style={{cursor: 'pointer'}} />;
+                                    },
+                                    input({checked, readOnly}) {
+                                        return <input type="checkbox" checked={checked} readOnly={readOnly} className="mr-2 accent-primary-600 rounded w-4 h-4 align-text-bottom cursor-default" />;
                                     }
-
-                                    return (
-                                      <CodeBlock 
-                                        language={match ? match[1] : 'text'} 
-                                        value={String(children).replace(/\n$/, '')} 
-                                        theme={theme}
-                                        onShowToast={onShowToast}
-                                        lang={language}
-                                      />
-                                    );
-                                },
-                                // Simplified components: Removed table, th, td, tr, blockquote, etc.
-                                // because they are now handled by .markdown-body CSS
-                                a({href, children}) {
-                                    return (
-                                        <a 
-                                            href={href} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer" 
-                                        >
-                                            {children}
-                                            <ExternalLink className="w-3 h-3 inline-block ml-0.5 opacity-70" />
-                                        </a>
-                                    );
-                                },
-                                img({src, alt}) {
-                                    return <img src={src} alt={alt} onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} style={{cursor: 'pointer'}} />;
-                                },
-                                input({checked, readOnly}) {
-                                    return <input type="checkbox" checked={checked} readOnly={readOnly} className="mr-2 accent-primary-600 rounded w-4 h-4 align-text-bottom cursor-default" />;
-                                }
-                            }}
-                        >
-                            {/* Use clean content for markdown rendering */}
-                            {content}
-                        </ReactMarkdown>
+                                }}
+                            >
+                                {content}
+                            </ReactMarkdown>
+                        )}
                     </div>
                     )}
                 </>
                 )}
             </div>
                 
-            {/* Meta Info & Actions */}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 px-1 min-h-[1.5rem]">
                 <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 {msg.role === Role.MODEL && !msg.isError && (

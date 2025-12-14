@@ -26,9 +26,9 @@ export class GoogleService {
                 });
             }
         }
-        // Filter for relevant models (Gemini, Flash, Pro, Thinking)
+        // Filter for relevant models (Gemini, Flash, Pro, Thinking, Imagen)
         return models.filter(m => 
-            m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking')
+            m.name.includes('gemini') || m.name.includes('flash') || m.name.includes('pro') || m.name.includes('thinking') || m.name.includes('imagen')
         );
     } catch (e: any) {
         // Attach status if available in error message or object
@@ -47,10 +47,19 @@ export class GoogleService {
   public async testConnection(apiKey: string, modelId: string = 'gemini-2.5-flash'): Promise<boolean> {
       try {
           const ai = new GoogleGenAI({ apiKey });
-          await ai.models.generateContent({
-              model: modelId,
-              contents: 'Test',
-          });
+          // If checking Imagen model, use generateImages to test
+          if (modelId.includes('imagen')) {
+             await ai.models.generateImages({
+                 model: modelId,
+                 prompt: 'Test',
+                 config: { numberOfImages: 1 }
+             });
+          } else {
+             await ai.models.generateContent({
+                 model: modelId,
+                 contents: 'Test',
+             });
+          }
           // If we get here without error, the key is valid.
           return true;
       } catch (e) {
@@ -71,7 +80,8 @@ export class GoogleService {
           const ai = new GoogleGenAI({ apiKey });
           
           // Filter out invalid messages (error or empty) to match generation logic
-          const validHistory = history.filter(msg => msg.text && msg.text.trim().length > 0 && !msg.isError);
+          // Note: Token counting might not fully support images yet in the SDK exactly same way, ignoring images for now for simplicity in count
+          const validHistory = history.filter(msg => (msg.text && msg.text.trim().length > 0) && !msg.isError);
 
           const googleHistory = validHistory.map(msg => ({
               role: msg.role === Role.USER ? 'user' : 'model',
@@ -98,6 +108,37 @@ export class GoogleService {
   }
 
   /**
+   * Generates images using Imagen models.
+   */
+  public async generateImage(apiKey: string, model: string, prompt: string): Promise<string> {
+      try {
+          const ai = new GoogleGenAI({ apiKey });
+          const response = await ai.models.generateImages({
+              model: model,
+              prompt: prompt,
+              config: {
+                  numberOfImages: 1,
+                  // outputMimeType: 'image/jpeg', // Optional
+              }
+          });
+          
+          // The SDK returns base64 image bytes
+          // @ts-ignore - SDK typing might vary slightly
+          const imageBytes = response.generatedImages?.[0]?.image?.imageBytes;
+          
+          if (imageBytes) {
+              // Return as Markdown image
+              return `![Generated Image](data:image/png;base64,${imageBytes})`;
+          } else {
+              throw new Error("No image generated.");
+          }
+      } catch (e: any) {
+         if (e.message && e.message.includes('403')) (e as any).status = 403;
+         throw e;
+      }
+  }
+
+  /**
    * Streams chat response from Google Gemini API.
    */
   public async streamChat(
@@ -105,6 +146,7 @@ export class GoogleService {
       modelId: string, 
       history: Message[], 
       newMessage: string, 
+      images: string[] | undefined,
       systemInstruction: string | undefined, 
       config: GenerationConfig,
       onChunk?: (text: string) => void,
@@ -112,10 +154,38 @@ export class GoogleService {
   ): Promise<string> {
       try {
         const ai = new GoogleGenAI({ apiKey });
-        const googleHistory = history.map(msg => ({
-            role: msg.role === Role.USER ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-        }));
+        
+        // Prepare history
+        const googleHistory = history.map(msg => {
+            const parts: any[] = [];
+            
+            // Add images from history if present
+            if (msg.images && msg.images.length > 0) {
+                 msg.images.forEach(img => {
+                     // Convert data URI to inline data
+                     // Format: data:image/png;base64,.....
+                     const match = img.match(/^data:(.*?);base64,(.*)$/);
+                     if (match) {
+                         parts.push({
+                             inlineData: {
+                                 mimeType: match[1],
+                                 data: match[2]
+                             }
+                         });
+                     }
+                 });
+            }
+
+            // Add text part
+            if (msg.text) {
+                parts.push({ text: msg.text });
+            }
+
+            return {
+                role: msg.role === Role.USER ? 'user' : 'model',
+                parts: parts
+            };
+        });
 
         const commonConfig: any = {
             systemInstruction: systemInstruction,
@@ -136,8 +206,28 @@ export class GoogleService {
             history: googleHistory
         });
 
+        // Prepare new message contents
+        const newParts: any[] = [];
+        if (images && images.length > 0) {
+            images.forEach(img => {
+                const match = img.match(/^data:(.*?);base64,(.*)$/);
+                if (match) {
+                    newParts.push({
+                        inlineData: {
+                            mimeType: match[1],
+                            data: match[2]
+                        }
+                    });
+                }
+            });
+        }
+        if (newMessage) {
+            newParts.push({ text: newMessage });
+        }
+
         if (config.stream) {
-            const resultStream = await client.sendMessageStream({ message: newMessage });
+            // sendMessageStream accepts 'message' which can be string or Part[]
+            const resultStream = await client.sendMessageStream({ message: newParts });
             let fullText = '';
             let stopReason = '';
 
@@ -171,7 +261,7 @@ export class GoogleService {
 
             return fullText;
         } else {
-            const result = await client.sendMessage({ message: newMessage });
+            const result = await client.sendMessage({ message: newParts });
             // Handling non-streaming empty response
             if (!result.text && result.candidates?.[0]?.finishReason) {
                  const reason = result.candidates[0].finishReason;

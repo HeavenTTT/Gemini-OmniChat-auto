@@ -2,11 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gemini OmniChat</title>
-    <meta name="description" content="A high-performance chat interface supporting multiple API key rotation." />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -36,31 +34,33 @@
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "next": "https://esm.sh/next@^16.0.10",
-    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "uuid": "https://esm.sh/uuid@^13.0.0",
-    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
-    "react-dom": "https://esm.sh/react-dom@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "vite": "https://esm.sh/vite@^7.2.7",
-    "path": "https://esm.sh/path@^0.12.7",
-    "react-syntax-highlighter/": "https://esm.sh/react-syntax-highlighter@^16.1.0/",
-    "react-syntax-highlighter": "https://esm.sh/react-syntax-highlighter@^16.1.0",
-    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.1",
-    "url": "https://esm.sh/url@^0.11.4",
-    "remark-math": "https://esm.sh/remark-math@^6.0.0",
-    "rehype-katex": "https://esm.sh/rehype-katex@^7.0.1",
-    "ollama/": "https://esm.sh/ollama@^0.6.3/"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "vite": "https://aistudiocdn.com/vite@^7.2.4",
+    "url": "https://aistudiocdn.com/url@^0.11.4",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.1",
+    "remark-math": "https://aistudiocdn.com/remark-math@^6.0.0",
+    "rehype-katex": "https://aistudiocdn.com/rehype-katex@^7.0.0",
+    "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.0",
+    "react-syntax-highlighter": "https://aistudiocdn.com/react-syntax-highlighter@^15.5.0",
+    "react-syntax-highlighter/dist/esm/styles/prism": "https://aistudiocdn.com/react-syntax-highlighter@^15.5.0/dist/esm/styles/prism",
+    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^16.1.0/",
+    "ollama/": "https://aistudiocdn.com/ollama@^0.6.3/"
   }
 }
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<link rel="stylesheet" href="/styles.css">
 </head>
   <body class="antialiased h-screen overflow-hidden selection:bg-primary-500/30">
     <div id="root" class="h-full w-full"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>

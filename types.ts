@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.5.1';
+export const APP_VERSION = '1.5.2';
 
 export enum Role {
   USER = 'user',
@@ -9,6 +9,7 @@ export interface Message {
   id: string;
   role: Role;
   text: string;
+  images?: string[]; // Array of base64 data URIs
   timestamp: number;
   isError?: boolean;
   keyIndex?: number; // 1-based index of the key used
@@ -50,7 +51,8 @@ export interface KeyConfig {
 export enum GeminiModel {
   FLASH = 'gemini-2.5-flash',
   PRO = 'gemini-3-pro-preview',
-  FLASH_THINKING = 'gemini-2.5-flash-thinking-preview-01-21'
+  FLASH_THINKING = 'gemini-2.5-flash-thinking-preview-01-21',
+  IMAGEN = 'imagen-3.0-generate-001'
 }
 
 export interface ModelInfo {

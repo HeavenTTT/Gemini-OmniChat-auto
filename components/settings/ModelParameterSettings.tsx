@@ -108,6 +108,9 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                                 className="slider-standard"
                                 aria-label={t('param.temperature_slider', lang)}
                             />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('param.temperature_desc', lang)}
+                            </p>
                         </div>
 
                         <div>
@@ -123,6 +126,9 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                                 className="slider-standard"
                                 aria-label={t('param.top_p_slider', lang)}
                             />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('param.topP_desc', lang)}
+                            </p>
                         </div>
 
                         <div>
@@ -138,6 +144,9 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                                 className="slider-standard"
                                 aria-label={t('param.top_k_slider', lang)}
                             />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('param.topK_desc', lang)}
+                            </p>
                         </div>
 
                         {/* Thinking Budget (Gemini 2.5) */}

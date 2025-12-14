@@ -81,6 +81,13 @@ export class OllamaService {
   }
 
   /**
+   * Helper to strip base64 header for Ollama (it expects raw base64 usually)
+   */
+  private extractBase64(dataUri: string): string {
+      return dataUri.replace(/^data:image\/[a-z]+;base64,/, "");
+  }
+
+  /**
    * Streams chat completion from Ollama API using the library's async generator.
    */
   public async streamChat(
@@ -88,6 +95,7 @@ export class OllamaService {
     modelId: string,
     history: Message[],
     newMessage: string,
+    images: string[] | undefined,
     systemInstruction: string | undefined,
     config: GenerationConfig,
     apiKey?: string,
@@ -97,19 +105,24 @@ export class OllamaService {
     const client = this.getClient(apiKey);
 
     // Map App's history to Ollama's expected message format
-    // App uses 'model', Ollama uses 'assistant'
     const messages = history.map(msg => ({
       role: msg.role === Role.USER ? 'user' : 'assistant',
-      content: msg.text
+      content: msg.text,
+      // Pass images if present (strip prefix)
+      images: msg.images ? msg.images.map(this.extractBase64) : undefined
     }));
 
     // Prepend system instruction if present
     if (systemInstruction) {
-      messages.unshift({ role: 'system', content: systemInstruction });
+      messages.unshift({ role: 'system', content: systemInstruction, images: undefined });
     }
 
     // Append the new user message
-    messages.push({ role: 'user', content: newMessage });
+    messages.push({ 
+        role: 'user', 
+        content: newMessage,
+        images: images ? images.map(this.extractBase64) : undefined
+    });
 
     try {
       const response = await client.chat({
