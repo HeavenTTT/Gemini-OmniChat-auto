@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -93,7 +92,7 @@ const App: React.FC = () => {
   });
 
   // UI State
-  const [toasts, setToasts] = useState<ToastMessage[]>([] );
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [dialog, setDialog] = useState<DialogConfig>({
       isOpen: false,
       type: 'alert',

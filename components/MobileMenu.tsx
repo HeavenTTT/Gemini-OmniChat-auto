@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef } from 'react';
-import { History, X, Plus, Trash2, Settings } from 'lucide-react';
+import { History as HistoryIcon, X, Plus, Trash2, Settings } from 'lucide-react';
 import { ChatSession, Language } from '../types';
 import { t } from '../utils/i18n';
 
@@ -35,7 +35,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose} aria-hidden="true"></div>
       <div className="relative w-[85%] max-w-sm h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl shadow-2xl flex flex-col p-4 animate-slide-in-left border-r border-gray-200 dark:border-gray-800">
           <div className="flex items-center justify-between mb-6">
-            <span id="mobile-menu-title" className="font-bold text-lg dark:text-white flex items-center gap-2"><History className="w-5 h-5"/> {t('status.history', language)}</span>
+            <span id="mobile-menu-title" className="font-bold text-lg dark:text-white flex items-center gap-2"><HistoryIcon className="w-5 h-5"/> {t('status.history', language)}</span>
             <button onClick={onClose} className="p-1 text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-white" aria-label={t('action.close_mobile_menu', language)}><X className="w-6 h-6"/></button>
           </div>
           
