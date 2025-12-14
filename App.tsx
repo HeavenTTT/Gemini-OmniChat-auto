@@ -332,7 +332,8 @@ const App: React.FC = () => {
       messages: [],
       createdAt: Date.now()
     };
-    setSessions([newSession]);
+    // Fix: Add new session to the list instead of overwriting existing sessions
+    setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newId);
     setMessages([]);
   };
