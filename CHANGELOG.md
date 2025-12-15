@@ -1,8 +1,15 @@
-
-
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.5.3] - 2024-06-03
+### Added
+- **File Upload**: Users can now upload text files (e.g., .txt, .md, .json, .js) directly to the input box. Content is read and appended to the message.
+- **Image Preview**: Added full-screen lightbox preview support for images in chat messages.
+- **Documentation**: Added `PROJECT_STRUCTURE.md` providing a detailed overview of the project's file organization and purpose.
+
+### Changed
+- **Code Refactoring**: Major refactoring of `ChatMessage.tsx`. Split into smaller, decoupled components (`MessageContent`, `CodeBlock`, `ThoughtBlock`, `AutoResizeTextarea`) for improved maintainability and performance.
 
 ## [1.5.1] - 2024-06-02
 ### Changed
