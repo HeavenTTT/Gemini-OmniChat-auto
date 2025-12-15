@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Square, Zap, Paperclip, X } from 'lucide-react';
+import { Send, Square, Zap, Paperclip, X, Plus, Image as ImageIcon, FileText } from 'lucide-react';
 import { Language, Message, Theme } from '../types';
 import { t } from '../utils/i18n';
 
@@ -44,8 +44,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textFileInputRef = useRef<HTMLInputElement>(null);
   const [tokenEstimate, setTokenEstimate] = useState(0);
   const [exactTokenCount, setExactTokenCount] = useState<number | null>(null);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
 
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
   const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
@@ -116,8 +118,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (e.target.files && e.target.files.length > 0 && setInputImages) {
       const files = Array.from(e.target.files) as File[];
       readAndAddImages(files);
+      setIsToolsOpen(false); // Close menu after selection
     }
     if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+  };
+
+  const handleTextFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const content = ev.target?.result as string;
+        const textToAppend = `\n\n\`\`\`${file.name}\n${content}\n\`\`\`\n`;
+        // Use input prop directly since setInput type definition in props doesn't support functional update
+        setInput((input + textToAppend).trimStart());
+        setIsToolsOpen(false);
+      };
+      reader.readAsText(file);
+    }
+    if (textFileInputRef.current) textFileInputRef.current.value = '';
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
@@ -166,6 +185,55 @@ const ChatInput: React.FC<ChatInputProps> = ({
     <div className="p-3 md:p-4 pb-2 bg-transparent flex flex-col items-center">
       <div className={`${containerClass} w-full`}>
         
+        {/* Collapsible Toolbar (Top Left) */}
+        <div className="flex items-center gap-2 mb-2 px-1 h-8">
+            <button
+                onClick={() => setIsToolsOpen(!isToolsOpen)}
+                className={`p-1.5 rounded-full transition-all duration-300 ${isToolsOpen ? 'bg-gray-200 dark:bg-gray-700 rotate-45' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'} text-gray-500 dark:text-gray-400`}
+                title="Expand tools"
+            >
+                <Plus className="w-5 h-5" />
+            </button>
+
+            <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out ${isToolsOpen ? 'w-auto opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-4 pointer-events-none'}`}>
+                 <button 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors text-xs font-medium whitespace-nowrap"
+                    title={t('action.upload_image', language)}
+                    disabled={isDisabled}
+                 >
+                    <ImageIcon className="w-4 h-4" />
+                    <span>{t('action.upload_image', language)}</span>
+                 </button>
+
+                 <button 
+                    onClick={() => textFileInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-medium whitespace-nowrap"
+                    title={t('action.upload_file', language)}
+                    disabled={isDisabled}
+                 >
+                    <FileText className="w-4 h-4" />
+                    <span>{t('action.upload_file', language)}</span>
+                 </button>
+            </div>
+            
+            <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileSelect} 
+                accept="image/*" 
+                multiple 
+                className="hidden" 
+            />
+            <input 
+                type="file" 
+                ref={textFileInputRef} 
+                onChange={handleTextFileSelect} 
+                accept=".txt,.md,.js,.ts,.py,.json,.html,.css,.csv,.xml" 
+                className="hidden" 
+            />
+        </div>
+
         {/* Image Preview Area */}
         {inputImages.length > 0 && (
             <div className="flex gap-2 mb-2 overflow-x-auto p-1 scrollbar-hide">
@@ -189,23 +257,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
         <div className="relative flex items-center glass-panel rounded-2xl shadow-xl focus-within:ring-2 focus-within:ring-primary-500/50 focus-within:border-primary-500 transition-all">
           
-          <button 
-             onClick={() => fileInputRef.current?.click()}
-             className="ml-3 p-2 text-gray-400 hover:text-primary-600 dark:text-gray-500 dark:hover:text-primary-400 transition-colors"
-             title={t('action.upload_image', language)}
-             disabled={isDisabled}
-          >
-              <Paperclip className="w-5 h-5" />
-          </button>
-          <input 
-             type="file" 
-             ref={fileInputRef} 
-             onChange={handleFileSelect} 
-             accept="image/*" 
-             multiple 
-             className="hidden" 
-          />
-
           <textarea 
             ref={textareaRef}
             value={input} 

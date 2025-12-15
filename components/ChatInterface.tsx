@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useRef, useEffect, useState, useLayoutEffect, useCallback } from 'react';
@@ -74,6 +73,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   
   // Track if the user has manually scrolled up to pause auto-scrolling
   const isUserScrolledUp = useRef(false);
@@ -209,75 +209,99 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   }
 
   return (
-    <div 
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        // Removed scroll-smooth to prevent fighting with JS scroll
-        className="flex-1 overflow-y-auto p-2 md:p-4 h-full relative"
-    >
-      <div className="flex flex-col space-y-4 pb-4 min-h-0">
-        {messages.map((msg, index) => (
-            <div key={msg.id} data-role={msg.role}>
-                <ChatMessage
-                    msg={msg}
-                    isEditing={editingId === msg.id}
-                    isConfirmingDelete={confirmDeleteId === msg.id}
-                    isLoading={isLoading}
-                    bubbleTransparency={bubbleTransparency}
-                    textWrapping={textWrapping}
-                    fontSize={fontSize}
-                    showModelName={showModelName}
-                    showResponseTimer={showResponseTimer}
-                    language={language}
-                    theme={theme}
-                    kirbyThemeColor={kirbyThemeColor}
-                    onEditMessage={onEditMessage}
-                    onDeleteMessage={onDeleteMessage}
-                    onRegenerate={onRegenerate}
-                    setEditingId={setEditingId}
-                    setConfirmDeleteId={setConfirmDeleteId}
-                    startEditing={startEditing}
-                    deleteTimerRef={deleteTimerRef}
-                    onShowToast={onShowToast}
-                    smoothAnimation={smoothAnimation}
-                    isLast={index === messages.length - 1}
-                    onScrollToBottom={scrollToBottom}
-                    avatarVisibility={avatarVisibility}
-                />
-            </div>
-        ))}
-        
-        {isLoading && (
-            <div className={`flex justify-start w-full ${containerClass} mx-auto animate-fade-in-up px-2 md:px-0`} data-role="loading">
-            <div className="flex gap-3">
-                {showLoadingAvatar && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
-                        <div className="w-full h-full scale-150">
-                            <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
-                        </div>
-                    </div>
-                )}
-                <div 
-                    className="loading-bubble"
-                    style={dynamicStyle}
-                >
-                    <div className="typing-dot" style={{ animationDelay: '0ms' }}></div>
-                    <div className="typing-dot" style={{ animationDelay: '150ms' }}></div>
-                    <div className="typing-dot" style={{ animationDelay: '300ms' }}></div>
-                    {showResponseTimer && <LoadingTimer />}
-                </div>
-            </div>
-            </div>
-        )}
-        
-        {/* Dynamic Bottom Buffer */}
-        <div 
-            className="w-full transition-all duration-300 ease-out flex-shrink-0" 
-            style={{ height: isLoading ? '160px' : '0px' }} 
-            aria-hidden="true" 
-        />
+    <>
+      <div 
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          // Removed scroll-smooth to prevent fighting with JS scroll
+          className="flex-1 overflow-y-auto p-2 md:p-4 h-full relative"
+      >
+        <div className="flex flex-col space-y-4 pb-4 min-h-0">
+          {messages.map((msg, index) => (
+              <div key={msg.id} data-role={msg.role}>
+                  <ChatMessage
+                      msg={msg}
+                      isEditing={editingId === msg.id}
+                      isConfirmingDelete={confirmDeleteId === msg.id}
+                      isLoading={isLoading}
+                      bubbleTransparency={bubbleTransparency}
+                      textWrapping={textWrapping}
+                      fontSize={fontSize}
+                      showModelName={showModelName}
+                      showResponseTimer={showResponseTimer}
+                      language={language}
+                      theme={theme}
+                      kirbyThemeColor={kirbyThemeColor}
+                      onEditMessage={onEditMessage}
+                      onDeleteMessage={onDeleteMessage}
+                      onRegenerate={onRegenerate}
+                      setEditingId={setEditingId}
+                      setConfirmDeleteId={setConfirmDeleteId}
+                      startEditing={startEditing}
+                      deleteTimerRef={deleteTimerRef}
+                      onShowToast={onShowToast}
+                      smoothAnimation={smoothAnimation}
+                      isLast={index === messages.length - 1}
+                      onScrollToBottom={scrollToBottom}
+                      avatarVisibility={avatarVisibility}
+                      onViewImage={setPreviewImageUrl}
+                  />
+              </div>
+          ))}
+          
+          {isLoading && (
+              <div className={`flex justify-start w-full ${containerClass} mx-auto animate-fade-in-up px-2 md:px-0`} data-role="loading">
+              <div className="flex gap-3">
+                  {showLoadingAvatar && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                          <div className="w-full h-full scale-150">
+                              <KirbyIcon theme={theme} isThemed={kirbyThemeColor} />
+                          </div>
+                      </div>
+                  )}
+                  <div 
+                      className="loading-bubble"
+                      style={dynamicStyle}
+                  >
+                      <div className="typing-dot" style={{ animationDelay: '0ms' }}></div>
+                      <div className="typing-dot" style={{ animationDelay: '150ms' }}></div>
+                      <div className="typing-dot" style={{ animationDelay: '300ms' }}></div>
+                      {showResponseTimer && <LoadingTimer />}
+                  </div>
+              </div>
+              </div>
+          )}
+          
+          {/* Dynamic Bottom Buffer */}
+          <div 
+              className="w-full transition-all duration-300 ease-out flex-shrink-0" 
+              style={{ height: isLoading ? '160px' : '0px' }} 
+              aria-hidden="true" 
+          />
+        </div>
       </div>
-    </div>
+
+      {/* Lightbox / Full Screen Image Preview */}
+      {previewImageUrl && (
+        <div 
+          className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-zoom-out animate-fade-in-up"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <img 
+            src={previewImageUrl} 
+            alt="Full Screen Preview" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+            onClick={() => setPreviewImageUrl(null)} // Ensure clicking image also closes
+          />
+          <button 
+            onClick={() => setPreviewImageUrl(null)}
+            className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+          >
+             <X className="w-8 h-8" />
+          </button>
+        </div>
+      )}
+    </>
   );
 };
 

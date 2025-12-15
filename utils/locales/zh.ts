@@ -312,4 +312,6 @@ export const zh: Record<string, string> = {
     'label.group': '分组',
     'label.no_group': '无分组',
     'action.open_full_editor': '打开全屏编辑器',
+    'action.upload_image': '上传图片',
+    'action.upload_file': '上传文件 (文本)',
   };

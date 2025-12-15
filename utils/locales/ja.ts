@@ -312,4 +312,6 @@ export const ja: Record<string, string> = {
     'label.group': 'グループ',
     'label.no_group': 'グループなし',
     'action.open_full_editor': 'フルスクリーンエディターを開く',
+    'action.upload_image': '画像をアップロード',
+    'action.upload_file': 'ファイルをアップロード (テキスト)',
   };

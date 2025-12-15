@@ -37,6 +37,7 @@ interface ChatMessageProps {
   isLast?: boolean;
   onScrollToBottom?: () => void;
   avatarVisibility: AvatarVisibility;
+  onViewImage?: (url: string) => void;
 }
 
 const CodeBlock = ({ 
@@ -190,7 +191,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   smoothAnimation = true,
   isLast = false,
   onScrollToBottom,
-  avatarVisibility
+  avatarVisibility,
+  onViewImage
 }) => {
   const [editText, setEditText] = useState(msg.text);
   const [displayedText, setDisplayedText] = useState(msg.text);
@@ -307,6 +309,15 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     setConfirmDeleteId(null);
   }
 
+  const handleImageClick = (src: string) => {
+      if (onViewImage) {
+          onViewImage(src);
+      } else {
+          // Fallback if view handler not provided
+          window.open(src, '_blank');
+      }
+  };
+
   const getWrappingClass = () => {
     switch (textWrapping) {
       case 'forced': return 'whitespace-pre-wrap break-all';
@@ -375,7 +386,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                     src={img} 
                                     alt="Message Attachment" 
                                     className="max-h-64 max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
-                                    onClick={() => window.open(img, '_blank')}
+                                    onClick={() => handleImageClick(img)}
                                 />
                             </div>
                         ))}
@@ -465,7 +476,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                                         );
                                     },
                                     img({src, alt}) {
-                                        return <img src={src} alt={alt} onClick={() => { if (typeof src === 'string') window.open(src, '_blank'); }} style={{cursor: 'pointer'}} />;
+                                        return <img src={src} alt={alt} onClick={() => { if (typeof src === 'string') handleImageClick(src); }} style={{cursor: 'pointer'}} />;
                                     },
                                     input({checked, readOnly}) {
                                         return <input type="checkbox" checked={checked} readOnly={readOnly} className="mr-2 accent-primary-600 rounded w-4 h-4 align-text-bottom cursor-default" />;

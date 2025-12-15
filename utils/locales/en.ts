@@ -312,4 +312,6 @@ export const en: Record<string, string> = {
     'label.group': 'Group',
     'label.no_group': 'No Group',
     'action.open_full_editor': 'Open Full Screen Editor',
+    'action.upload_image': 'Upload Image',
+    'action.upload_file': 'Upload File (Text)',
   };
