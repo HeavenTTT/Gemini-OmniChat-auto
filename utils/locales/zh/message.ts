@@ -1,3 +1,4 @@
+
 /**
  * 中文消息通知与输入框本地化配置
  */
@@ -49,6 +50,7 @@ export const message = {
   'msg.sync_success': '模型同步成功。',
   'msg.config_exported': '配置导出成功。',
   'msg.config_imported': '密钥配置已导入。',
+  'success.chat_import': '聊天记录导入成功。',
   'msg.invalid_format': '格式无效。',
   'msg.confirm_clear_chat': '确定要清空此对话中的所有消息吗？',
   'msg.ai_generated_disclaimer': '本项目（代码、UI、逻辑）完全由 AI 生成。',

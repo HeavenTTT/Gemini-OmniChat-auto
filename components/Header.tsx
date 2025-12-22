@@ -1,7 +1,8 @@
+
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, Plus, Settings, Loader2, Sparkles, Download, Upload, Eraser, MoreHorizontal, ChevronUp } from 'lucide-react';
+import { Menu, Settings, Loader2, Sparkles, Download, Upload, Eraser, MoreHorizontal, ChevronUp } from 'lucide-react';
 import { Language } from '../types';
 import { t } from '../utils/i18n';
 
@@ -41,7 +42,8 @@ export const Header: React.FC<HeaderProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
-   * 点击外部关闭菜单
+   * 节点 1: 外部点击监听
+   * 用于自动关闭展开的操作菜单
    */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,24 +55,32 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   /**
-   * 触发加载文件的文件选择器
+   * 节点 2: 触发文件选择器
+   * 修复点：通过 ref 稳定触发隐藏的 input 元素
    */
   const handleLoadTrigger = () => {
-    fileInputRef.current?.click();
+    if (fileInputRef.current) {
+        fileInputRef.current.click();
+    }
     setIsActionsOpen(false);
   };
 
   /**
-   * 处理加载聊天记录文件
+   * 节点 3: 文件读取逻辑
+   * 解析 JSON 并验证消息格式，成功后回调父组件进行会话切换
    */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (parsed.messages && Array.isArray(parsed.messages)) {
+        const content = event.target?.result as string;
+        const parsed = JSON.parse(content);
+        
+        // 关键节点：验证对话文件是否包含有效的消息数组
+        if (parsed && parsed.messages && Array.isArray(parsed.messages)) {
           onLoadSession(parsed.messages, parsed.title);
         } else {
           onShowToast(t('error.invalid_chat_file', language), 'error');
@@ -78,18 +88,21 @@ export const Header: React.FC<HeaderProps> = ({
       } catch (err) {
         onShowToast(t('error.load_file', language), 'error');
       }
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      
+      // 清空 input 值，允许重复上传同一个文件触发 onChange
+      if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+      }
     };
     reader.readAsText(file);
   };
 
   /**
-   * 操作按钮子组件
-   * 采用纵向折叠展开逻辑
+   * 子组件：操作菜单按钮组
+   * 注意：不要在这里定义包含 ref 的 input 元素，应移至外层
    */
   const ActionButtons = () => (
     <div className="relative flex items-center" ref={menuRef}>
-      {/* 展开/收起 触发按钮 */}
       <button
         onClick={() => setIsActionsOpen(!isActionsOpen)}
         className={`p-2 rounded-full transition-all duration-300 z-20 ${isActionsOpen ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600' : 'bg-transparent text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
@@ -98,7 +111,6 @@ export const Header: React.FC<HeaderProps> = ({
         {isActionsOpen ? <ChevronUp className="w-5 h-5" /> : <MoreHorizontal className="w-5 h-5" />}
       </button>
 
-      {/* 纵向展开的内容容器 */}
       <div 
         className={`absolute top-full right-0 mt-2 flex flex-col gap-1.5 p-1.5 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl transition-all duration-300 origin-top-right z-30 ${
           isActionsOpen 
@@ -106,7 +118,6 @@ export const Header: React.FC<HeaderProps> = ({
           : 'opacity-0 -translate-y-4 scale-95 pointer-events-none'
         }`}
       >
-        {/* 总结对话 - 已移动到此折叠按钮中 */}
         <button
           onClick={() => { onSummarize(); setIsActionsOpen(false); }}
           disabled={isSummarizing || !hasMessages}
@@ -116,7 +127,6 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{t('action.summarize', language)}</span>
         </button>
 
-        {/* 设置按钮 - 仅在移动模式下显示在折叠菜单中 */}
         <button
           onClick={() => { onOpenSettings(); setIsActionsOpen(false); }}
           className="md:hidden flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors whitespace-nowrap"
@@ -151,13 +161,21 @@ export const Header: React.FC<HeaderProps> = ({
           <span>{t('action.load', language)}</span>
         </button>
       </div>
-
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" aria-label={t('action.select_chat_file', language)} />
     </div>
   );
 
   return (
     <>
+      {/* 稳定节点：将隐藏的 input 放置在 Header 根部，确保 ref 不受子组件重绘影响 */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileChange} 
+        accept=".json" 
+        className="hidden" 
+        aria-label={t('action.select_chat_file', language)} 
+      />
+
       {/* Desktop Header */}
       <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-30 transition-colors">
         <div className="flex items-center gap-3 overflow-hidden">

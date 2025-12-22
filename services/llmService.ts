@@ -1,3 +1,4 @@
+
 import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
@@ -5,14 +6,27 @@ import { OllamaService } from "./ollamaService";
 import { t } from "../utils/i18n";
 
 /**
- * Service class for handling Multi-Provider LLM interactions.
- * Manages API key rotation, load balancing, and delegates to specific provider services (Google Gemini, OpenAI, or Ollama).
+ * 队列任务接口定义
+ */
+interface RequestTask {
+  execute: () => Promise<any>;
+  resolve: (value: any) => void;
+  reject: (reason?: any) => void;
+  abortSignal?: AbortSignal;
+}
+
+/**
+ * LLM 核心服务类：处理多提供商交互。
+ * 包含：API 密钥轮询、负载均衡、请求队列处理。
  */
 export class LLMService {
   private keys: KeyConfig[] = [];
-  private keyIndex: number = 0;
-  private keyUsageCount: number = 0;
-  private _isCallInProgress: boolean = false; // Lock to prevent concurrent calls
+  private keyIndex: number = 0; // 当前轮询到的 Key 索引
+  private keyUsageCount: number = 0; // 当前 Key 已使用的次数
+  
+  // 队列管理状态：确保 API 请求按顺序处理，避免高并发冲突
+  private requestQueue: RequestTask[] = [];
+  private isProcessingQueue: boolean = false;
   
   private openAIService: OpenAIService;
   private googleService: GoogleService;
@@ -28,11 +42,11 @@ export class LLMService {
   }
 
   /**
-   * Updates the pool of API keys available for rotation.
-   * Resets usage counters if the key list changes significantly.
+   * 更新 API 密钥池
    */
   public updateKeys(newKeys: KeyConfig[]) {
     this.keys = newKeys;
+    // 索引越界安全检查
     if (this.keyIndex >= this.keys.length) {
         this.keyIndex = 0;
         this.keyUsageCount = 0;
@@ -40,67 +54,93 @@ export class LLMService {
   }
 
   /**
-   * Lists available models for a specific key configuration.
-   * Supports Google GenAI, OpenAI, and Ollama endpoints.
+   * 将任务推入队列并触发处理逻辑
+   */
+  private async enqueueTask<T>(execute: () => Promise<T>, abortSignal?: AbortSignal): Promise<T> {
+    return new Promise((resolve, reject) => {
+      if (abortSignal?.aborted) {
+        return reject(new Error("Aborted by user"));
+      }
+
+      this.requestQueue.push({
+        execute,
+        resolve,
+        reject,
+        abortSignal
+      });
+
+      this.processQueue();
+    });
+  }
+
+  /**
+   * 顺序处理队列中的任务 (FIFO)
+   */
+  private async processQueue() {
+    if (this.isProcessingQueue || this.requestQueue.length === 0) return;
+
+    this.isProcessingQueue = true;
+
+    while (this.requestQueue.length > 0) {
+      const task = this.requestQueue.shift();
+      if (!task) continue;
+
+      if (task.abortSignal?.aborted) {
+        task.reject(new Error("Aborted by user"));
+        continue;
+      }
+
+      try {
+        const result = await task.execute();
+        task.resolve(result);
+      } catch (error) {
+        task.reject(error);
+      }
+    }
+
+    this.isProcessingQueue = false;
+  }
+
+  /**
+   * 获取模型列表
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
-    if (this._isCallInProgress) {
-        throw new Error("error.call_in_progress"); // UI will translate this key
-    }
-    this._isCallInProgress = true;
-    try {
-        if (keyConfig.provider === 'openai') {
-            if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
-            return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
-        } else if (keyConfig.provider === 'ollama') {
-            // Allow empty baseUrl (defaults to /ollama-proxy)
-            return await this.ollamaService.listModels(keyConfig.baseUrl || '', keyConfig.key);
-        } else {
-            // Google Implementation
-            return await this.googleService.listModels(keyConfig.key);
-        }
-    } finally {
-        this._isCallInProgress = false;
-    }
+    return this.enqueueTask(async () => {
+      if (keyConfig.provider === 'openai') {
+          if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
+          return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+      } else if (keyConfig.provider === 'ollama') {
+          return await this.ollamaService.listModels(keyConfig.baseUrl || '', keyConfig.key);
+      } else {
+          return await this.googleService.listModels(keyConfig.key);
+      }
+    });
   }
 
   /**
-   * Tests connection for a specific key configuration to ensure validity.
-   * Performs a minimal chat generation request or model list check.
+   * 测试连接
    */
   public async testConnection(keyConfig: KeyConfig): Promise<boolean> {
-      if (this._isCallInProgress) {
-          throw new Error("error.call_in_progress");
-      }
-      this._isCallInProgress = true;
+    return this.enqueueTask(async () => {
+      const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
       try {
-          const modelToUse = keyConfig.model || (keyConfig.provider === 'openai' ? 'gpt-3.5-turbo' : 'gemini-2.5-flash');
-
-          try {
-              if (keyConfig.provider === 'openai') {
-                  if (!keyConfig.baseUrl) return false;
-                  return await this.openAIService.testChat(
-                      keyConfig.key, 
-                      keyConfig.baseUrl, 
-                      modelToUse
-                  );
-              } else if (keyConfig.provider === 'ollama') {
-                  // Allow empty baseUrl (defaults to /ollama-proxy)
-                  return await this.ollamaService.testConnection(keyConfig.baseUrl || '', keyConfig.key);
-              } else {
-                  return await this.googleService.testConnection(keyConfig.key, modelToUse);
-              }
-          } catch (e) {
-              return false;
+          if (keyConfig.provider === 'openai') {
+              if (!keyConfig.baseUrl) return false;
+              return await this.openAIService.testChat(keyConfig.key, keyConfig.baseUrl, modelToUse);
+          } else if (keyConfig.provider === 'ollama') {
+              return await this.ollamaService.testConnection(keyConfig.baseUrl || '', keyConfig.key);
+          } else {
+              return await this.googleService.testConnection(keyConfig.key, modelToUse);
           }
-      } finally {
-          this._isCallInProgress = false;
+      } catch (e) {
+          return false;
       }
+    });
   }
 
   /**
-   * Retrieves the next available active API key using a Round-Robin strategy.
-   * Handles usage limits per key (Poll Count) and skips rate-limited keys.
+   * 核心算法：轮询策略
+   * 寻找下一个可用的 API 密钥，考虑：活跃状态、速率限制冷却时间、单个 Key 的轮询配额。
    */
   private getNextAvailableKey(lang: Language): KeyConfig {
     const activeKeys = this.keys.filter(k => k.isActive);
@@ -109,52 +149,47 @@ export class LLMService {
       throw new Error(t('error.no_active_keys', lang));
     }
 
-    // Attempt to find a usable key (not rate limited recently)
     const attempts = activeKeys.length;
     let selectedKey: KeyConfig | null = null;
     let selectedIndex = -1;
     
-    // Check next N keys starting from current index
     for (let i = 0; i < attempts; i++) {
         const idx = (this.keyIndex + i) % activeKeys.length;
         const candidate = activeKeys[idx];
 
-        // Check if rate limited and within cooldown period (60s)
+        // 检查冷却时间：如果被 429 限制，进入 1 分钟冷却期
         if (candidate.isRateLimited && Date.now() - candidate.lastUsed < 60000) {
-            continue; // Skip this key
+            continue; 
         }
 
-        // Key is good to use (or at least we should try)
-        // Check poll usage limit only if we are considering the current key (i=0)
-        // If we have already exceeded the limit for the current key, we force rotation.
-        if (i === 0 && this.keyUsageCount >= (candidate.usageLimit || 1)) {
-             // Current key exhausted usage limit, force rotate to next
-             continue; 
+        // 检查轮询配额：如果当前 Key 还没用够设定的次数，继续用它
+        if (i === 0 && this.keyUsageCount < (candidate.usageLimit || 1)) {
+             selectedKey = candidate;
+             selectedIndex = idx;
+             break;
         }
 
-        selectedKey = candidate;
-        selectedIndex = idx;
-        break;
+        // 切换到下一个 Key
+        if (i > 0) {
+            selectedKey = candidate;
+            selectedIndex = idx;
+            break;
+        }
     }
 
-    // If all keys are rate limited, fallback to the one with oldest usage or just current rotation
+    // 如果所有 Key 都因为某种原因被跳过，强制选择当前索引的下一个
     if (!selectedKey) {
-        // Fallback: Just rotate to next to try anyway
         selectedIndex = (this.keyIndex + 1) % activeKeys.length;
         selectedKey = activeKeys[selectedIndex];
     }
     
-    // Update global index and manage usage counter
+    // 如果发生了索引切换，重置单密钥使用计数
     if (this.keyIndex !== selectedIndex) {
-        // We switched keys (either due to usage limit or rate limit)
-        // Reset the usage counter for the new key
         this.keyIndex = selectedIndex;
         this.keyUsageCount = 0;
     }
     
-    // Increment usage for the selected key
     this.keyUsageCount++;
-    
     return selectedKey;
   }
 
@@ -163,7 +198,8 @@ export class LLMService {
   }
 
   /**
-   * Helper to map raw error objects/codes to user-friendly messages
+   * 错误分级处理逻辑
+   * 将 API 返回的原始错误转化为用户可读的本地化语言。
    */
   private getErrorMessage(error: any, lang: Language): string {
       const status = error.status || error.statusCode;
@@ -181,14 +217,13 @@ export class LLMService {
       }
       if (status === 500 || status === 502 || status === 503 || msg.includes('500')) return t('error.server_error', lang);
       if (status === 0 || msg.includes('network') || msg.includes('fetch')) return t('error.network_issue', lang);
-      if (msg.includes('refused')) return t('error.connection_refused', lang);
       
       return error.message || t('error.unexpected_error', lang);
   }
 
   /**
-   * Streams chat response using the next available key and its specific configuration.
-   * Handles retries on failure and switches keys automatically.
+   * 节点 5: 核心重试与分发逻辑
+   * 在发生非致命错误（如速率限制）时自动切换密钥并重试。
    */
   public async streamChatResponse(
     _ignoredGlobalModelId: string, 
@@ -202,15 +237,9 @@ export class LLMService {
     lang: Language = 'en'
   ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
 
-    if (this._isCallInProgress) {
-        throw new Error("error.call_in_progress");
-    }
-    this._isCallInProgress = true;
-
-    try {
+    return this.enqueueTask(async () => {
         const activeKeysCount = this.keys.filter(k => k.isActive).length;
-        // Retry logic: Try at least 2 times per key to handle transient network blips, 
-        // but avoid infinite loops. Limit total attempts relative to key count.
+        // 最大重试次数为活跃密钥数的 2 倍
         const maxRetries = Math.max(activeKeysCount * 2, 2); 
         let attempts = 0;
         const validHistory = history.filter(msg => (msg.text && msg.text.trim().length > 0) || (msg.images && msg.images.length > 0));
@@ -222,65 +251,35 @@ export class LLMService {
             try {
                 keyConfig = this.getNextAvailableKey(lang);
             } catch (e: any) {
-                // If getNextAvailableKey throws (e.g. no active keys), stop immediately
                 throw e;
             }
 
-            const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-2.5-flash';
+            const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-3-flash-preview';
 
             try {
                 let text = "";
                 
-                // --- SPECIAL ROUTE: Image Generation (Imagen models) ---
+                // 根据提供商分发请求
                 if (keyConfig.provider === 'google' && modelToUse.toLowerCase().includes('imagen')) {
-                     // Google Imagen generation
-                     text = await this.googleService.generateImage(
-                         keyConfig.key,
-                         modelToUse,
-                         newMessage
-                     );
+                     text = await this.googleService.generateImage(keyConfig.key, modelToUse, newMessage);
                 } 
-                // --- STANDARD ROUTE: Chat/Vision ---
                 else if (keyConfig.provider === 'openai') {
                     if (!keyConfig.baseUrl) throw new Error(t('error.base_url_required', lang));
                     text = await this.openAIService.streamChat(
-                        keyConfig.key,
-                        keyConfig.baseUrl,
-                        modelToUse,
-                        validHistory,
-                        newMessage,
-                        images,
-                        systemInstruction,
-                        generationConfig,
-                        onChunk,
-                        abortSignal
+                        keyConfig.key, keyConfig.baseUrl, modelToUse, validHistory, 
+                        newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
                     );
-                } else if (keyConfig.provider === 'ollama') {
-                    // Allow empty baseUrl
+                } 
+                else if (keyConfig.provider === 'ollama') {
                     text = await this.ollamaService.streamChat(
-                        keyConfig.baseUrl || '',
-                        modelToUse,
-                        validHistory,
-                        newMessage,
-                        images,
-                        systemInstruction,
-                        generationConfig,
-                        keyConfig.key, // Optional API key
-                        onChunk,
-                        abortSignal
+                        keyConfig.baseUrl || '', modelToUse, validHistory, 
+                        newMessage, images, systemInstruction, generationConfig, keyConfig.key, onChunk, abortSignal
                     );
-                } else {
-                    // Google Gemini API Call delegated to GoogleService
+                } 
+                else {
                     text = await this.googleService.streamChat(
-                        keyConfig.key,
-                        modelToUse,
-                        validHistory,
-                        newMessage,
-                        images,
-                        systemInstruction,
-                        generationConfig,
-                        onChunk,
-                        abortSignal
+                        keyConfig.key, modelToUse, validHistory, 
+                        newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
                     );
                 }
 
@@ -295,81 +294,56 @@ export class LLMService {
                 if (abortSignal?.aborted) throw new Error("Aborted by user");
                 
                 lastError = error;
-
-                // Extract Error Code for internal tracking/display
                 let errorCode = 'Error';
                 let statusCode = error.status || error.statusCode;
 
-                if (statusCode) {
-                    errorCode = statusCode.toString();
-                } else {
+                if (!statusCode) {
                      const match = error.message?.match(/\b\d{3}\b/);
-                     if (match) {
-                         errorCode = match[0];
-                         statusCode = parseInt(errorCode);
-                     }
+                     if (match) errorCode = match[0];
                      else if (error.message?.includes("Network")) errorCode = "Network";
+                } else {
+                    errorCode = statusCode.toString();
                 }
 
-                // Determine if fatal
-                // 401 (Invalid Key), 403 (Permission), 404 (Model Not Found), 400 (Bad Request) are usually configuration errors -> Disable Key
-                // 429 (Rate Limit), 500+ (Server), 0 (Network) are transient -> Keep Active but Rate Limit
-                let isFatal = false;
-                if ([400, 401, 402, 403, 404].includes(statusCode)) {
-                    isFatal = true;
-                }
+                // 判断是否是致命错误：身份验证失败、计费问题、位置不支持等需要禁用密钥
+                let isFatal = [401, 402, 403, 404].includes(statusCode);
                 
-                // Specific check for Safety Block (400) - usually prompt specific, not key specific, but treated as error
+                // 安全审核拦截不属于密钥问题，直接抛出给用户
                 if (error.isSafety) {
-                    isFatal = false; // Don't disable key for safety blocks
-                    // But we should probably throw immediately for safety blocks as rotating won't help?
-                    // Actually, let's stop retrying if it's a safety block
                     throw new Error(this.getErrorMessage(error, lang));
                 }
 
-                // Notify App
                 if (this.onKeyError) {
                     this.onKeyError(keyConfig.id, errorCode, isFatal);
                 }
                 
-                // Mark inactive or rate-limited locally
                 const localKey = this.keys.find(k => k.id === keyConfig.id);
                 if (localKey) {
-                    if (isFatal) {
-                        localKey.isActive = false;
-                    } else {
+                    if (isFatal) localKey.isActive = false;
+                    else {
+                        // 速率限制错误：进入冷却
                         localKey.isRateLimited = true;
                         localKey.lastUsed = Date.now();
-                        // Also force rotation for next attempt
+                        // 强制轮询配额用满，以便下次重试使用新 Key
                         this.keyUsageCount = 10000; 
                     }
                     localKey.lastErrorCode = errorCode;
                 }
 
-                // If we ran out of active keys after this failure, stop
-                if (this.keys.filter(k => k.isActive).length === 0) {
-                     break; 
-                }
+                if (this.keys.filter(k => k.isActive).length === 0) break; 
 
                 attempts++;
                 continue;
             }
         }
         
-        // If we exhausted retries or keys
-        if (lastError) {
-            throw new Error(this.getErrorMessage(lastError, lang));
-        }
-        
+        if (lastError) throw new Error(this.getErrorMessage(lastError, lang));
         throw new Error(t('error.all_keys_failed', lang));
-    } finally {
-        this._isCallInProgress = false;
-    }
+    }, abortSignal);
   }
 
   /**
-   * Counts tokens for a given context.
-   * Returns -1 if provider does not support counting (like generic OpenAI or Ollama) or error occurs.
+   * Token 统计
    */
   public async countTokens(
       keyConfig: KeyConfig,
@@ -377,21 +351,11 @@ export class LLMService {
       newMessage: string,
       _ignoredSystemInstruction: string | undefined
   ): Promise<number> {
-      if (this._isCallInProgress) {
-          throw new Error("error.call_in_progress");
-      }
-      this._isCallInProgress = true;
-      try {
+      return this.enqueueTask(async () => {
           if (keyConfig.provider !== 'google') return -1;
-          
           return await this.googleService.countTokens(
-              keyConfig.key,
-              keyConfig.model || 'gemini-2.5-flash',
-              history,
-              newMessage
+              keyConfig.key, keyConfig.model || 'gemini-3-flash-preview', history, newMessage
           );
-      } finally {
-          this._isCallInProgress = false;
-      }
+      });
   }
 }
