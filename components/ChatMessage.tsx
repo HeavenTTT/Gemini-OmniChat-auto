@@ -71,17 +71,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
   const containerClass = isVSCodeTheme ? 'max-w-[85rem]' : 'max-w-5xl';
 
-  // Detect if the message is a generated image (markdown image with data URI)
-  // We skip animation for generated images to avoid raw base64 flashing
+  // 检测消息是否为生成的图片（Markdown 图片且包含 Data URI）
+  // 对于生成的图片跳过动画，避免 base64 源码闪烁
   const isGeneratedImage = useMemo(() => {
       const trimmed = msg.text.trim();
       return msg.role === Role.MODEL && trimmed.startsWith('![') && trimmed.includes('(data:image/');
   }, [msg.text, msg.role]);
 
-  // --- Animation Logic ---
+  // --- 动画逻辑 ---
   useEffect(() => {
     targetTextRef.current = msg.text;
-    // Disable animation if user preference is off, role is not model, error, editing, OR if it is a generated image
+    // 如果关闭动画、不是 AI 消息、错误消息、正在编辑或生成的图片，则直接显示完整文本
     if (!smoothAnimation || msg.role !== Role.MODEL || isEditing || isGeneratedImage) {
         setDisplayedText(msg.text);
     }
@@ -91,6 +91,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     if (isEditing) setEditText(msg.text);
   }, [isEditing, msg.text]);
 
+  /**
+   * 打字机动画循环
+   * 根据缓冲区待处理字符数动态调整打字速度
+   */
   useEffect(() => {
     if (!smoothAnimation || msg.role !== Role.MODEL || msg.isError || isEditing || isGeneratedImage) return;
 
@@ -101,10 +105,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
         if (current.length > target.length) return target;
 
         const diff = target.length - current.length;
-        let chunk = 2;
-        if (diff > 50) chunk = 5;
-        if (diff > 100) chunk = 15;
-        if (diff > 500) chunk = 50; 
+        
+        /**
+         * 动态调整打字步长：
+         * 根据用户需求，提高比例为缓冲区字数 (diff) / 50。
+         * 设置最小步长为 1，确保即使剩余字数较少也能匀速完成渲染。
+         */
+        const chunk = Math.max(1, Math.ceil(diff / 50));
 
         const nextLen = Math.min(target.length, current.length + chunk);
         const nextText = target.substring(0, nextLen);
@@ -125,7 +132,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
       }
   }, [displayedText, isLast, onScrollToBottom, smoothAnimation, msg.role, isEditing, isGeneratedImage]);
 
-  // --- Handlers ---
+  // --- 处理方法 ---
 
   const cancelEditing = () => { 
     setEditingId(null); 
@@ -172,12 +179,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
       if (onViewImage) {
           onViewImage(src);
       } else {
-          // Fallback if view handler not provided
           window.open(src, '_blank');
       }
   };
 
-  // --- Styles ---
+  // --- 样式计算 ---
 
   const effectiveTransparency = isEditing ? 100 : bubbleTransparency;
   const borderAlpha = 0.5 + (effectiveTransparency / 100) * 0.5;
@@ -230,7 +236,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     } : {}
                 }
             >
-                {/* Image Grid for Message Attachments (User Uploads) */}
+                {/* 消息附件图片网格 */}
                 {msg.images && msg.images.length > 0 && !isEditing && (
                     <div className="flex flex-wrap gap-2 mb-2">
                         {msg.images.map((img, idx) => (
