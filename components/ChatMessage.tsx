@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { User, X, Save, Edit2, RefreshCw, Trash2, Clock } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
@@ -301,6 +299,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         theme={theme}
                         onShowToast={onShowToast}
                         onViewImage={onViewImage}
+                        isLast={isLast} // Pass isLast to control auto-expansion of thoughts
                     />
                 )}
             </div>

@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useState } from 'react';
-import { AlertCircle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
@@ -60,6 +58,30 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                         />
                         <div className="toggle-slider"></div>
                     </label>
+                </div>
+
+                {/* Thinking Budget (Gemini 2.5) - Moved to main section */}
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
+                    <div className="flex justify-between text-sm mb-2 items-center">
+                        <label htmlFor="thinking-budget-input" className="text-gray-800 dark:text-gray-200 font-medium flex items-center gap-2">
+                            <Brain className="w-4 h-4 text-purple-500" />
+                            {t('param.thinkingBudget', lang)}
+                        </label>
+                        <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded text-xs font-mono">
+                            {settings.generation.thinkingBudget || 0}
+                        </span>
+                    </div>
+                    <input 
+                        id="thinking-budget-input"
+                        type="range" min="0" max="32768" step="1024"
+                        value={settings.generation.thinkingBudget || 0}
+                        onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, thinkingBudget: parseInt(e.target.value)}})}
+                        className="slider-standard accent-purple-500"
+                        aria-label={t('param.thinking_budget_input', lang)}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        {t('param.thinkingBudget_desc', lang)}
+                    </p>
                 </div>
 
                 {/* Strip Thoughts Toggle */}
@@ -146,27 +168,6 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {t('param.topK_desc', lang)}
-                            </p>
-                        </div>
-
-                        {/* Thinking Budget (Gemini 2.5) */}
-                        <div>
-                            <div className="flex justify-between text-sm mb-2">
-                                <label htmlFor="thinking-budget-input" className="text-gray-700 dark:text-gray-300 font-medium">{t('param.thinkingBudget', lang)}</label>
-                                <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">
-                                    {settings.generation.thinkingBudget || 0}
-                                </span>
-                            </div>
-                            <input 
-                                id="thinking-budget-input"
-                                type="range" min="0" max="32768" step="1024"
-                                value={settings.generation.thinkingBudget || 0}
-                                onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, thinkingBudget: parseInt(e.target.value)}})}
-                                className="slider-standard"
-                                aria-label={t('param.thinking_budget_input', lang)}
-                            />
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {t('param.thinkingBudget_desc', lang)}
                             </p>
                         </div>
 

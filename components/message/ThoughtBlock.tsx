@@ -6,10 +6,11 @@ import { t } from '../../utils/i18n';
 interface ThoughtBlockProps {
   text: string;
   lang: Language;
+  defaultOpen?: boolean;
 }
 
-export const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang }) => {
-  const [isOpen, setIsOpen] = useState(false); 
+export const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang, defaultOpen = false }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen); 
 
   return (
     <div className="my-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
@@ -24,7 +25,7 @@ export const ThoughtBlock: React.FC<ThoughtBlockProps> = ({ text, lang }) => {
         </div>
       </button>
       {isOpen && (
-         <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-xs font-mono text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed">
+         <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 text-xs font-mono text-gray-600 dark:text-gray-400 whitespace-pre-wrap leading-relaxed animate-fade-in-up">
              {text}
          </div>
       )}

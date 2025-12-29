@@ -20,6 +20,7 @@ interface MessageContentProps {
   theme: Theme;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onViewImage?: (url: string) => void;
+  isLast?: boolean;
 }
 
 export const MessageContent: React.FC<MessageContentProps> = React.memo(({
@@ -32,7 +33,8 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
   language,
   theme,
   onShowToast,
-  onViewImage
+  onViewImage,
+  isLast = false
 }) => {
 
   // Parse <think> blocks
@@ -48,8 +50,15 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
     while ((match = thinkRegex.exec(content)) !== null) {
         extractedThoughts.push(match[1]);
     }
-    const stripped = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '').trim();
-    return { thoughts: extractedThoughts, cleanContent: stripped };
+    
+    // Strip the thoughts
+    let stripped = content.replace(/<think>[\s\S]*?(?:<\/think>|$)/g, '');
+    
+    // Fix for streaming: If the content ends with a partial <think> tag (e.g. "<", "<t", "<thin"),
+    // strip it from the display text to avoid flickering raw tags.
+    stripped = stripped.replace(/<(?:t(?:h(?:i(?:n(?:k)?)?)?)?)?$/, '');
+
+    return { thoughts: extractedThoughts, cleanContent: stripped.trim() };
   }, [content, role]);
 
   const handleImageClick = (src: string) => {
@@ -77,7 +86,12 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
         {thoughts.length > 0 && (
             <div className="mb-3 flex flex-col gap-2">
                 {thoughts.map((thought, idx) => (
-                    <ThoughtBlock key={idx} text={thought} lang={language} />
+                    <ThoughtBlock 
+                        key={idx} 
+                        text={thought} 
+                        lang={language} 
+                        defaultOpen={isLast} // Auto-expand for the latest message (streaming)
+                    />
                 ))}
             </div>
         )}

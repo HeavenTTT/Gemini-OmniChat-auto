@@ -189,8 +189,45 @@ export const Header: React.FC<HeaderProps> = ({
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
-            <ActionButtons />
+        <div className="flex items-center gap-1">
+            <button
+                onClick={onSummarize}
+                disabled={isSummarizing || !hasMessages}
+                className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t('action.summarize', language)}
+                aria-label={t('action.summarize', language)}
+            >
+                {isSummarizing ? <Loader2 className="w-5 h-5 animate-spin"/> : <Sparkles className="w-5 h-5" />}
+            </button>
+
+            <button
+                onClick={onClearChat}
+                disabled={!hasMessages}
+                className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t('action.clear_chat', language)}
+                aria-label={t('action.clear_chat', language)}
+            >
+                <Eraser className="w-5 h-5" />
+            </button>
+            
+            <button 
+                onClick={onSaveChat} 
+                disabled={!hasMessages}
+                className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                title={t('action.save', language)}
+                aria-label={t('action.save', language)}
+            >
+                <Download className="w-5 h-5" />
+            </button>
+
+            <button 
+                onClick={handleLoadTrigger} 
+                className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 rounded-lg transition-colors"
+                title={t('action.load', language)}
+                aria-label={t('action.load', language)}
+            >
+                <Upload className="w-5 h-5" />
+            </button>
         </div>
       </header>
 
