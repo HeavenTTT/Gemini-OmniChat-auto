@@ -307,7 +307,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                     
                                     onUpdate({ provider: newProvider, baseUrl: newBaseUrl });
                                 }}
-                                className="input-standard"
+                                className="input-standard appearance-none pr-8"
                                 aria-label={t('settings.model_provider_select', lang)}
                             >
                                 <option value="google">Google Gemini</option>
@@ -322,7 +322,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                 <select
                                     value={config.groupId || ''}
                                     onChange={(e) => onUpdate({ groupId: e.target.value || undefined })} // Empty string means undefined (unassigned)
-                                    className="input-standard"
+                                    className="input-standard appearance-none pr-8"
                                     aria-label={t('label.group', lang)}
                                 >
                                     <option value="">{t('label.no_group', lang)}</option>
