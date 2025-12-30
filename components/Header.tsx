@@ -1,9 +1,9 @@
-
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Menu, Settings, Loader2, Sparkles, Download, Upload, Eraser, MoreHorizontal, ChevronUp } from 'lucide-react';
-import { Language } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+import { Language, Role, Message } from '../types';
 import { t } from '../utils/i18n';
 
 interface HeaderProps {
@@ -67,7 +67,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   /**
    * 节点 3: 文件读取逻辑
-   * 解析 JSON 并验证消息格式，成功后回调父组件进行会话切换
+   * 解析 JSON 并验证消息格式，兼容 OpenAI 格式导出
    */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -81,7 +81,45 @@ export const Header: React.FC<HeaderProps> = ({
         
         // 关键节点：验证对话文件是否包含有效的消息数组
         if (parsed && parsed.messages && Array.isArray(parsed.messages)) {
-          onLoadSession(parsed.messages, parsed.title);
+          const normalizedMessages = parsed.messages.map((msg: any) => {
+             // 1. Role 映射 (External "assistant" -> Internal "model")
+             let role = msg.role;
+             if (role === 'assistant') role = Role.MODEL;
+             // 确保 role 是有效的枚举值，否则默认为 USER
+             if (role !== Role.MODEL && role !== Role.USER) role = Role.USER;
+
+             // 2. Content 映射 (External "content" -> Internal "text")
+             let text = msg.text;
+             if (text === undefined && msg.content !== undefined) {
+                 if (typeof msg.content === 'string') {
+                     text = msg.content;
+                 } else if (Array.isArray(msg.content)) {
+                     // 尝试处理 OpenAI 多模态数组结构 [{"type":"text", "text":"..."}]
+                     text = msg.content
+                        .filter((part: any) => part.type === 'text')
+                        .map((part: any) => part.text)
+                        .join('\n');
+                     // 如果过滤后为空，尝试直接 join (fallback)
+                     if (!text && msg.content.length > 0) text = JSON.stringify(msg.content); 
+                     else if (!text) text = '';
+                 } else {
+                     text = String(msg.content);
+                 }
+             }
+
+             return {
+                 id: msg.id || uuidv4(),
+                 role: role,
+                 text: text || '',
+                 images: msg.images || undefined, // Internal format uses images array
+                 timestamp: msg.timestamp || Date.now(),
+                 isError: msg.isError,
+                 model: msg.model,
+                 provider: msg.provider
+             } as Message;
+          });
+          
+          onLoadSession(normalizedMessages, parsed.title);
         } else {
           onShowToast(t('error.invalid_chat_file', language), 'error');
         }

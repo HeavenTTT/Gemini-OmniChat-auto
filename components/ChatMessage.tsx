@@ -62,9 +62,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   avatarVisibility,
   onViewImage
 }) => {
-  const [editText, setEditText] = useState(msg.text);
-  const [displayedText, setDisplayedText] = useState(msg.text);
-  const targetTextRef = useRef(msg.text);
+  const safeText = msg.text || '';
+  const [editText, setEditText] = useState(safeText);
+  const [displayedText, setDisplayedText] = useState(safeText);
+  const targetTextRef = useRef(safeText);
   const animationRef = useRef<number>(0);
 
   const isVSCodeTheme = theme === 'vscode-light' || theme === 'vscode-dark';
@@ -73,22 +74,22 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // 检测消息是否为生成的图片（Markdown 图片且包含 Data URI）
   // 对于生成的图片跳过动画，避免 base64 源码闪烁
   const isGeneratedImage = useMemo(() => {
-      const trimmed = msg.text.trim();
+      const trimmed = safeText.trim();
       return msg.role === Role.MODEL && trimmed.startsWith('![') && trimmed.includes('(data:image/');
-  }, [msg.text, msg.role]);
+  }, [safeText, msg.role]);
 
   // --- 动画逻辑 ---
   useEffect(() => {
-    targetTextRef.current = msg.text;
+    targetTextRef.current = safeText;
     // 如果关闭动画、不是 AI 消息、错误消息、正在编辑或生成的图片，则直接显示完整文本
     if (!smoothAnimation || msg.role !== Role.MODEL || isEditing || isGeneratedImage) {
-        setDisplayedText(msg.text);
+        setDisplayedText(safeText);
     }
-  }, [msg.text, msg.role, isEditing, smoothAnimation, isGeneratedImage]);
+  }, [safeText, msg.role, isEditing, smoothAnimation, isGeneratedImage]);
 
   useEffect(() => {
-    if (isEditing) setEditText(msg.text);
-  }, [isEditing, msg.text]);
+    if (isEditing) setEditText(safeText);
+  }, [isEditing, safeText]);
 
   /**
    * 打字机动画循环
@@ -140,7 +141,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   };
 
   const saveEdit = () => { 
-    if (editText.trim() !== msg.text) onEditMessage(msg.id, editText); 
+    if (editText.trim() !== safeText) onEditMessage(msg.id, editText); 
     setEditingId(null); 
     setConfirmDeleteId(null);
   };

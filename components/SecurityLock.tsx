@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -54,7 +55,8 @@ const SecurityLock: React.FC<SecurityLockProps> = ({ config, onUnlock, lang, the
       }
     } else {
       const currentQ = config.questions[questionIndex];
-      if (input.trim().toLowerCase() === currentQ.answer.trim().toLowerCase()) {
+      const answer = currentQ?.answer || '';
+      if (input.trim().toLowerCase() === answer.trim().toLowerCase()) {
         onUnlock();
       } else {
         setError(t('error.incorrect_answer', lang));
