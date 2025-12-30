@@ -1,3 +1,4 @@
+
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { User, X, Save, Edit2, RefreshCw, Trash2, Clock } from 'lucide-react';
 import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
@@ -309,13 +310,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 {msg.role === Role.MODEL && !msg.isError && (
                 <div className="flex flex-wrap items-center gap-1">
                     {msg.keyIndex && (
-                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="API Key Index">#{msg.keyIndex}</span>
+                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title={t('tooltip.key_index', language)}>#{msg.keyIndex}</span>
                     )}
                     {showModelName && msg.model && (
-                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 break-all max-w-[250px]" title="Model Used">{msg.model}</span>
+                        <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 break-all max-w-[250px]" title={t('tooltip.model_used', language)}>{msg.model}</span>
                     )}
                     {showResponseTimer && msg.executionTime && (
-                        <div className="flex items-center gap-0.5 text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title="Response Time">
+                        <div className="flex items-center gap-0.5 text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title={t('tooltip.response_time', language)}>
                             <Clock className="w-2.5 h-2.5" />
                             <span>{t('label.response_time', language).replace('{duration}', (msg.executionTime / 1000).toFixed(1))}</span>
                         </div>

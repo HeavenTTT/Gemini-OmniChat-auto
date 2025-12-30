@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
@@ -176,7 +177,7 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             <div className="flex justify-between text-sm mb-2">
                                 <label htmlFor="context-limit-input" className="text-gray-700 dark:text-gray-300 font-medium">{t('param.historyContextLimit', lang)}</label>
                                 <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">
-                                    {settings.historyContextLimit === 0 ? 'Unlimited' : settings.historyContextLimit}
+                                    {settings.historyContextLimit === 0 ? t('label.unlimited', lang) : settings.historyContextLimit}
                                 </span>
                             </div>
                             <input 

@@ -63,6 +63,15 @@ body {
   background: rgba(255, 255, 255, 0.4);
 }
 
+/* Utility for hiding scrollbar but keeping functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Chat Message Content Styles */
 .message-content pre,
 .message-content code {

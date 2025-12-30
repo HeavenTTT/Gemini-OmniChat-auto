@@ -27,6 +27,7 @@ export const message = {
   'input.prompt_title_field': 'System prompt title input',
   'input.instruction_field': 'System prompt instruction content input',
   'input.group_name_placeholder': 'Enter group name',
+  'input.ollama_auth': 'Optional / Auth Header',
   'msg.new_chat_title': 'New Chat',
   'msg.rename_chat': 'Rename Chat:',
   'msg.rate_limited': 'Rate Limited',

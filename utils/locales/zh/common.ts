@@ -27,6 +27,8 @@ export const common = {
   'label.no_group': '无分组',
   'label.input_limit': '输入限制',
   'label.output_limit': '输出限制',
+  'label.unlimited': '无限制',
+  'label.session': '会话',
   'avatar.always': '全部显示',
   'avatar.user_only': '只显示用户',
   'avatar.model_only': '只显示AI',
@@ -48,4 +50,8 @@ export const common = {
   'provider.google': 'Google Gemini',
   'provider.openai': 'OpenAI 兼容模式',
   'provider.ollama': 'Ollama',
+  'tooltip.key_index': 'API 密钥序号',
+  'tooltip.model_used': '使用的模型',
+  'tooltip.response_time': '响应耗时',
+  'tooltip.expand_tools': '展开工具栏',
 };

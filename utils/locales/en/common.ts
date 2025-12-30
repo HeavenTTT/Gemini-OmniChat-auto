@@ -27,6 +27,8 @@ export const common = {
   'label.no_group': 'No Group',
   'label.input_limit': 'Input Limit',
   'label.output_limit': 'Output Limit',
+  'label.unlimited': 'Unlimited',
+  'label.session': 'Session',
   'avatar.always': 'Show All',
   'avatar.user_only': 'User Only',
   'avatar.model_only': 'AI Only',
@@ -48,4 +50,8 @@ export const common = {
   'provider.google': 'Google Gemini',
   'provider.openai': 'OpenAI Compatible',
   'provider.ollama': 'Ollama',
+  'tooltip.key_index': 'API Key Index',
+  'tooltip.model_used': 'Model Used',
+  'tooltip.response_time': 'Response Time',
+  'tooltip.expand_tools': 'Expand tools',
 };

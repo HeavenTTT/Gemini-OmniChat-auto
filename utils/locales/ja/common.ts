@@ -27,6 +27,8 @@ export const common = {
   'label.no_group': 'グループなし',
   'label.input_limit': '输入限制',
   'label.output_limit': '输出限制',
+  'label.unlimited': '無制限',
+  'label.session': 'セッション',
   'avatar.always': 'すべて表示',
   'avatar.user_only': 'ユーザーのみ',
   'avatar.model_only': 'AIのみ',
@@ -48,4 +50,8 @@ export const common = {
   'provider.google': 'Google Gemini',
   'provider.openai': 'OpenAI 互換',
   'provider.ollama': 'Ollama',
+  'tooltip.key_index': 'APIキーインデックス',
+  'tooltip.model_used': '使用モデル',
+  'tooltip.response_time': '応答時間',
+  'tooltip.expand_tools': 'ツールを展開',
 };

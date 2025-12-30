@@ -55,10 +55,10 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
                     onClick={() => onSelectSession(session.id)} 
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors text-sm ${activeSessionId === session.id ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium border-l-4 border-primary-500 shadow-sm' : 'text-gray-600 dark:text-gray-400 border-l-4 border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
                     role="menuitem"
-                    aria-label={`${t('action.select_chat_session', language)}: ${session.title || 'New Chat'}`}
+                    aria-label={`${t('action.select_chat_session', language)}: ${session.title || t('msg.new_chat_title', language)}`}
                 >
-                <span className="truncate flex-1">{session.title || 'New Chat'}</span>
-                <button onClick={(e) => onDeleteSession(e, session.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" aria-label={`${t('action.delete_chat_session', language)}: ${session.title || 'New Chat'}`}><Trash2 className="w-4 h-4" /></button>
+                <span className="truncate flex-1">{session.title || t('msg.new_chat_title', language)}</span>
+                <button onClick={(e) => onDeleteSession(e, session.id)} className="p-2 text-gray-400 hover:text-red-500 transition-colors" aria-label={`${t('action.delete_chat_session', language)}: ${session.title || t('msg.new_chat_title', language)}`}><Trash2 className="w-4 h-4" /></button>
                 </div>
             ))}
             </div>

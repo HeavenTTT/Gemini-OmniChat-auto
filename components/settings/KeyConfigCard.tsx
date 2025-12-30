@@ -197,9 +197,9 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
     
     const getProviderLabel = () => {
         switch (config.provider) {
-            case 'openai': return 'OpenAI Compatible';
-            case 'ollama': return 'Ollama Cloud';
-            default: return 'Google Gemini';
+            case 'openai': return t('provider.openai', lang);
+            case 'ollama': return t('provider.ollama', lang);
+            default: return t('provider.google', lang);
         }
     };
 
@@ -359,7 +359,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                                 <input 
                                 type="text" 
                                 autoFocus
-                                placeholder={config.provider === 'ollama' ? "Optional / Auth Header" : t('input.apikey_placeholder', lang)}
+                                placeholder={config.provider === 'ollama' ? t('input.ollama_auth', lang) : t('input.apikey_placeholder', lang)}
                                 className="flex-1 bg-transparent text-sm outline-none font-mono text-gray-800 dark:text-gray-200 min-w-0"
                                 value={config.key}
                                 onChange={(e) => onUpdate({ key: e.target.value })}
@@ -368,7 +368,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                             />
                         ) : (
                             <span className="flex-1 text-sm font-mono text-gray-500 dark:text-gray-400 truncate select-none">
-                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{config.provider === 'ollama' ? "Optional / Auth Header" : t('input.apikey_placeholder', lang)}</span>}
+                                {config.key ? getMaskedKey(config.key) : <span className="text-gray-400 italic opacity-50">{config.provider === 'ollama' ? t('input.ollama_auth', lang) : t('input.apikey_placeholder', lang)}</span>}
                             </span>
                         )}
                     </div>

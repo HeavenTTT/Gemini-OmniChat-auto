@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -190,7 +191,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <button
                 onClick={() => setIsToolsOpen(!isToolsOpen)}
                 className={`p-1.5 rounded-full transition-all duration-300 ${isToolsOpen ? 'bg-gray-200 dark:bg-gray-700 rotate-45' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'} text-gray-500 dark:text-gray-400`}
-                title="Expand tools"
+                title={t('tooltip.expand_tools', language)}
             >
                 <Plus className="w-5 h-5" />
             </button>

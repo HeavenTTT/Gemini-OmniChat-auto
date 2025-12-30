@@ -1,4 +1,3 @@
-
 /**
  * 中文消息通知与输入框本地化配置
  */
@@ -28,6 +27,7 @@ export const message = {
   'input.prompt_title_field': '系统提示词标题输入',
   'input.instruction_field': '系统提示词内容输入',
   'input.group_name_placeholder': '输入分组名称',
+  'input.ollama_auth': '选填 / Auth Header',
   'msg.new_chat_title': '新对话',
   'msg.rename_chat': '重命名对话：',
   'msg.rate_limited': '受限',

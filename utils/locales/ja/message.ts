@@ -27,6 +27,7 @@ export const message = {
   'input.prompt_title_field': 'システムプロンプトのタイトル',
   'input.instruction_field': '系统プロンプトの内容',
   'input.group_name_placeholder': 'グループ名を入力',
+  'input.ollama_auth': '任意 / 認証ヘッダー',
   'msg.new_chat_title': '新しいチャット',
   'msg.rename_chat': 'チャット名を変更:',
   'msg.rate_limited': 'レート制限',

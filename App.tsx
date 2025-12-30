@@ -457,7 +457,7 @@ const App: React.FC = () => {
 
   const handleSaveChat = () => {
     const activeSession = sessions.find(s => s.id === activeSessionId);
-    const title = activeSession?.title || "Session";
+    const title = activeSession?.title || t('label.session', settings.language);
     const safeTitle = title.replace(/[^a-z0-9\u4e00-\u9fa5]/gi, '_').substring(0, 50);
     const chatData = { title, date: new Date().toISOString(), messages };
     const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });

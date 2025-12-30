@@ -58,13 +58,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                 onClick={() => onSelectSession(session.id)} 
                 className={`group sidebar-item ${activeSessionId === session.id ? 'active' : ''}`}
                 role="menuitem"
-                aria-label={`${t('action.select_chat_session', language)}: ${session.title || 'New Chat'}`}
+                aria-label={`${t('action.select_chat_session', language)}: ${session.title || t('msg.new_chat_title', language)}`}
             >
-              <div className="flex items-center gap-2 overflow-hidden"><MessageSquare className="w-4 h-4 flex-shrink-0 opacity-70" /><span className="truncate">{session.title || 'New Chat'}</span></div>
+              <div className="flex items-center gap-2 overflow-hidden"><MessageSquare className="w-4 h-4 flex-shrink-0 opacity-70" /><span className="truncate">{session.title || t('msg.new_chat_title', language)}</span></div>
               <button 
                 onClick={(e) => onDeleteSession(e, session.id)} 
                 className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 rounded transition-all"
-                aria-label={`${t('action.delete_chat_session', language)}: ${session.title || 'New Chat'}`}
+                aria-label={`${t('action.delete_chat_session', language)}: ${session.title || t('msg.new_chat_title', language)}`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
