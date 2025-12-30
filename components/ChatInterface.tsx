@@ -60,10 +60,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     language, 
     fontSize, 
     textWrapping, 
-    bubbleTransparency,
+    bubbleTransparency, 
     showModelName,
     showResponseTimer = false,
-    theme,
+    theme, 
     kirbyThemeColor,
     onShowToast,
     smoothAnimation = true,
@@ -275,7 +275,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Dynamic Bottom Buffer */}
           <div 
               className="w-full transition-all duration-300 ease-out flex-shrink-0" 
-              style={{ height: isLoading ? '160px' : '0px' }} 
+              style={{ height: isLoading ? '160px' : '128px' }} 
               aria-hidden="true" 
           />
         </div>

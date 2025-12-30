@@ -541,7 +541,7 @@ const App: React.FC = () => {
             />
         </Suspense>
 
-        <main className="flex-1 flex flex-col relative h-full min-w-0">
+        <main className="flex-1 flex flex-col relative h-full min-w-0 overflow-hidden">
           <Header 
              currentSessionTitle={currentSessionTitle} isSummarizing={isSummarizing} hasMessages={messages.length > 0}
              language={settings.language} onRename={() => {
@@ -616,7 +616,7 @@ const App: React.FC = () => {
               avatarVisibility={settings.avatarVisibility}
           />
 
-          <div className="flex-shrink-0 z-20 bg-gradient-to-t from-white via-white/90 to-transparent dark:from-black dark:via-black/90 dark:to-transparent pt-4">
+          <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-950 dark:via-gray-950 dark:to-transparent pt-10 pb-0">
              <ChatInput 
                 input={input} setInput={setInput} inputImages={inputImages} setInputImages={setInputImages}
                 onSend={handleSendMessage} onStop={handleStopGeneration} isLoading={isLoading} isDisabled={activeKeysCount === 0}
@@ -630,7 +630,7 @@ const App: React.FC = () => {
                 }} 
                 theme={settings.theme}
              />
-             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-1 select-none">
+             <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
                 {t('footer.ai_generated', settings.language)}{APP_VERSION}
              </div>
           </div>
