@@ -1,3 +1,4 @@
+
 /**
  * English settings and parameters localization config
  */
@@ -63,7 +64,7 @@ export const setting = {
   'param.topK_desc': 'Limits the pool of tokens to the top K most likely next tokens. Lower values reduce randomness.',
   'param.maxTokens': 'Max Output Tokens',
   'param.thinkingBudget': 'Thinking Budget',
-  'param.thinkingBudget_desc': 'For Gemini 2.5 series. Higher budget = more reasoning. 0 to disable.',
+  'param.thinkingBudget_desc': 'For supported Thinking models (e.g. Gemini 2.5 / 2.0 Thinking). Higher budget = more reasoning. 0 to disable.',
   'param.historyContextLimit': 'Context Limit (Messages)',
   'param.historyContextLimit_desc': 'Max number of past messages to send. 0 = Unlimited.',
   'param.stream': 'Stream Response',

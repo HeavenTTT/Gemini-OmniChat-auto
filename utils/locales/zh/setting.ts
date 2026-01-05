@@ -1,3 +1,4 @@
+
 /**
  * 中文设置与AI参数本地化配置
  */
@@ -63,7 +64,7 @@ export const setting = {
   'param.topK_desc': '将选择范围限制在概率最高的 K 个 Token 中。较低的值可减少随机性。',
   'param.maxTokens': '最大输出长度',
   'param.thinkingBudget': '思考预算 (Thinking Budget)',
-  'param.thinkingBudget_desc': '仅适用于 Gemini 2.5 系列。预算越高推理越强。设为0禁用。',
+  'param.thinkingBudget_desc': '适用于支持 Thinking 的模型 (如 Gemini 2.5 / 2.0 Thinking)。预算越高推理越强。设为0禁用。',
   'param.historyContextLimit': '历史上下文限制 (条)',
   'param.historyContextLimit_desc': '发送给模型的最大历史消息数量。0 = 无限制。',
   'param.stream': '流式传输',

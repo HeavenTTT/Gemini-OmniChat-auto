@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -48,7 +49,16 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
     // We clone the content to not mutate original during regex exec loops if needed, 
     // but regex.exec works on string reference.
     while ((match = thinkRegex.exec(content)) !== null) {
-        extractedThoughts.push(match[1]);
+        let thoughtContent = match[1];
+        
+        // Anti-Flicker: Strip partial closing tags from the *end* of the thought content.
+        // During streaming, the content might look like "...thoughts...</t" or "...thoughts...</thi"
+        // This ensures the ThoughtBlock doesn't display broken tags while generating.
+        if (isLast) {
+             thoughtContent = thoughtContent.replace(/<\/t(?:h(?:i(?:n(?:k(?:>)? )?)?)?)?$/, '');
+        }
+        
+        extractedThoughts.push(thoughtContent);
     }
     
     // Strip the thoughts
@@ -59,7 +69,7 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
     stripped = stripped.replace(/<(?:t(?:h(?:i(?:n(?:k)?)?)?)?)?$/, '');
 
     return { thoughts: extractedThoughts, cleanContent: stripped.trim() };
-  }, [content, role]);
+  }, [content, role, isLast]);
 
   const handleImageClick = (src: string) => {
       if (onViewImage) {

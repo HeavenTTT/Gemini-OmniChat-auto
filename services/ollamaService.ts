@@ -1,3 +1,4 @@
+
 import { Ollama } from 'ollama/browser';
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n";
@@ -125,34 +126,55 @@ export class OllamaService {
     });
 
     try {
-      const response = await client.chat({
-        model: modelId,
-        messages: messages,
-        stream: true,
-        options: {
-            temperature: config.temperature,
-            top_p: config.topP,
-            top_k: config.topK,
-            num_predict: config.maxOutputTokens
-        }
-      });
+      if (config.stream) {
+        const response = await client.chat({
+          model: modelId,
+          messages: messages,
+          stream: true,
+          options: {
+              temperature: config.temperature,
+              top_p: config.topP,
+              top_k: config.topK,
+              num_predict: config.maxOutputTokens
+          }
+        });
 
-      let fullText = "";
-      
-      // Iterate over the async generator
-      for await (const part of response) {
-        if (abortSignal?.aborted) {
-             // Abort this specific client instance
-             client.abort(); 
-             break;
-        }
+        let fullText = "";
         
-        const chunkContent = part.message.content;
-        fullText += chunkContent;
-        if (onChunk) onChunk(fullText);
-      }
+        // Iterate over the async generator
+        for await (const part of response) {
+          if (abortSignal?.aborted) {
+              // Abort this specific client instance
+              client.abort(); 
+              break;
+          }
+          
+          const chunkContent = part.message.content;
+          fullText += chunkContent;
+          if (onChunk) onChunk(fullText);
+        }
 
-      return fullText;
+        return fullText;
+      } else {
+        // Non-streaming mode
+        const response = await client.chat({
+          model: modelId,
+          messages: messages,
+          stream: false,
+          options: {
+              temperature: config.temperature,
+              top_p: config.topP,
+              top_k: config.topK,
+              num_predict: config.maxOutputTokens
+          }
+        });
+        
+        if (abortSignal?.aborted) {
+           throw new Error("Aborted by user");
+        }
+
+        return response.message.content;
+      }
 
     } catch (error: any) {
       if (error.name === 'AbortError' || abortSignal?.aborted) {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -28,9 +29,7 @@ const ENV_KEY = process.env.API_KEY || '';
 
 const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
     { name: 'gemini-3-flash-preview', inputTokenLimit: 1048576, outputTokenLimit: 8192 },
-    { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 },
-    { name: 'gemini-2.5-flash-thinking-preview-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 },
-    { name: 'imagen-3.0-generate-001', displayName: 'Imagen 3 (Generate Images)', inputTokenLimit: 0, outputTokenLimit: 0 }
+    { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 }
 ];
 
 const App: React.FC = () => {
@@ -181,7 +180,22 @@ const App: React.FC = () => {
 
     const storedKnownModels = localStorage.getItem(STORAGE_KNOWN_MODELS_KEY);
     if (storedKnownModels) {
-        loadedKnownModels = safeJsonParse(storedKnownModels, DEFAULT_KNOWN_MODELS);
+        // Merge stored models with defaults to ensure new defaults appear
+        const parsedStoredModels = safeJsonParse(storedKnownModels, []);
+        // Create a map for easy lookup by name
+        const storedModelMap = new Map(parsedStoredModels.map((m: any) => [m.name, m]));
+        
+        // Start with defaults
+        const mergedModels = [...DEFAULT_KNOWN_MODELS];
+        
+        // Add any stored models that are NOT in defaults
+        parsedStoredModels.forEach((m: any) => {
+            if (!mergedModels.find(dm => dm.name === m.name)) {
+                mergedModels.push(m);
+            }
+        });
+        
+        loadedKnownModels = mergedModels;
     }
 
     if (storedSettings) {

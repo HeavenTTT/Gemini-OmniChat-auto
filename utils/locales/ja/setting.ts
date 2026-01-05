@@ -1,3 +1,4 @@
+
 /**
  * 日本語設定・AIパラメータローカライズ設定
  */
@@ -63,7 +64,7 @@ export const setting = {
   'param.topK_desc': '確率の高い順にK個のトークンから選択します。値を低くするとランダム性が減少します。',
   'param.maxTokens': '最大出力トークン',
   'param.thinkingBudget': '思考予算 (Thinking Budget)',
-  'param.thinkingBudget_desc': 'Gemini 2.5シリーズ用。予算が高いほど推論が強化されます。0で無効。',
+  'param.thinkingBudget_desc': 'Thinking対応モデル用 (Gemini 2.5 / 2.0 Thinking など)。予算が高いほど推論が強化されます。0で無効。',
   'param.historyContextLimit': 'コンテキスト制限 (メッセージ数)',
   'param.historyContextLimit_desc': '送信する過去のメッセージの最大数。0 =无制限。',
   'param.stream': 'ストリーム応答',
