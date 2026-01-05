@@ -29,7 +29,14 @@ const ENV_KEY = process.env.API_KEY || '';
 
 const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
     { name: 'gemini-3-flash-preview', inputTokenLimit: 1048576, outputTokenLimit: 8192 },
-    { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 }
+    { name: 'gemini-3-pro-preview', inputTokenLimit: 2097152, outputTokenLimit: 8192 },
+    { name: 'gemini-2.5-flash-thinking-preview-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 },
+    { name: 'gemini-2.0-flash-thinking-exp-01-21', inputTokenLimit: 32768, outputTokenLimit: 8192 },
+    { name: 'gemini-2.0-flash-thinking-exp', inputTokenLimit: 32768, outputTokenLimit: 8192 },
+    { name: 'gemini-2.0-pro-exp-02-05', inputTokenLimit: 2097152, outputTokenLimit: 8192 },
+    { name: 'deepseek-r1', displayName: 'DeepSeek R1 (Ollama/Local)', inputTokenLimit: 128000, outputTokenLimit: 8192 },
+    { name: 'deepseek-reasoner', displayName: 'DeepSeek Reasoner (API)', inputTokenLimit: 64000, outputTokenLimit: 8000 },
+    { name: 'imagen-3.0-generate-001', displayName: 'Imagen 3 (Generate Images)', inputTokenLimit: 0, outputTokenLimit: 0 }
 ];
 
 const App: React.FC = () => {
