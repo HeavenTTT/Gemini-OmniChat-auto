@@ -1,3 +1,4 @@
+
 /**
  * 日本語共通ローカライズ設定
  */
@@ -15,6 +16,7 @@ export const common = {
   'label.model': 'モデル',
   'label.poll': 'ポール',
   'label.poll_count': 'ポール回数',
+  'label.poll_count_input': 'ポール回数入力',
   'label.seconds': '秒',
   'label.token_usage': '要求トークン',
   'label.exact_count': 'APIからの正確なカウント',

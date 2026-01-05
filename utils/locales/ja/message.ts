@@ -1,3 +1,4 @@
+
 /**
  * 日本語メッセージ・入力ローカライズ設定
  */
@@ -28,6 +29,8 @@ export const message = {
   'input.instruction_field': '系统プロンプトの内容',
   'input.group_name_placeholder': 'グループ名を入力',
   'input.ollama_auth': '任意 / 認証ヘッダー',
+  'input.base_url_field': 'Base URL 入力',
+  'input.apikey_field': 'APIキー入力',
   'msg.new_chat_title': '新しいチャット',
   'msg.rename_chat': 'チャット名を変更:',
   'msg.rate_limited': 'レート制限',
@@ -50,6 +53,7 @@ export const message = {
   'msg.sync_success': 'モデルの同期に成功しました。',
   'msg.config_exported': '设定をエクスポートしました。',
   'msg.config_imported': 'キー设定をインポートしました。',
+  'success.settings_import': 'アプリケーション設定が正常にインポートされました。',
   'msg.invalid_format': '形式が無效です。',
   'msg.confirm_clear_chat': 'このチャットのすべてのメッセージを消去してもよろしいですか？',
   'msg.ai_generated_disclaimer': 'このプロジェクト（コード、UI、ロジック）は完全にAIによって生成されました。',

@@ -1,3 +1,4 @@
+
 /**
  * 中文消息通知与输入框本地化配置
  */
@@ -28,6 +29,8 @@ export const message = {
   'input.instruction_field': '系统提示词内容输入',
   'input.group_name_placeholder': '输入分组名称',
   'input.ollama_auth': '选填 / Auth Header',
+  'input.base_url_field': 'Base URL 输入框',
+  'input.apikey_field': 'API Key 输入框',
   'msg.new_chat_title': '新对话',
   'msg.rename_chat': '重命名对话：',
   'msg.rate_limited': '受限',
@@ -51,6 +54,7 @@ export const message = {
   'msg.config_exported': '配置导出成功。',
   'msg.config_imported': '密钥配置已导入。',
   'success.chat_import': '聊天记录导入成功。',
+  'success.settings_import': '应用设置导入成功。',
   'msg.invalid_format': '格式无效。',
   'msg.confirm_clear_chat': '确定要清空此对话中的所有消息吗？',
   'msg.ai_generated_disclaimer': '本项目（代码、UI、逻辑）完全由 AI 生成。',

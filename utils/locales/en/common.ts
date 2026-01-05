@@ -1,3 +1,4 @@
+
 /**
  * English common localization config
  */
@@ -15,6 +16,7 @@ export const common = {
   'label.model': 'Model',
   'label.poll': 'Poll',
   'label.poll_count': 'Poll Count',
+  'label.poll_count_input': 'Poll Count Input',
   'label.seconds': 'seconds',
   'label.token_usage': 'Request Tokens',
   'label.exact_count': 'Exact count from API',

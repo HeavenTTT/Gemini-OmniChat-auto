@@ -1,3 +1,4 @@
+
 /**
  * 中文通用本地化配置
  */
@@ -15,6 +16,7 @@ export const common = {
   'label.model': '模型',
   'label.poll': '轮询',
   'label.poll_count': '轮询次数',
+  'label.poll_count_input': '轮询次数输入框',
   'label.seconds': '秒',
   'label.token_usage': '请求 Tokens',
   'label.exact_count': '来自 API 的精确计数',

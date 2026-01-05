@@ -1,5 +1,3 @@
-
-
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n"; // Import t for translations
 
@@ -14,7 +12,7 @@ export class OpenAIService {
   public async testConnection(apiKey: string, baseUrl: string): Promise<boolean> {
     try {
       const models = await this.listModels(apiKey, baseUrl);
-      return Array.isArray(models);
+      return Array.isArray(models) && models.length >= 0;
     } catch (e) {
       return false;
     }
@@ -59,12 +57,17 @@ export class OpenAIService {
       if (!response.ok) {
         let errorMsg = response.statusText;
         try {
-            const errorBody = await response.json();
-            if (errorBody.error?.message) errorMsg = errorBody.error.message;
+            const text = await response.text();
+            if (text) {
+                try {
+                    const errorBody = JSON.parse(text);
+                    if (errorBody.error?.message) errorMsg = errorBody.error.message;
+                } catch {
+                    errorMsg = text;
+                }
+            }
         } catch {
-            // fallback to text if json parse fails
-            const textBody = await response.text();
-            if (textBody) errorMsg = textBody;
+            // fallback
         }
 
         const error = new Error(`OpenAI API Error: ${response.status} - ${errorMsg}`);
@@ -72,7 +75,10 @@ export class OpenAIService {
         throw error;
       }
       
-      const data = await response.json();
+      const text = await response.text();
+      if (!text) return [];
+      
+      const data = JSON.parse(text);
       if (data.data && Array.isArray(data.data)) {
         return data.data.map((m: any) => ({
             name: m.id,
@@ -165,7 +171,7 @@ export class OpenAIService {
       stream: config.stream
     };
 
-    try { // Outer try-catch for fetch errors
+    try {
         const response = await fetch(`${cleanUrl}/chat/completions`, {
             method: 'POST',
             headers: {
@@ -179,11 +185,17 @@ export class OpenAIService {
         if (!response.ok) {
             let errorMsg = response.statusText;
             try {
-                const errorBody = await response.json();
-                if (errorBody.error?.message) errorMsg = errorBody.error.message;
+                const text = await response.text();
+                if (text) {
+                    try {
+                        const errorBody = JSON.parse(text);
+                        if (errorBody.error?.message) errorMsg = errorBody.error.message;
+                    } catch {
+                        errorMsg = text;
+                    }
+                }
             } catch {
-                const textBody = await response.text();
-                if (textBody) errorMsg = textBody;
+                // fallback
             }
 
             const error = new Error(errorMsg);
@@ -195,6 +207,7 @@ export class OpenAIService {
           const reader = response.body?.getReader();
           const decoder = new TextDecoder("utf-8");
           let fullText = "";
+          let buffer = ""; // Buffer for partial SSE lines
 
           if (reader) {
             while (true) {
@@ -206,30 +219,38 @@ export class OpenAIService {
               }
 
               const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split("\n").filter(line => line.trim() !== "");
+              buffer += chunk;
+
+              const lines = buffer.split("\n");
+              // Keep the last partial line in the buffer
+              buffer = lines.pop() || "";
 
               for (const line of lines) {
-                if (line.startsWith("data: ")) {
-                  const dataStr = line.replace("data: ", "").trim();
-                  if (dataStr === "[DONE]") break;
-                  
-                  try {
-                    const json = JSON.parse(dataStr);
-                    const content = json.choices?.[0]?.delta?.content || "";
-                    if (content) {
-                      fullText += content;
-                      if (onChunk) onChunk(fullText);
-                    }
-                  } catch (e) {
-                    // Ignore parse errors for partial chunks
+                const trimmedLine = line.trim();
+                if (!trimmedLine || !trimmedLine.startsWith("data: ")) continue;
+                
+                const dataStr = trimmedLine.replace("data: ", "").trim();
+                if (dataStr === "[DONE]") break;
+                
+                try {
+                  const json = JSON.parse(dataStr);
+                  const content = json.choices?.[0]?.delta?.content || "";
+                  if (content) {
+                    fullText += content;
+                    if (onChunk) onChunk(fullText);
                   }
+                } catch (e) {
+                  // If JSON is incomplete, wait for next chunk
+                  // In some implementations, buffer might need to be restored
                 }
               }
             }
           }
           return fullText;
         } else {
-          const data = await response.json();
+          const text = await response.text();
+          if (!text) return "";
+          const data = JSON.parse(text);
           return data.choices?.[0]?.message?.content || "";
         }
     } catch (error: any) {

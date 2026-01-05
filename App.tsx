@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
@@ -129,6 +128,16 @@ const App: React.FC = () => {
       setDialog(prev => ({ ...prev, isOpen: false }));
   };
 
+  const safeJsonParse = (str: string | null, fallback: any = null) => {
+    if (!str || !str.trim()) return fallback;
+    try {
+      return JSON.parse(str);
+    } catch (e) {
+      console.warn("Failed to parse JSON from storage:", e);
+      return fallback;
+    }
+  };
+
   /**
    * 节点 1: 挂载初始化
    * 从 LocalStorage 加载所有持久化数据，包括密钥、设置和会话历史。
@@ -137,16 +146,16 @@ const App: React.FC = () => {
     const storedKeys = localStorage.getItem(STORAGE_KEYS_KEY);
     const oldKeysV3 = localStorage.getItem('gemini_omnichat_keys_v3');
     const oldSettingsStr = localStorage.getItem('gemini_omnichat_settings_v5');
-    const oldSettings = oldSettingsStr ? JSON.parse(oldSettingsStr) : null;
+    const oldSettings = safeJsonParse(oldSettingsStr);
     const globalModel = oldSettings?.model || DEFAULT_MODEL;
     const globalBaseUrl = oldSettings?.openAIBaseUrl || 'https://api.openai.com/v1';
 
     let initialKeys: KeyConfig[] = [];
 
     if (storedKeys) {
-      initialKeys = JSON.parse(storedKeys);
+      initialKeys = safeJsonParse(storedKeys, []);
     } else if (oldKeysV3) {
-      const parsed = JSON.parse(oldKeysV3);
+      const parsed = safeJsonParse(oldKeysV3, []);
       initialKeys = parsed.map((k: any) => ({
           ...k,
           model: globalModel,
@@ -172,18 +181,18 @@ const App: React.FC = () => {
 
     const storedKnownModels = localStorage.getItem(STORAGE_KNOWN_MODELS_KEY);
     if (storedKnownModels) {
-        try {
-            loadedKnownModels = JSON.parse(storedKnownModels);
-        } catch (e) {}
+        loadedKnownModels = safeJsonParse(storedKnownModels, DEFAULT_KNOWN_MODELS);
     }
 
     if (storedSettings) {
-      const parsedSettings = JSON.parse(storedSettings);
-      if (parsedSettings.knownModels && !storedKnownModels) {
-          loadedKnownModels = parsedSettings.knownModels;
+      const parsedSettings = safeJsonParse(storedSettings);
+      if (parsedSettings) {
+          if (parsedSettings.knownModels && !storedKnownModels) {
+              loadedKnownModels = parsedSettings.knownModels;
+          }
+          if ('knownModels' in parsedSettings) delete parsedSettings.knownModels;
+          loadedSettings = { ...settings, ...parsedSettings };
       }
-      if ('knownModels' in parsedSettings) delete parsedSettings.knownModels;
-      loadedSettings = { ...settings, ...parsedSettings };
     } 
     setSettings(loadedSettings);
     setKnownModels(loadedKnownModels);
@@ -217,7 +226,7 @@ const App: React.FC = () => {
     const storedActiveId = localStorage.getItem(STORAGE_ACTIVE_SESSION_KEY);
     
     if (storedSessions) {
-      const parsedSessions = JSON.parse(storedSessions) as ChatSession[];
+      const parsedSessions = safeJsonParse(storedSessions, []) as ChatSession[];
       if (parsedSessions.length > 0) {
         setSessions(parsedSessions);
         const targetId = (storedActiveId && parsedSessions.find(s => s.id === storedActiveId)) ? storedActiveId : parsedSessions[0].id;
