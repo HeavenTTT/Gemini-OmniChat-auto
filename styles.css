@@ -72,6 +72,17 @@ body {
   display: none;
 }
 
+/* Utility for floating/overlay scrollbar */
+.scrollbar-overlay {
+  overflow-y: auto;
+}
+
+@supports (overflow-y: overlay) {
+  .scrollbar-overlay {
+    overflow-y: overlay;
+  }
+}
+
 /* Chat Message Content Styles */
 .message-content pre,
 .message-content code {

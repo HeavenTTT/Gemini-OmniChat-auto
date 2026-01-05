@@ -213,8 +213,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <div 
           ref={scrollContainerRef}
           onScroll={handleScroll}
-          // Removed scroll-smooth to prevent fighting with JS scroll
-          className="flex-1 overflow-y-auto p-2 md:p-4 h-full relative"
+          // Use scrollbar-overlay class for floating scrollbar effect
+          className="flex-1 scrollbar-overlay p-2 md:p-4 h-full relative"
       >
         <div className="flex flex-col space-y-4 pb-4 min-h-0">
           {messages.map((msg, index) => (

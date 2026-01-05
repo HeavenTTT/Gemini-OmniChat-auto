@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         <span className="font-medium">{t('action.new_chat', language)}</span>
       </button>
 
-      <div className="flex-1 overflow-y-auto -mx-2 px-2 mb-4 scrollbar-hide">
+      <div className="flex-1 scrollbar-overlay -mx-2 px-2 mb-4 scrollbar-hide">
         <div className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2 mb-2">{t('status.history', language)}</div>
         <div className="space-y-1" role="menu">
           {sessions.map(session => (

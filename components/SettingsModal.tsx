@@ -194,7 +194,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto md:p-6 px-4 py-3 scrollbar-hide bg-gray-50/30 dark:bg-black/20">
+        <div className="flex-1 scrollbar-overlay md:p-6 px-4 py-3 scrollbar-hide bg-gray-50/30 dark:bg-black/20">
           
           {/* General Tab */}
           {activeTab === 'general' && (

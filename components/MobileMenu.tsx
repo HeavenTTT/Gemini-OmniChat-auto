@@ -47,7 +47,7 @@ const MobileMenu: React.FC<MobileMenuProps> = ({
             <Plus className="w-5 h-5" /><span className="font-medium">{t('action.new_chat', language)}</span>
           </button>
           
-          <div className="flex-1 overflow-y-auto -mx-2 px-2 scrollbar-hide" role="menu">
+          <div className="flex-1 scrollbar-overlay -mx-2 px-2 scrollbar-hide" role="menu">
             <div className="space-y-1">
             {sessions.map(session => (
                 <div 

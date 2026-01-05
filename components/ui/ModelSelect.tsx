@@ -72,7 +72,7 @@ export const ModelSelect: React.FC<ModelSelectProps> = ({
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full mb-1 left-0 right-0 max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 animate-fade-in-up">
+        <div className="absolute bottom-full mb-1 left-0 right-0 max-h-56 scrollbar-overlay bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 animate-fade-in-up">
             {options.length > 0 ? (
                 <div className="py-1">
                     {options.map((option) => (
