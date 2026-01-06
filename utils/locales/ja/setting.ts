@@ -13,6 +13,7 @@ export const setting = {
   'settings.text_wrapping': 'テキスト折り返し',
   'settings.bubble_transparency': '吹き出しの透明度',
   'settings.show_model_name': 'モデル名を表示',
+  'settings.show_group_name': 'グループ名を表示',
   'settings.kirby_theme_color': 'アイコン色をテーマに適応',
   'settings.show_token_usage': 'トークン使用量を表示',
   'settings.show_response_timer': '応答時間を表示',

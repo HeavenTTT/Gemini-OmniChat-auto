@@ -54,6 +54,7 @@ export const common = {
   'provider.ollama': 'Ollama',
   'tooltip.key_index': 'API 密钥序号',
   'tooltip.model_used': '使用的模型',
+  'tooltip.group_name': '使用的分组',
   'tooltip.response_time': '响应耗时',
   'tooltip.expand_tools': '展开工具栏',
 };

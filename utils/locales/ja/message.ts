@@ -69,4 +69,7 @@ export const message = {
   'msg.key_added': 'APIキーが追加されました。',
   'msg.security_saved': 'セキュリティ设定が保存されました。',
   'msg.params_reset': 'パラメータがリセットされました。',
+  'msg.switching_key': 'キー #{index} に切り替え',
+  'msg.switching_group': 'グループ "{group}" に切り替え',
+  'msg.key_error_verbose': 'キー #{index} エラー: {error}。再試行中...',
 };

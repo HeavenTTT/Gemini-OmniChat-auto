@@ -54,6 +54,7 @@ export const common = {
   'provider.ollama': 'Ollama',
   'tooltip.key_index': 'API Key Index',
   'tooltip.model_used': 'Model Used',
+  'tooltip.group_name': 'Group Used',
   'tooltip.response_time': 'Response Time',
   'tooltip.expand_tools': 'Expand tools',
 };

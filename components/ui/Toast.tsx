@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from 'react';
-import { CheckCircle, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, X, AlertTriangle } from 'lucide-react';
 import { ToastMessage } from '../../types';
 
 interface ToastContainerProps {
@@ -21,6 +21,7 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
     switch (toast.type) {
       case 'success': return <CheckCircle className="w-5 h-5 text-green-500" />;
       case 'error': return <AlertCircle className="w-5 h-5 text-red-500" />;
+      case 'warning': return <AlertTriangle className="w-5 h-5 text-yellow-500" />;
       case 'info': default: return <Info className="w-5 h-5 text-blue-500" />;
     }
   };
@@ -29,6 +30,7 @@ const ToastItem: React.FC<{ toast: ToastMessage; onRemove: () => void }> = ({ to
      switch (toast.type) {
       case 'success': return 'bg-white dark:bg-gray-800 border-green-200 dark:border-green-900/30';
       case 'error': return 'bg-white dark:bg-gray-800 border-red-200 dark:border-red-900/30';
+      case 'warning': return 'bg-white dark:bg-gray-800 border-yellow-200 dark:border-yellow-900/30';
       case 'info': default: return 'bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-900/30';
     }
   };

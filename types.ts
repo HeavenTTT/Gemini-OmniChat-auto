@@ -16,6 +16,7 @@ export interface Message {
   provider?: ModelProvider; // Track which provider generated this
   model?: string; // The specific model used for this message
   executionTime?: number; // Time taken to generate response in ms
+  groupName?: string; // Name of the group the key belonged to
 }
 
 export interface ChatSession {
@@ -120,6 +121,7 @@ export interface AppSettings {
   avatarVisibility: AvatarVisibility; // New: Control avatar visibility
   bubbleTransparency: number; // 0-100
   showModelName: boolean; // New: Toggle model name visibility
+  showGroupName: boolean; // New: Toggle group name visibility
   kirbyThemeColor: boolean; // New: Toggle kirby icon theme adaptation
   showTokenUsage: boolean; // New: Toggle token usage estimation
   showResponseTimer: boolean; // New: Toggle response execution time display
@@ -140,7 +142,7 @@ export interface AppSettings {
 export interface ToastMessage {
   id: string;
   message: string;
-  type: 'success' | 'error' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
 }
 
 export interface DialogConfig {

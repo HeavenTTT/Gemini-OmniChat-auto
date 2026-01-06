@@ -114,6 +114,20 @@ export const GeneralAppearanceSettings: React.FC<GeneralAppearanceSettingsProps>
                         </div>
 
                         <div className="flex items-center justify-between">
+                            <label htmlFor="show-group-name-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_group_name', lang)}</label>
+                            <label htmlFor="show-group-name-toggle" className="toggle-switch-label">
+                                <input 
+                                    id="show-group-name-toggle"
+                                    type="checkbox" 
+                                    className="toggle-checkbox"
+                                    checked={settings.showGroupName || false}
+                                    onChange={(e) => onUpdateSettings({...settings, showGroupName: e.target.checked})}
+                                />
+                                <div className="toggle-slider"></div>
+                            </label>
+                        </div>
+
+                        <div className="flex items-center justify-between">
                             <label htmlFor="show-token-usage-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('settings.show_token_usage', lang)}</label>
                             <label htmlFor="show-token-usage-toggle" className="toggle-switch-label">
                                 <input 

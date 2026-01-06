@@ -1,5 +1,5 @@
 
-import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language } from "../types";
+import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language, KeyGroup } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
 import { OllamaService } from "./ollamaService";
@@ -15,12 +15,18 @@ interface RequestTask {
   abortSignal?: AbortSignal;
 }
 
+interface LLMServiceCallbacks {
+    onKeyError?: (id: string, errorCode?: string, isFatal?: boolean) => void;
+    onStatusMessage?: (message: string, type: 'info' | 'warning' | 'error' | 'success') => void;
+}
+
 /**
  * LLM 核心服务类：处理多提供商交互。
  * 包含：API 密钥轮询、负载均衡、请求队列处理。
  */
 export class LLMService {
   private keys: KeyConfig[] = [];
+  private keyGroups: KeyGroup[] = [];
   private keyIndex: number = 0; // 当前轮询到的 Key 索引
   private keyUsageCount: number = 0; // 当前 Key 已使用的次数
   
@@ -31,26 +37,43 @@ export class LLMService {
   private openAIService: OpenAIService;
   private googleService: GoogleService;
   private ollamaService: OllamaService;
+  
   private onKeyError?: (id: string, errorCode?: string, isFatal?: boolean) => void;
+  private onStatusMessage?: (message: string, type: 'info' | 'warning' | 'error' | 'success') => void;
 
-  constructor(initialKeys: KeyConfig[], onKeyError?: (id: string, errorCode?: string, isFatal?: boolean) => void) {
+  constructor(
+      initialKeys: KeyConfig[], 
+      callbacksOrOnError?: LLMServiceCallbacks | ((id: string, errorCode?: string, isFatal?: boolean) => void)
+  ) {
     this.updateKeys(initialKeys);
     this.openAIService = new OpenAIService();
     this.googleService = new GoogleService();
     this.ollamaService = new OllamaService();
-    this.onKeyError = onKeyError;
+    
+    if (typeof callbacksOrOnError === 'function') {
+        this.onKeyError = callbacksOrOnError;
+    } else if (callbacksOrOnError) {
+        this.onKeyError = callbacksOrOnError.onKeyError;
+        this.onStatusMessage = callbacksOrOnError.onStatusMessage;
+    }
   }
 
   /**
    * 更新 API 密钥池
    */
-  public updateKeys(newKeys: KeyConfig[]) {
+  public updateKeys(newKeys: KeyConfig[], keyGroups: KeyGroup[] = []) {
     this.keys = newKeys;
+    this.keyGroups = keyGroups;
     // 索引越界安全检查
     if (this.keyIndex >= this.keys.length) {
         this.keyIndex = 0;
         this.keyUsageCount = 0;
     }
+  }
+
+  private getGroupName(groupId?: string): string | undefined {
+    if (!groupId) return undefined;
+    return this.keyGroups.find(g => g.id === groupId)?.name;
   }
 
   /**
@@ -245,6 +268,7 @@ export class LLMService {
         const validHistory = history.filter(msg => (msg.text && msg.text.trim().length > 0) || (msg.images && msg.images.length > 0));
         
         let lastError: any = null;
+        let lastGroupId: string | undefined = undefined;
 
         while (attempts < maxRetries) {
             let keyConfig: KeyConfig;
@@ -253,6 +277,24 @@ export class LLMService {
             } catch (e: any) {
                 throw e;
             }
+
+            const currentKeyIndex = this.getKeyDisplayIndex(keyConfig.id);
+            const currentGroupId = keyConfig.groupId;
+            const groupName = this.getGroupName(currentGroupId);
+
+            // Notify on switch (Retry or Rotation)
+            // Skip notification for the very first attempt unless debugging, to be less noisy? 
+            // The prompt asks for "Every key switch", so we include retries.
+            if (attempts > 0) {
+                let msg = t('msg.switching_key', lang).replace('{index}', currentKeyIndex.toString());
+                // Detect Group Switch specifically
+                if (currentGroupId && lastGroupId && currentGroupId !== lastGroupId && groupName) {
+                     msg += ` (${t('msg.switching_group', lang).replace('{group}', groupName)})`;
+                }
+                this.onStatusMessage?.(msg, 'info');
+            }
+            
+            lastGroupId = currentGroupId;
 
             const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-3-flash-preview';
 
@@ -285,7 +327,7 @@ export class LLMService {
 
                 return { 
                     text, 
-                    usedKeyIndex: this.getKeyDisplayIndex(keyConfig.id), 
+                    usedKeyIndex: currentKeyIndex, 
                     provider: keyConfig.provider,
                     usedModel: modelToUse
                 };
@@ -304,6 +346,15 @@ export class LLMService {
                 } else {
                     errorCode = statusCode.toString();
                 }
+
+                // Notify Error before switching
+                const errorMessage = this.getErrorMessage(error, lang);
+                this.onStatusMessage?.(
+                    t('msg.key_error_verbose', lang)
+                        .replace('{index}', currentKeyIndex.toString())
+                        .replace('{error}', errorMessage), 
+                    'error'
+                );
 
                 // 判断是否是致命错误：身份验证失败、计费问题、位置不支持等需要禁用密钥
                 let isFatal = [401, 402, 403, 404].includes(statusCode);

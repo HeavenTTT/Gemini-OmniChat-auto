@@ -13,6 +13,7 @@ export const setting = {
   'settings.text_wrapping': 'Text Wrapping',
   'settings.bubble_transparency': 'Bubble Transparency',
   'settings.show_model_name': 'Show Model Name',
+  'settings.show_group_name': 'Show Group Name',
   'settings.kirby_theme_color': 'Adaptive Icon Color',
   'settings.show_token_usage': 'Show Token Usage',
   'settings.show_response_timer': 'Show Response Timer',

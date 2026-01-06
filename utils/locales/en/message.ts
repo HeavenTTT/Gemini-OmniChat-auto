@@ -69,4 +69,7 @@ export const message = {
   'msg.key_added': 'API Key added.',
   'msg.security_saved': 'Security settings saved.',
   'msg.params_reset': 'Parameters reset.',
+  'msg.switching_key': 'Switching to Key #{index}',
+  'msg.switching_group': 'Switching to Group "{group}"',
+  'msg.key_error_verbose': 'Key #{index} Error: {error}. Retrying...',
 };

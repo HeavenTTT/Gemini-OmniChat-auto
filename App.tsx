@@ -58,6 +58,7 @@ const App: React.FC = () => {
     textWrapping: 'auto', 
     bubbleTransparency: 100, 
     showModelName: true, 
+    showGroupName: false,
     kirbyThemeColor: false, 
     showTokenUsage: false, 
     showResponseTimer: false, 
@@ -102,7 +103,7 @@ const App: React.FC = () => {
   const isProcessingRef = useRef(false);
 
   // --- 辅助工具函数 ---
-  const addToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
       setToasts(prev => [...prev, { id: uuidv4(), message, type }]);
   };
   
@@ -219,14 +220,21 @@ const App: React.FC = () => {
     });
 
     // 初始化核心 LLM 服务
-    setLlmService(new LLMService(effectiveKeys, (id, errorCode, isFatal = true) => {
-        setApiKeys(prev => prev.map(k => {
-            if (k.id !== id) return k;
-            if (isFatal) return { ...k, isActive: false, lastErrorCode: errorCode };
-            else return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
-        }));
-        if (isFatal) addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
-    }));
+    setLlmService(new LLMService(
+        effectiveKeys, 
+        {
+            onKeyError: (id, errorCode, isFatal = true) => {
+                setApiKeys(prev => prev.map(k => {
+                    if (k.id !== id) return k;
+                    if (isFatal) return { ...k, isActive: false, lastErrorCode: errorCode };
+                    else return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
+                }));
+                // Only toast on fatal errors here, LLMService handles other status messages
+                if (isFatal) addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+            },
+            onStatusMessage: (msg, type) => addToast(msg, type)
+        }
+    ));
 
     // 安全锁检查
     if (loadedSettings.security.enabled) {
@@ -275,7 +283,7 @@ const App: React.FC = () => {
         return k;
     });
 
-    if (llmService) llmService.updateKeys(effectiveKeys);
+    if (llmService) llmService.updateKeys(effectiveKeys, settings.keyGroups || []);
     localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
   }, [apiKeys, llmService, settings.keyGroups]);
 
@@ -379,6 +387,16 @@ const App: React.FC = () => {
           processedFinalText = executeFilterScript(settings.scripts.outputFilterCode, fullText, { role: 'model', history: [...historyBefore, userMessage] });
       }
 
+      // Resolve Group Name
+      let groupName: string | undefined;
+      if (usedKeyIndex && usedKeyIndex > 0 && usedKeyIndex <= apiKeys.length) {
+          const usedKey = apiKeys[usedKeyIndex - 1];
+          if (usedKey && usedKey.groupId) {
+              const group = settings.keyGroups?.find(g => g.id === usedKey.groupId);
+              if (group) groupName = group.name;
+          }
+      }
+
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempBotId ? { 
@@ -387,7 +405,8 @@ const App: React.FC = () => {
               keyIndex: usedKeyIndex, 
               provider: provider, 
               model: usedModel, 
-              executionTime: executionTime
+              executionTime: executionTime,
+              groupName: groupName
           } : msg
         )
       );
@@ -634,7 +653,7 @@ const App: React.FC = () => {
               }} 
               language={settings.language} fontSize={settings.fontSize} 
               textWrapping={settings.textWrapping} bubbleTransparency={settings.bubbleTransparency}
-              showModelName={settings.showModelName} showResponseTimer={settings.showResponseTimer} theme={settings.theme}
+              showModelName={settings.showModelName} showGroupName={settings.showGroupName} showResponseTimer={settings.showResponseTimer} theme={settings.theme}
               kirbyThemeColor={settings.kirbyThemeColor} onShowToast={addToast} smoothAnimation={settings.smoothAnimation}
               avatarVisibility={settings.avatarVisibility}
           />

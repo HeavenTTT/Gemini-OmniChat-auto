@@ -24,6 +24,7 @@ interface ChatInterfaceProps {
   textWrapping: TextWrappingMode;
   bubbleTransparency: number;
   showModelName: boolean;
+  showGroupName?: boolean;
   showResponseTimer?: boolean;
   theme: Theme;
   kirbyThemeColor: boolean;
@@ -62,6 +63,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     textWrapping, 
     bubbleTransparency, 
     showModelName,
+    showGroupName,
     showResponseTimer = false,
     theme, 
     kirbyThemeColor,
@@ -228,6 +230,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       textWrapping={textWrapping}
                       fontSize={fontSize}
                       showModelName={showModelName}
+                      showGroupName={showGroupName}
                       showResponseTimer={showResponseTimer}
                       language={language}
                       theme={theme}

@@ -70,4 +70,7 @@ export const message = {
   'msg.key_added': 'API密钥已添加。',
   'msg.security_saved': '安全设置已保存。',
   'msg.params_reset': '参数已重置。',
+  'msg.switching_key': '切换到密钥 #{index}',
+  'msg.switching_group': '切换到分组 "{group}"',
+  'msg.key_error_verbose': '密钥 #{index} 错误: {error}。正在重试...',
 };

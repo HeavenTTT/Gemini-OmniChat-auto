@@ -13,6 +13,7 @@ export const setting = {
   'settings.text_wrapping': '文本换行模式',
   'settings.bubble_transparency': '气泡透明度',
   'settings.show_model_name': '显示模型名称',
+  'settings.show_group_name': '显示分组名称',
   'settings.kirby_theme_color': '自适应图标颜色',
   'settings.show_token_usage': '显示 Token 用量',
   'settings.show_response_timer': '显示响应计时器',
