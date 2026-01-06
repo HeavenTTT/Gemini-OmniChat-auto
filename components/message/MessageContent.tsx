@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import remarkGfm from 'remark-gfm';
-import { ExternalLink, AlertCircle } from 'lucide-react';
+import { ExternalLink, AlertCircle, Globe } from 'lucide-react';
 import { Role, Language, TextWrappingMode, Theme } from '../../types';
 import { t } from '../../utils/i18n';
 import { CodeBlock } from './CodeBlock';
@@ -22,7 +22,42 @@ interface MessageContentProps {
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
   onViewImage?: (url: string) => void;
   isLast?: boolean;
+  groundingMetadata?: any; // New prop
 }
+
+const SearchSources: React.FC<{ metadata: any }> = ({ metadata }) => {
+    if (!metadata || !metadata.groundingChunks || metadata.groundingChunks.length === 0) return null;
+
+    const chunks = metadata.groundingChunks.filter((c: any) => c.web);
+    if (chunks.length === 0) return null;
+
+    return (
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+            <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <Globe className="w-3.5 h-3.5" />
+                Sources
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {chunks.map((chunk: any, index: number) => (
+                    <a 
+                        key={index}
+                        href={chunk.web.uri}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col p-2 rounded-lg bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-colors border border-gray-100 dark:border-gray-700/50 group"
+                    >
+                        <span className="text-xs font-medium text-primary-600 dark:text-primary-400 truncate group-hover:underline">
+                            {chunk.web.title || chunk.web.uri}
+                        </span>
+                        <span className="text-[10px] text-gray-400 truncate mt-0.5">
+                            {new URL(chunk.web.uri).hostname}
+                        </span>
+                    </a>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export const MessageContent: React.FC<MessageContentProps> = React.memo(({
   content,
@@ -35,7 +70,8 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
   theme,
   onShowToast,
   onViewImage,
-  isLast = false
+  isLast = false,
+  groundingMetadata
 }) => {
 
   // Parse <think> blocks
@@ -149,6 +185,9 @@ export const MessageContent: React.FC<MessageContentProps> = React.memo(({
                 {cleanContent}
             </ReactMarkdown>
         )}
+
+        {/* Google Search Grounding Sources */}
+        <SearchSources metadata={groundingMetadata} />
     </div>
   );
 });

@@ -77,6 +77,8 @@ export const setting = {
   'param.stream': '流式传输',
   'param.strip_thoughts': '从历史记录中移除思考过程',
   'param.strip_thoughts_desc': '发送给API时移除 <think> 内容以节省 Token。',
+  'param.google_search': 'Google 联网搜索 (Grounding)',
+  'param.google_search_desc': '允许模型使用 Google 搜索获取最新信息。仅支持特定模型 (如 Pro/Flash 2.0+)。',
   'param.stream_response_toggle': '切换流式传输回复',
   'param.temperature_slider': '调整模型随机性',
   'param.top_p_slider': '调整Top P参数',

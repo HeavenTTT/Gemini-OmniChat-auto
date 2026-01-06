@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Send, Square, Zap, Paperclip, X, Plus, Image as ImageIcon, FileText } from 'lucide-react';
+import { Send, Square, Zap, Paperclip, X, Plus, Image as ImageIcon, FileText, Globe } from 'lucide-react';
 import { Language, Message, Theme } from '../types';
 import { t } from '../utils/i18n';
 
@@ -23,6 +23,8 @@ interface ChatInputProps {
   historyLimit?: number;
   onGetTokenCount?: (text: string) => Promise<number>;
   theme?: Theme;
+  isSearchEnabled?: boolean;
+  onToggleSearch?: (enabled: boolean) => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -41,7 +43,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   history = [],
   historyLimit = 0,
   onGetTokenCount,
-  theme
+  theme,
+  isSearchEnabled,
+  onToggleSearch
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +220,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     <FileText className="w-4 h-4" />
                     <span>{t('action.upload_file', language)}</span>
                  </button>
+
+                 {onToggleSearch && (
+                    <button
+                        onClick={() => onToggleSearch(!isSearchEnabled)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors text-xs font-medium whitespace-nowrap ${isSearchEnabled ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                        title={t('param.google_search', language)}
+                        disabled={isDisabled}
+                    >
+                        <Globe className="w-4 h-4" />
+                        <span>Search</span>
+                    </button>
+                 )}
             </div>
             
             <input 

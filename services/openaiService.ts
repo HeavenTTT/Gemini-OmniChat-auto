@@ -114,7 +114,7 @@ export class OpenAIService {
     config: GenerationConfig,
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal
-  ): Promise<string> {
+  ): Promise<{ text: string, groundingMetadata?: any }> {
     const cleanUrl = baseUrl.replace(/\/$/, '');
     
     // Construct history with images support
@@ -248,12 +248,12 @@ export class OpenAIService {
               }
             }
           }
-          return fullText;
+          return { text: fullText };
         } else {
           const text = await response.text();
-          if (!text) return "";
+          if (!text) return { text: "" };
           const data = JSON.parse(text);
-          return data.choices?.[0]?.message?.content || "";
+          return { text: data.choices?.[0]?.message?.content || "" };
         }
     } catch (error: any) {
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {

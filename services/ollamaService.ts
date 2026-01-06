@@ -103,7 +103,7 @@ export class OllamaService {
     apiKey?: string,
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal
-  ): Promise<string> {
+  ): Promise<{ text: string, groundingMetadata?: any }> {
     // Determine proxy URL
     const currentOrigin = window.location.origin;
     const proxyUrl = `${currentOrigin}/ollama-proxy`;
@@ -204,7 +204,7 @@ export class OllamaService {
             }
         }
         
-        return fullText;
+        return { text: fullText };
 
       } else {
         // Non-streaming mode: Use the library for simplicity
@@ -220,7 +220,7 @@ export class OllamaService {
            throw new Error("Aborted by user");
         }
 
-        return response.message.content;
+        return { text: response.message.content };
       }
 
     } catch (error: any) {

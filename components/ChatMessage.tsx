@@ -304,6 +304,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onShowToast={onShowToast}
                         onViewImage={onViewImage}
                         isLast={isLast} // Pass isLast to control auto-expansion of thoughts
+                        groundingMetadata={msg.groundingMetadata}
                     />
                 )}
             </div>

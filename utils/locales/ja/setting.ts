@@ -77,6 +77,8 @@ export const setting = {
   'param.stream': 'ストリーム応答',
   'param.strip_thoughts': '履歴から思考プロセスを削除',
   'param.strip_thoughts_desc': 'トークン節約のため、API送信時に <think> コンテンツを削除します。',
+  'param.google_search': 'Google 検索 (Grounding)',
+  'param.google_search_desc': 'モデルがGoogle検索を使用して最新情報を取得できるようにします。特定のモデル（Pro/Flash 2.0+など）でのみサポートされます。',
   'param.stream_response_toggle': 'ストリーム応答を切り替え',
   'param.temperature_slider': '温度 (Temperature) を調整',
   'param.top_p_slider': 'トップP (Top P) を調整',

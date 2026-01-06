@@ -1,5 +1,4 @@
 
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 
@@ -140,6 +139,7 @@ export class GoogleService {
 
   /**
    * Streams chat response from Google Gemini API.
+   * Returns text and optional grounding metadata.
    */
   public async streamChat(
       apiKey: string, 
@@ -151,7 +151,7 @@ export class GoogleService {
       config: GenerationConfig,
       onChunk?: (text: string) => void,
       abortSignal?: AbortSignal
-  ): Promise<string> {
+  ): Promise<{ text: string, groundingMetadata?: any }> {
       try {
         const ai = new GoogleGenAI({ apiKey });
         
@@ -201,6 +201,11 @@ export class GoogleService {
             commonConfig.thinkingConfig = { thinkingBudget: config.thinkingBudget };
         }
 
+        // Apply Google Search Grounding if enabled
+        if (config.googleSearch) {
+            commonConfig.tools = [{ googleSearch: {} }];
+        }
+
         const client = ai.chats.create({
             model: modelId,
             config: commonConfig,
@@ -231,23 +236,29 @@ export class GoogleService {
             const resultStream = await client.sendMessageStream({ message: newParts });
             let fullText = '';
             let stopReason = '';
+            let groundingMetadata: any = null;
 
             for await (const chunk of resultStream) {
-            if (abortSignal?.aborted) break;
-            
-            const response = chunk as GenerateContentResponse;
-            const chunkText = response.text;
+                if (abortSignal?.aborted) break;
+                
+                const response = chunk as GenerateContentResponse;
+                const chunkText = response.text;
 
-            if (chunkText) {
-                fullText += chunkText;
-                if (onChunk) onChunk(fullText);
-            } else {
-                // If text is undefined/empty, check candidates for finishReason
-                const candidate = response.candidates?.[0];
-                if (candidate?.finishReason) {
-                    stopReason = candidate.finishReason;
+                // Capture Grounding Metadata
+                if (response.candidates?.[0]?.groundingMetadata) {
+                    groundingMetadata = response.candidates[0].groundingMetadata;
                 }
-            }
+
+                if (chunkText) {
+                    fullText += chunkText;
+                    if (onChunk) onChunk(fullText);
+                } else {
+                    // If text is undefined/empty, check candidates for finishReason
+                    const candidate = response.candidates?.[0];
+                    if (candidate?.finishReason) {
+                        stopReason = candidate.finishReason;
+                    }
+                }
             }
             
             // If we have no text but a stop reason (e.g., SAFETY, RECITATION), display it
@@ -260,7 +271,7 @@ export class GoogleService {
                 throw error;
             }
 
-            return fullText;
+            return { text: fullText, groundingMetadata };
         } else {
             const result = await client.sendMessage({ message: newParts });
             // Handling non-streaming empty response
@@ -271,7 +282,10 @@ export class GoogleService {
                  (error as any).isSafety = true;
                  throw error;
             }
-            return result.text || '';
+            return { 
+                text: result.text || '', 
+                groundingMetadata: result.candidates?.[0]?.groundingMetadata 
+            };
         }
       } catch (e: any) {
          // Enhance error object with status code if buried in message

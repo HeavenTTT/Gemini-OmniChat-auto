@@ -77,6 +77,8 @@ export const setting = {
   'param.stream': 'Stream Response',
   'param.strip_thoughts': 'Strip Thoughts from History',
   'param.strip_thoughts_desc': 'Remove <think> tags from context sent to API to save tokens.',
+  'param.google_search': 'Google Search (Grounding)',
+  'param.google_search_desc': 'Allows the model to search the web for up-to-date information. Supported on specific models (e.g., Pro/Flash 2.0+).',
   'param.stream_response_toggle': 'Toggle streaming response',
   'param.temperature_slider': 'Adjust model temperature',
   'param.top_p_slider': 'Adjust Top P parameter',

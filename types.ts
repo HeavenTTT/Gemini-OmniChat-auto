@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.5.4';
+export const APP_VERSION = '1.5.5';
 
 export enum Role {
   USER = 'user',
@@ -17,6 +17,7 @@ export interface Message {
   model?: string; // The specific model used for this message
   executionTime?: number; // Time taken to generate response in ms
   groupName?: string; // Name of the group the key belonged to
+  groundingMetadata?: any; // New: Google Search Grounding metadata
 }
 
 export interface ChatSession {
@@ -99,6 +100,7 @@ export interface GenerationConfig {
   thinkingBudget?: number; // New: For Gemini 2.5 thinking models
   stripThoughts?: boolean; // New: Strip <think> tags from history to save tokens
   frequencyPenalty?: number; // New: Frequency penalty parameter
+  googleSearch?: boolean; // New: Enable Google Search Grounding
 }
 
 export interface ScriptConfig {

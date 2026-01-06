@@ -1,4 +1,3 @@
-
 import { Message, KeyConfig, GenerationConfig, ModelProvider, ModelInfo, Language, KeyGroup } from "../types";
 import { OpenAIService } from "./openaiService";
 import { GoogleService } from "./googleService";
@@ -258,7 +257,7 @@ export class LLMService {
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal,
     lang: Language = 'en'
-  ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string }> {
+  ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string, groundingMetadata?: any }> {
 
     return this.enqueueTask(async () => {
         const activeKeysCount = this.keys.filter(k => k.isActive).length;
@@ -299,37 +298,39 @@ export class LLMService {
             const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-3-flash-preview';
 
             try {
-                let text = "";
+                let response: { text: string; groundingMetadata?: any } = { text: "", groundingMetadata: undefined };
                 
                 // 根据提供商分发请求
                 if (keyConfig.provider === 'google' && modelToUse.toLowerCase().includes('imagen')) {
-                     text = await this.googleService.generateImage(keyConfig.key, modelToUse, newMessage);
+                     const imageMarkdown = await this.googleService.generateImage(keyConfig.key, modelToUse, newMessage);
+                     response = { text: imageMarkdown, groundingMetadata: undefined };
                 } 
                 else if (keyConfig.provider === 'openai') {
                     if (!keyConfig.baseUrl) throw new Error(t('error.base_url_required', lang));
-                    text = await this.openAIService.streamChat(
+                    response = await this.openAIService.streamChat(
                         keyConfig.key, keyConfig.baseUrl, modelToUse, validHistory, 
                         newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
                     );
                 } 
                 else if (keyConfig.provider === 'ollama') {
-                    text = await this.ollamaService.streamChat(
+                    response = await this.ollamaService.streamChat(
                         keyConfig.baseUrl || '', modelToUse, validHistory, 
                         newMessage, images, systemInstruction, generationConfig, keyConfig.key, onChunk, abortSignal
                     );
                 } 
                 else {
-                    text = await this.googleService.streamChat(
+                    response = await this.googleService.streamChat(
                         keyConfig.key, modelToUse, validHistory, 
                         newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
                     );
                 }
 
                 return { 
-                    text, 
+                    text: response.text, 
                     usedKeyIndex: currentKeyIndex, 
                     provider: keyConfig.provider,
-                    usedModel: modelToUse
+                    usedModel: modelToUse,
+                    groundingMetadata: response.groundingMetadata
                 };
 
             } catch (error: any) {

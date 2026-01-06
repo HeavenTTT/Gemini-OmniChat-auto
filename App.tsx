@@ -81,7 +81,8 @@ const App: React.FC = () => {
         stream: false, 
         thinkingBudget: 0, 
         stripThoughts: false,
-        frequencyPenalty: 0
+        frequencyPenalty: 0,
+        googleSearch: false
     },
     scripts: {
         inputFilterEnabled: false,
@@ -381,7 +382,7 @@ const App: React.FC = () => {
       }
 
       // 执行流式调用
-      const { text: fullText, usedKeyIndex, provider, usedModel } = await llmService.streamChatResponse(
+      const { text: fullText, usedKeyIndex, provider, usedModel, groundingMetadata } = await llmService.streamChatResponse(
         '', 
         contextToSend, 
         userMessage.text, 
@@ -425,7 +426,8 @@ const App: React.FC = () => {
               provider: provider, 
               model: usedModel, 
               executionTime: executionTime,
-              groupName: groupName
+              groupName: groupName,
+              groundingMetadata: groundingMetadata // Store metadata
           } : msg
         )
       );
@@ -481,13 +483,16 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
       try {
           // We use streamChatResponse but ignore the chunks, just wait for final text.
           // Using a blank system instruction for this meta-task.
+          // IMPORTANT: Disable search for memory generation to save tokens/latency
+          const memoryGenConfig = { ...settings.generation, stream: false, googleSearch: false };
+
           const { text: newMemory } = await llmService.streamChatResponse(
               '', 
               [], 
               memoryPrompt, 
               undefined, 
               undefined, 
-              { ...settings.generation, stream: false }, // Use non-streaming if possible or just await full text
+              memoryGenConfig, // Use non-streaming and no-search
               undefined,
               undefined,
               settings.language
@@ -763,6 +768,8 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
                     return await llmService.countTokens(activeKey, messages, currentInput, settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n'));
                 }} 
                 theme={settings.theme}
+                isSearchEnabled={settings.generation.googleSearch}
+                onToggleSearch={(enabled) => setSettings({ ...settings, generation: { ...settings.generation, googleSearch: enabled } })}
              />
              <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
                 {t('footer.ai_generated', settings.language)}{APP_VERSION}

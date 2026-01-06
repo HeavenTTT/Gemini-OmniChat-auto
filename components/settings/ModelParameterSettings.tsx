@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain, BookOpen } from 'lucide-react';
+import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain, BookOpen, Globe } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
@@ -32,7 +32,8 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             stream: false,
             thinkingBudget: 0,
             stripThoughts: false,
-            frequencyPenalty: 0
+            frequencyPenalty: 0,
+            googleSearch: false
         }
     });
   };
@@ -59,6 +60,29 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             checked={settings.generation.stream}
                             onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, stream: e.target.checked}})}
                             aria-label={t('param.stream_response_toggle', lang)}
+                        />
+                        <div className="toggle-slider"></div>
+                    </label>
+                </div>
+
+                {/* Google Search Toggle */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <label htmlFor="google-search-toggle" className="text-gray-800 dark:text-gray-200 font-medium text-sm flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-blue-500" />
+                            {t('param.google_search', lang)}
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-[250px] sm:max-w-md">
+                            {t('param.google_search_desc', lang)}
+                        </p>
+                    </div>
+                    <label htmlFor="google-search-toggle" className="toggle-switch-label flex-shrink-0 ml-4">
+                        <input 
+                            id="google-search-toggle"
+                            type="checkbox" 
+                            className="toggle-checkbox"
+                            checked={settings.generation.googleSearch || false}
+                            onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, googleSearch: e.target.checked}})}
                         />
                         <div className="toggle-slider"></div>
                     </label>
