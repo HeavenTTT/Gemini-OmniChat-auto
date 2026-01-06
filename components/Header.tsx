@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Menu, Settings, Loader2, Sparkles, Download, Upload, Eraser, MoreHorizontal, ChevronUp } from 'lucide-react';
+import { Menu, Settings, Loader2, Sparkles, Download, Upload, Eraser, MoreHorizontal, ChevronUp, BookOpen } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { Language, Role, Message } from '../types';
 import { t } from '../utils/i18n';
+import { LargeTextEditor } from './ui/LargeTextEditor';
 
 interface HeaderProps {
   currentSessionTitle: string;
   isSummarizing: boolean;
   hasMessages: boolean;
   language: Language;
+  currentSessionMemory?: string; // New: Current memory for active session
   onRename: () => void;
   onSummarize: () => void;
   onOpenMobileMenu: () => void;
@@ -19,6 +21,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   onSaveChat: () => void;
   onLoadSession: (messages: any[], title?: string) => void;
+  onUpdateMemory?: (memory: string) => void; // New: Update memory handler
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
 }
 
@@ -27,6 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
   isSummarizing,
   hasMessages,
   language,
+  currentSessionMemory,
   onRename,
   onSummarize,
   onOpenMobileMenu,
@@ -35,10 +39,12 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   onSaveChat,
   onLoadSession,
+  onUpdateMemory,
   onShowToast
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isMemoryEditorOpen, setIsMemoryEditorOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -157,6 +163,14 @@ export const Header: React.FC<HeaderProps> = ({
         }`}
       >
         <button
+          onClick={() => { setIsMemoryEditorOpen(true); setIsActionsOpen(false); }}
+          className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors whitespace-nowrap"
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>{t('action.edit_memory', language)}</span>
+        </button>
+
+        <button
           onClick={() => { onSummarize(); setIsActionsOpen(false); }}
           disabled={isSummarizing || !hasMessages}
           className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:text-primary-600 dark:hover:text-primary-400 transition-colors whitespace-nowrap disabled:opacity-30"
@@ -214,6 +228,22 @@ export const Header: React.FC<HeaderProps> = ({
         aria-label={t('action.select_chat_file', language)} 
       />
 
+      {/* Memory Editor Modal */}
+      {isMemoryEditorOpen && (
+          <LargeTextEditor 
+              isOpen={isMemoryEditorOpen}
+              onClose={() => setIsMemoryEditorOpen(false)}
+              title={t('label.role_memory', language)}
+              initialValue={currentSessionMemory || ''}
+              onSave={(value) => {
+                  if (onUpdateMemory) onUpdateMemory(value);
+                  onShowToast(t('msg.memory_updated', language), 'success');
+                  setIsMemoryEditorOpen(false);
+              }}
+              lang={language}
+          />
+      )}
+
       {/* Desktop Header */}
       <header className="hidden md:flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-white/30 dark:bg-black/30 backdrop-blur-sm z-30 transition-colors">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -228,6 +258,15 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
+            <button
+                onClick={() => setIsMemoryEditorOpen(true)}
+                className={`p-2 rounded-lg transition-colors ${currentSessionMemory ? 'text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20' : 'text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'}`}
+                title={t('action.edit_memory', language)}
+                aria-label={t('action.edit_memory', language)}
+            >
+                <BookOpen className="w-5 h-5" />
+            </button>
+
             <button
                 onClick={onSummarize}
                 disabled={isSummarizing || !hasMessages}

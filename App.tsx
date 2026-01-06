@@ -64,6 +64,8 @@ const App: React.FC = () => {
     showResponseTimer: false, 
     smoothAnimation: true, 
     avatarVisibility: 'always', 
+    enableAutoMemory: false, // Default off
+    autoMemoryInterval: 20, // Default interval
     historyContextLimit: 0, 
     security: {
         enabled: false,
@@ -78,7 +80,8 @@ const App: React.FC = () => {
         maxOutputTokens: 8192,
         stream: false, 
         thinkingBudget: 0, 
-        stripThoughts: false 
+        stripThoughts: false,
+        frequencyPenalty: 0
     },
     scripts: {
         inputFilterEnabled: false,
@@ -145,7 +148,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const storedKeys = localStorage.getItem(STORAGE_KEYS_KEY);
     const oldKeysV3 = localStorage.getItem('gemini_omnichat_keys_v3');
-    const oldSettingsStr = localStorage.getItem('gemini_omnichat_settings_v5');
+    const oldSettingsStr = localStorage.getItem('gemini_omnichat_settings_v8');
     const oldSettings = safeJsonParse(oldSettingsStr);
     const globalModel = oldSettings?.model || DEFAULT_MODEL;
     const globalBaseUrl = oldSettings?.openAIBaseUrl || 'https://api.openai.com/v1';
@@ -264,7 +267,8 @@ const App: React.FC = () => {
       id: newId,
       title: t('msg.new_chat_title', settings.language),
       messages: [],
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      memory: '' // Initialize with empty memory
     };
     setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newId);
@@ -304,6 +308,9 @@ const App: React.FC = () => {
     setSessions(prev => {
       const idx = prev.findIndex(s => s.id === activeSessionId);
       if (idx === -1) return prev;
+      // Only update if messages have changed to avoid unnecessary cycles
+      if (prev[idx].messages === messages) return prev;
+      
       const updated = [...prev];
       updated[idx] = { ...updated[idx], messages };
       return updated;
@@ -343,7 +350,19 @@ const App: React.FC = () => {
     const startTime = Date.now();
 
     try {
-      const systemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
+      // 1. Get Global System Prompt
+      const globalSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
+      
+      // 2. Get Session Specific Memory
+      // Note: We access sessions state directly here. It might lag slightly behind if updated very recently in same tick, 
+      // but memory updates usually happen via dedicated user action.
+      const currentSession = sessions.find(s => s.id === activeSessionId);
+      const sessionMemory = currentSession?.memory || '';
+
+      // 3. Combine Instructions (Memory acts as a high-priority system context)
+      // Using array filter to remove empty strings before joining
+      const finalSystemInstruction = [globalSystemInstruction, sessionMemory].filter(Boolean).join('\n\n');
+
       let historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
 
       if (settings.generation.stripThoughts) {
@@ -367,7 +386,7 @@ const App: React.FC = () => {
         contextToSend, 
         userMessage.text, 
         userMessage.images, 
-        systemInstruction,
+        finalSystemInstruction,
         settings.generation,
         (chunkText) => {
            let processedChunk = chunkText;
@@ -410,6 +429,20 @@ const App: React.FC = () => {
           } : msg
         )
       );
+
+      // --- Auto-Generate Role Memory Logic ---
+      if (settings.enableAutoMemory && !controller.signal.aborted) {
+          // Check if we hit the interval. We add 2 (User + AI) to current history length before this turn.
+          // Or simpler: check total message count including the new ones.
+          const totalMessages = historyBefore.length + 2; 
+          const interval = settings.autoMemoryInterval || 20;
+          
+          if (totalMessages > 0 && totalMessages % interval === 0) {
+              // Trigger memory update silently in background
+              generateAutoMemory(sessionMemory, userMessage.text, processedFinalText);
+          }
+      }
+
     } catch (error: any) {
       if (error.message !== "Aborted by user") {
          const errorMessage: Message = {
@@ -426,6 +459,47 @@ const App: React.FC = () => {
       setIsLoading(false);
       abortControllerRef.current = null;
     }
+  };
+
+  /**
+   * Helper function to update character memory automatically in background.
+   */
+  const generateAutoMemory = async (currentMemory: string, userText: string, aiText: string) => {
+      if (!llmService) return;
+      
+      // Construct a meta-prompt for memory consolidation
+      const memoryPrompt = `
+Existing Memory: ${currentMemory}
+
+User Input: ${userText.slice(0, 500)}
+AI Response: ${aiText.slice(0, 500)}
+
+Instruction: Update the Existing Memory to reflect new information, user preferences, or context established in this exchange. Keep it concise and relevant for future context. Return ONLY the updated memory text.
+`;
+
+      try {
+          // We use streamChatResponse but ignore the chunks, just wait for final text.
+          // Using a blank system instruction for this meta-task.
+          const { text: newMemory } = await llmService.streamChatResponse(
+              '', 
+              [], 
+              memoryPrompt, 
+              undefined, 
+              undefined, 
+              { ...settings.generation, stream: false }, // Use non-streaming if possible or just await full text
+              undefined,
+              undefined,
+              settings.language
+          );
+
+          if (newMemory && newMemory.trim()) {
+              handleUpdateSessionMemory(newMemory.trim());
+              addToast(t('msg.memory_updated', settings.language), 'info');
+          }
+      } catch (e) {
+          // Silent fail for background tasks, or maybe log to console
+          console.warn("Auto-memory generation failed", e);
+      }
   };
 
   const handleStopGeneration = () => {
@@ -484,7 +558,8 @@ const App: React.FC = () => {
           id: newId,
           title: title || t('msg.new_chat_title', settings.language),
           messages: loadedMessages,
-          createdAt: Date.now()
+          createdAt: Date.now(),
+          memory: '' // Import defaults to empty unless we import full session objects later
       };
 
       // 插入到会话列表最前端并立即切换
@@ -497,11 +572,20 @@ const App: React.FC = () => {
       addToast(t('success.chat_import', settings.language) || t('msg.config_imported', settings.language), 'success');
   };
 
+  const handleUpdateSessionMemory = (newMemory: string) => {
+      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, memory: newMemory } : s));
+  };
+
   const handleSaveChat = () => {
     const activeSession = sessions.find(s => s.id === activeSessionId);
     const title = activeSession?.title || t('label.session', settings.language);
     const safeTitle = title.replace(/[^a-z0-9\u4e00-\u9fa5]/gi, '_').substring(0, 50);
-    const chatData = { title, date: new Date().toISOString(), messages };
+    const chatData = { 
+        title, 
+        date: new Date().toISOString(), 
+        messages,
+        memory: activeSession?.memory || '' // Export memory too
+    };
     const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -526,7 +610,9 @@ const App: React.FC = () => {
   };
 
   const activeKeysCount = apiKeys.filter(k => k.isActive).length;
-  const currentSessionTitle = sessions.find(s => s.id === activeSessionId)?.title || t('app.title', settings.language);
+  const currentSession = sessions.find(s => s.id === activeSessionId);
+  const currentSessionTitle = currentSession?.title || t('app.title', settings.language);
+  const currentSessionMemory = currentSession?.memory || '';
   
   if (isLocked) return (
     <div className={`${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark' : ''}`}>
@@ -585,13 +671,17 @@ const App: React.FC = () => {
 
         <main className="flex-1 flex flex-col relative h-full min-w-0 overflow-hidden">
           <Header 
-             currentSessionTitle={currentSessionTitle} isSummarizing={isSummarizing} hasMessages={messages.length > 0}
-             language={settings.language} onRename={() => {
-                const currentSession = sessions.find(s => s.id === activeSessionId);
+             currentSessionTitle={currentSessionTitle} 
+             isSummarizing={isSummarizing} 
+             hasMessages={messages.length > 0}
+             language={settings.language}
+             currentSessionMemory={currentSessionMemory}
+             onRename={() => {
+                const session = sessions.find(s => s.id === activeSessionId);
                 showDialog({
                     type: 'input',
                     title: t('msg.rename_chat', settings.language),
-                    inputValue: currentSession?.title || '',
+                    inputValue: session?.title || '',
                     onConfirm: (newTitle) => {
                         if (newTitle && newTitle.trim()) setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, title: newTitle.trim() } : s));
                     }
@@ -630,7 +720,8 @@ const App: React.FC = () => {
              }}
              onOpenSettings={() => setIsSettingsOpen(true)} 
              onSaveChat={handleSaveChat} 
-             onLoadSession={handleLoadSession} 
+             onLoadSession={handleLoadSession}
+             onUpdateMemory={handleUpdateSessionMemory}
              onShowToast={addToast}
           />
 

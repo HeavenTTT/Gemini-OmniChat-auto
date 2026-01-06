@@ -31,6 +31,7 @@ export const message = {
   'input.ollama_auth': '任意 / 認証ヘッダー',
   'input.base_url_field': 'Base URL 入力',
   'input.apikey_field': 'APIキー入力',
+  'input.memory_placeholder': 'このセッション固有の役割設定、背景情報、または長期記憶を入力してください...',
   'msg.new_chat_title': '新しいチャット',
   'msg.rename_chat': 'チャット名を変更:',
   'msg.rate_limited': 'レート制限',
@@ -47,7 +48,7 @@ export const message = {
   'msg.connection_failed': '接続失败。',
   'msg.summarize_prompt': '以下の会話を10文字以内の简洁なタイトルに要约してください。タイトルテキストのみを返してください。',
   'msg.summarize_error': '要约に失败しました。',
-  'msg.model_url_moved': '特定のモデルとBase URLの设定は、柔软性を高めるために「一般设定」タブでキーごとに设定するようになりました。',
+  'msg.model_url_moved': '特定のモデルとBase URLの设定は、柔軟性を高めるために「一般设定」タブでキーごとに设定するようになりました。',
   'msg.confirm_sync_model': 'モデル "{model}" を他の {count} 個の同种キーに适用してもよろしいですか？',
   'msg.sync_no_targets': '同期对象となる他の同种キーが见つかりませんでした。',
   'msg.sync_success': 'モデルの同期に成功しました。',
@@ -72,4 +73,5 @@ export const message = {
   'msg.switching_key': 'キー #{index} に切り替え',
   'msg.switching_group': 'グループ "{group}" に切り替え',
   'msg.key_error_verbose': 'キー #{index} エラー: {error}。再試行中...',
+  'msg.memory_updated': 'ロールメモリが更新されました。',
 };

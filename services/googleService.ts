@@ -192,7 +192,8 @@ export class GoogleService {
             temperature: config.temperature,
             topP: config.topP,
             topK: config.topK,
-            maxOutputTokens: config.maxOutputTokens
+            maxOutputTokens: config.maxOutputTokens,
+            frequencyPenalty: config.frequencyPenalty,
         };
 
         // Apply thinking budget if set and > 0

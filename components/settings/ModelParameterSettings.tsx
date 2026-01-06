@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain } from 'lucide-react';
+import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain, BookOpen } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
 import { CollapsibleSection } from './CollapsibleSection';
 import { t } from '../../utils/i18n';
@@ -22,6 +22,8 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
     onUpdateSettings({
         ...settings,
         historyContextLimit: 0,
+        enableAutoMemory: false,
+        autoMemoryInterval: 20,
         generation: {
             temperature: 1.0,
             topP: 0.95,
@@ -29,7 +31,8 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             maxOutputTokens: 8192,
             stream: false,
             thinkingBudget: 0,
-            stripThoughts: false
+            stripThoughts: false,
+            frequencyPenalty: 0
         }
     });
   };
@@ -61,7 +64,7 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                     </label>
                 </div>
 
-                {/* Thinking Budget (Gemini 2.5) - Moved to main section */}
+                {/* Thinking Budget (Gemini 2.5) */}
                 <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
                     <div className="flex justify-between text-sm mb-2 items-center">
                         <label htmlFor="thinking-budget-input" className="text-gray-800 dark:text-gray-200 font-medium flex items-center gap-2">
@@ -83,6 +86,53 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                         {t('param.thinkingBudget_desc', lang)}
                     </p>
+                </div>
+
+                {/* Auto Role Memory Config */}
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <label htmlFor="auto-memory-toggle" className="text-gray-800 dark:text-gray-200 font-medium text-sm flex items-center gap-2">
+                            <BookOpen className="w-4 h-4 text-blue-500" />
+                            {t('settings.enable_auto_memory', lang)}
+                        </label>
+                        <label htmlFor="auto-memory-toggle" className="toggle-switch-label">
+                            <input 
+                                id="auto-memory-toggle"
+                                type="checkbox" 
+                                className="toggle-checkbox"
+                                checked={settings.enableAutoMemory || false}
+                                onChange={(e) => onUpdateSettings({...settings, enableAutoMemory: e.target.checked})}
+                            />
+                            <div className="toggle-slider"></div>
+                        </label>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('settings.auto_memory_desc', lang)}
+                    </p>
+
+                    {settings.enableAutoMemory && (
+                        <div className="animate-fade-in-up pt-1 border-t border-blue-100 dark:border-blue-800/30 mt-2">
+                            <div className="flex justify-between text-sm mb-2 items-center">
+                                <label htmlFor="auto-memory-interval" className="text-gray-700 dark:text-gray-300 font-medium text-xs">
+                                    {t('settings.auto_memory_interval', lang)}
+                                </label>
+                                <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded text-xs font-mono">
+                                    {settings.autoMemoryInterval || 20}
+                                </span>
+                            </div>
+                            <input 
+                                id="auto-memory-interval"
+                                type="range" min="2" max="100" step="1"
+                                value={settings.autoMemoryInterval || 20}
+                                onChange={(e) => onUpdateSettings({...settings, autoMemoryInterval: parseInt(e.target.value)})}
+                                className="slider-standard accent-blue-500"
+                                aria-label={t('param.auto_memory_interval_input', lang)}
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('settings.auto_memory_interval_desc', lang)}
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Strip Thoughts Toggle */}
@@ -169,6 +219,25 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {t('param.topK_desc', lang)}
+                            </p>
+                        </div>
+
+                        {/* Frequency Penalty */}
+                        <div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <label htmlFor="frequency-penalty-slider" className="text-gray-700 dark:text-gray-300 font-medium">{t('param.frequencyPenalty', lang)}</label>
+                                <span className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-0.5 rounded text-xs">{settings.generation.frequencyPenalty || 0}</span>
+                            </div>
+                            <input 
+                                id="frequency-penalty-slider"
+                                type="range" min="0" max="2" step="0.1"
+                                value={settings.generation.frequencyPenalty || 0}
+                                onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, frequencyPenalty: parseFloat(e.target.value)}})}
+                                className="slider-standard"
+                                aria-label={t('param.frequency_penalty_slider', lang)}
+                            />
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {t('param.frequencyPenalty_desc', lang)}
                             </p>
                         </div>
 

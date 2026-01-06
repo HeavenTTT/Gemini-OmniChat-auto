@@ -31,6 +31,7 @@ export const message = {
   'input.ollama_auth': '选填 / Auth Header',
   'input.base_url_field': 'Base URL 输入框',
   'input.apikey_field': 'API Key 输入框',
+  'input.memory_placeholder': '在此输入此会话的专属角色设定、背景信息或长期记忆...',
   'msg.new_chat_title': '新对话',
   'msg.rename_chat': '重命名对话：',
   'msg.rate_limited': '受限',
@@ -73,4 +74,5 @@ export const message = {
   'msg.switching_key': '切换到密钥 #{index}',
   'msg.switching_group': '切换到分组 "{group}"',
   'msg.key_error_verbose': '密钥 #{index} 错误: {error}。正在重试...',
+  'msg.memory_updated': '角色记忆已更新。',
 };

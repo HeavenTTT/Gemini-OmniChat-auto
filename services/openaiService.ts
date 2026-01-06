@@ -1,3 +1,4 @@
+
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n"; // Import t for translations
 
@@ -168,7 +169,8 @@ export class OpenAIService {
       temperature: config.temperature,
       top_p: config.topP,
       max_tokens: config.maxOutputTokens,
-      stream: config.stream
+      stream: config.stream,
+      frequency_penalty: config.frequencyPenalty,
     };
 
     try {

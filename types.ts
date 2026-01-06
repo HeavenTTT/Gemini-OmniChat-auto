@@ -1,4 +1,4 @@
-export const APP_VERSION = '1.5.3';
+export const APP_VERSION = '1.5.4';
 
 export enum Role {
   USER = 'user',
@@ -24,6 +24,7 @@ export interface ChatSession {
   title: string;
   messages: Message[];
   createdAt: number;
+  memory?: string; // New: Per-session character memory/context
 }
 
 export type ModelProvider = 'google' | 'openai' | 'ollama';
@@ -97,6 +98,7 @@ export interface GenerationConfig {
   stream: boolean;
   thinkingBudget?: number; // New: For Gemini 2.5 thinking models
   stripThoughts?: boolean; // New: Strip <think> tags from history to save tokens
+  frequencyPenalty?: number; // New: Frequency penalty parameter
 }
 
 export interface ScriptConfig {
@@ -126,6 +128,8 @@ export interface AppSettings {
   showTokenUsage: boolean; // New: Toggle token usage estimation
   showResponseTimer: boolean; // New: Toggle response execution time display
   smoothAnimation: boolean; // New: Toggle typewriter animation
+  enableAutoMemory: boolean; // New: Toggle automatic memory generation
+  autoMemoryInterval: number; // New: Interval for auto memory generation (e.g. every 20 messages)
   historyContextLimit: number; // New: Limit number of past messages sent (0 = unlimited)
   security: SecurityConfig;
   generation: GenerationConfig;

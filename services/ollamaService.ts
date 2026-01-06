@@ -1,4 +1,5 @@
 
+
 import { Ollama } from 'ollama/browser';
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n";
@@ -135,7 +136,8 @@ export class OllamaService {
               temperature: config.temperature,
               top_p: config.topP,
               top_k: config.topK,
-              num_predict: config.maxOutputTokens
+              num_predict: config.maxOutputTokens,
+              frequency_penalty: config.frequencyPenalty,
           }
         });
 
@@ -165,7 +167,8 @@ export class OllamaService {
               temperature: config.temperature,
               top_p: config.topP,
               top_k: config.topK,
-              num_predict: config.maxOutputTokens
+              num_predict: config.maxOutputTokens,
+              frequency_penalty: config.frequencyPenalty,
           }
         });
         

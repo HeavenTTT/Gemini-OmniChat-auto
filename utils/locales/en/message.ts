@@ -31,6 +31,7 @@ export const message = {
   'input.ollama_auth': 'Optional / Auth Header',
   'input.base_url_field': 'Base URL Input',
   'input.apikey_field': 'API Key Input',
+  'input.memory_placeholder': 'Enter specific role settings, background information, or long-term memory for this session...',
   'msg.new_chat_title': 'New Chat',
   'msg.rename_chat': 'Rename Chat:',
   'msg.rate_limited': 'Rate Limited',
@@ -72,4 +73,5 @@ export const message = {
   'msg.switching_key': 'Switching to Key #{index}',
   'msg.switching_group': 'Switching to Group "{group}"',
   'msg.key_error_verbose': 'Key #{index} Error: {error}. Retrying...',
+  'msg.memory_updated': 'Role memory updated.',
 };
