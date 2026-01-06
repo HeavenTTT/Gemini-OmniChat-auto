@@ -31,7 +31,7 @@ export const common = {
   'label.output_limit': '输出限制',
   'label.unlimited': '无限制',
   'label.session': '会话',
-  'label.role_memory': '角色记忆',
+  'label.role_memory': '对话记忆',
   'avatar.always': '全部显示',
   'avatar.user_only': '只显示用户',
   'avatar.model_only': '只显示AI',

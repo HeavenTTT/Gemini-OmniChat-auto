@@ -430,7 +430,7 @@ const App: React.FC = () => {
         )
       );
 
-      // --- Auto-Generate Role Memory Logic ---
+      // --- Auto-Generate Chat Memory Logic ---
       if (settings.enableAutoMemory && !controller.signal.aborted) {
           // Check if we hit the interval. We add 2 (User + AI) to current history length before this turn.
           // Or simpler: check total message count including the new ones.
@@ -462,19 +462,20 @@ const App: React.FC = () => {
   };
 
   /**
-   * Helper function to update character memory automatically in background.
+   * Helper function to update conversation memory automatically in background.
    */
   const generateAutoMemory = async (currentMemory: string, userText: string, aiText: string) => {
       if (!llmService) return;
       
       // Construct a meta-prompt for memory consolidation
+      // Updated to focus on "key facts, conclusions, and context" rather than just role/settings
       const memoryPrompt = `
 Existing Memory: ${currentMemory}
 
 User Input: ${userText.slice(0, 500)}
 AI Response: ${aiText.slice(0, 500)}
 
-Instruction: Update the Existing Memory to reflect new information, user preferences, or context established in this exchange. Keep it concise and relevant for future context. Return ONLY the updated memory text.
+Instruction: Analyze the exchange and update the Existing Memory. Focus on preserving key facts, user preferences, important conclusions, and context. Remove obsolete details. Keep it concise. Return ONLY the updated memory text.
 `;
 
       try {

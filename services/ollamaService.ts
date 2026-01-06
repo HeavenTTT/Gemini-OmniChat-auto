@@ -1,12 +1,11 @@
 
-
 import { Ollama } from 'ollama/browser';
 import { Message, Role, GenerationConfig, ModelInfo } from "../types";
 import { t } from "../utils/i18n";
 
 /**
- * Service to handle Ollama API interactions using the official ollama-js library.
- * Configured to always use the local proxy to avoid Mixed Content/CORS issues.
+ * Service to handle Ollama API interactions.
+ * Uses the official library for management, but raw fetch for reliable streaming in browser.
  */
 export class OllamaService {
   
@@ -90,7 +89,8 @@ export class OllamaService {
   }
 
   /**
-   * Streams chat completion from Ollama API using the library's async generator.
+   * Streams chat completion from Ollama API.
+   * Uses raw fetch with ReadableStream for better compatibility with browser streaming than the library.
    */
   public async streamChat(
     baseUrl: string, // Ignored
@@ -104,7 +104,9 @@ export class OllamaService {
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal
   ): Promise<string> {
-    const client = this.getClient(apiKey);
+    // Determine proxy URL
+    const currentOrigin = window.location.origin;
+    const proxyUrl = `${currentOrigin}/ollama-proxy`;
 
     // Map App's history to Ollama's expected message format
     const messages = history.map(msg => ({
@@ -126,50 +128,92 @@ export class OllamaService {
         images: images ? images.map(this.extractBase64) : undefined
     });
 
+    const requestOptions = {
+      model: modelId,
+      messages: messages,
+      stream: config.stream,
+      options: {
+          temperature: config.temperature,
+          top_p: config.topP,
+          top_k: config.topK,
+          num_predict: config.maxOutputTokens,
+          frequency_penalty: config.frequencyPenalty,
+      }
+    };
+
     try {
       if (config.stream) {
-        const response = await client.chat({
-          model: modelId,
-          messages: messages,
-          stream: true,
-          options: {
-              temperature: config.temperature,
-              top_p: config.topP,
-              top_k: config.topK,
-              num_predict: config.maxOutputTokens,
-              frequency_penalty: config.frequencyPenalty,
-          }
-        });
-
-        let fullText = "";
-        
-        // Iterate over the async generator
-        for await (const part of response) {
-          if (abortSignal?.aborted) {
-              // Abort this specific client instance
-              client.abort(); 
-              break;
-          }
-          
-          const chunkContent = part.message.content;
-          fullText += chunkContent;
-          if (onChunk) onChunk(fullText);
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+        if (apiKey && apiKey.trim()) {
+            headers['Authorization'] = `Bearer ${apiKey.trim()}`;
         }
 
+        const response = await fetch(`${proxyUrl}/api/chat`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestOptions),
+            signal: abortSignal
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            let errorMessage = response.statusText;
+            try {
+                const json = JSON.parse(errorText);
+                if (json.error) errorMessage = json.error;
+            } catch { /* ignore */ }
+            const error = new Error(`Ollama API Error: ${response.status} - ${errorMessage}`);
+            (error as any).status = response.status;
+            throw error;
+        }
+
+        if (!response.body) throw new Error("No response body");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+            
+            const lines = buffer.split('\n');
+            // Keep the last partial line in the buffer
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const json = JSON.parse(line);
+                    if (json.done) break;
+                    
+                    if (json.message?.content) {
+                        const content = json.message.content;
+                        fullText += content;
+                        if (onChunk) onChunk(fullText);
+                    }
+                } catch (e) {
+                    console.warn("Error parsing Ollama stream chunk:", e);
+                }
+            }
+        }
+        
         return fullText;
+
       } else {
-        // Non-streaming mode
+        // Non-streaming mode: Use the library for simplicity
+        const client = this.getClient(apiKey);
         const response = await client.chat({
           model: modelId,
           messages: messages,
           stream: false,
-          options: {
-              temperature: config.temperature,
-              top_p: config.topP,
-              top_k: config.topK,
-              num_predict: config.maxOutputTokens,
-              frequency_penalty: config.frequencyPenalty,
-          }
+          options: requestOptions.options
         });
         
         if (abortSignal?.aborted) {

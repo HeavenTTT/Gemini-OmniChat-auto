@@ -31,7 +31,7 @@ export const common = {
   'label.output_limit': '输出限制',
   'label.unlimited': '無制限',
   'label.session': 'セッション',
-  'label.role_memory': 'ロールメモリ',
+  'label.role_memory': '会話メモリ',
   'avatar.always': 'すべて表示',
   'avatar.user_only': 'ユーザーのみ',
   'avatar.model_only': 'AIのみ',

@@ -31,7 +31,7 @@ export const common = {
   'label.output_limit': 'Output Limit',
   'label.unlimited': 'Unlimited',
   'label.session': 'Session',
-  'label.role_memory': 'Role Memory',
+  'label.role_memory': 'Conversation Memory',
   'avatar.always': 'Show All',
   'avatar.user_only': 'User Only',
   'avatar.model_only': 'AI Only',

@@ -31,7 +31,7 @@ export const message = {
   'input.ollama_auth': '任意 / 認証ヘッダー',
   'input.base_url_field': 'Base URL 入力',
   'input.apikey_field': 'APIキー入力',
-  'input.memory_placeholder': 'このセッション固有の役割設定、背景情報、または長期記憶を入力してください...',
+  'input.memory_placeholder': 'このセッション固有の重要な情報、結論、または長期記憶を入力してください...',
   'msg.new_chat_title': '新しいチャット',
   'msg.rename_chat': 'チャット名を変更:',
   'msg.rate_limited': 'レート制限',
@@ -73,5 +73,5 @@ export const message = {
   'msg.switching_key': 'キー #{index} に切り替え',
   'msg.switching_group': 'グループ "{group}" に切り替え',
   'msg.key_error_verbose': 'キー #{index} エラー: {error}。再試行中...',
-  'msg.memory_updated': 'ロールメモリが更新されました。',
+  'msg.memory_updated': '会話メモリが更新されました。',
 };
