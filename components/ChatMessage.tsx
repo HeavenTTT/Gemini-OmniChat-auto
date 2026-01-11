@@ -317,7 +317,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         <span className="text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title={t('tooltip.key_index', language)}>#{msg.keyIndex}</span>
                     )}
                     {showGroupName && msg.groupName && (
-                        <div className="flex items-center gap-0.5 text-[10px] font-mono bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-1 rounded border border-indigo-100 dark:border-indigo-800 whitespace-nowrap" title={t('tooltip.group_name', language)}>
+                        <div className="flex items-center gap-0.5 text-[10px] font-mono bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100 dark:border-primary-800 whitespace-nowrap" title={t('tooltip.group_name', language)}>
                             <Folder className="w-2.5 h-2.5" />
                             <span>{msg.groupName}</span>
                         </div>

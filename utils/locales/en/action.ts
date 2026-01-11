@@ -1,3 +1,4 @@
+
 /**
  * English actions localization config
  */
@@ -106,5 +107,5 @@ export const action = {
   'action.open_full_editor': 'Open Full Screen Editor',
   'action.upload_image': 'Upload Image',
   'action.upload_file': 'Upload File (Text)',
-  'action.edit_memory': 'Edit Role Memory',
+  'action.edit_memory': 'Edit Conversation Memory',
 };

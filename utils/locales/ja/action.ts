@@ -1,3 +1,4 @@
+
 /**
  * 日本語アクションローカライズ設定
  */
@@ -106,5 +107,5 @@ export const action = {
   'action.open_full_editor': 'フルスクリーンエディターを開く',
   'action.upload_image': '画像をアップロード',
   'action.upload_file': 'ファイルをアップロード (テキスト)',
-  'action.edit_memory': 'ロールメモリを編集',
+  'action.edit_memory': '会話メモリを編集',
 };

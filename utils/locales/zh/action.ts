@@ -1,3 +1,4 @@
+
 /**
  * 中文动作按钮本地化配置
  */
@@ -107,5 +108,5 @@ export const action = {
   'action.open_full_editor': '打开全屏编辑器',
   'action.upload_image': '上传图片',
   'action.upload_file': '上传文件 (文本)',
-  'action.edit_memory': '编辑角色记忆',
+  'action.edit_memory': '编辑对话记忆',
 };
