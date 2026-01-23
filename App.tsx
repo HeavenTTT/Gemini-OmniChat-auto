@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { LLMService } from './services/llmService';
 import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo } from './types';
@@ -64,8 +64,8 @@ const App: React.FC = () => {
     showResponseTimer: false, 
     smoothAnimation: true, 
     avatarVisibility: 'always', 
-    enableAutoMemory: false, // Default off
-    autoMemoryInterval: 20, // Default interval
+    enableAutoMemory: false, 
+    autoMemoryInterval: 20, 
     historyContextLimit: 0, 
     security: {
         enabled: false,
@@ -105,6 +105,7 @@ const App: React.FC = () => {
   const [llmService, setLlmService] = useState<LLMService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isProcessingRef = useRef(false);
+  const lastActivityRef = useRef<number>(Date.now());
 
   // --- 辅助工具函数 ---
   const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
@@ -143,13 +144,12 @@ const App: React.FC = () => {
   };
 
   /**
-   * 节点 1: 挂载初始化
-   * 从 LocalStorage 加载所有持久化数据，包括密钥、设置和会话历史。
+   * 节点 1: 挂载初始化与安全检测
    */
   useEffect(() => {
     const storedKeys = localStorage.getItem(STORAGE_KEYS_KEY);
     const oldKeysV3 = localStorage.getItem('gemini_omnichat_keys_v3');
-    const oldSettingsStr = localStorage.getItem('gemini_omnichat_settings_v8');
+    const oldSettingsStr = localStorage.getItem(STORAGE_SETTINGS_KEY);
     const oldSettings = safeJsonParse(oldSettingsStr);
     const globalModel = oldSettings?.model || DEFAULT_MODEL;
     const globalBaseUrl = oldSettings?.openAIBaseUrl || 'https://api.openai.com/v1';
@@ -185,21 +185,13 @@ const App: React.FC = () => {
 
     const storedKnownModels = localStorage.getItem(STORAGE_KNOWN_MODELS_KEY);
     if (storedKnownModels) {
-        // Merge stored models with defaults to ensure new defaults appear
         const parsedStoredModels = safeJsonParse(storedKnownModels, []);
-        // Create a map for easy lookup by name
-        const storedModelMap = new Map(parsedStoredModels.map((m: any) => [m.name, m]));
-        
-        // Start with defaults
         const mergedModels = [...DEFAULT_KNOWN_MODELS];
-        
-        // Add any stored models that are NOT in defaults
         parsedStoredModels.forEach((m: any) => {
             if (!mergedModels.find(dm => dm.name === m.name)) {
                 mergedModels.push(m);
             }
         });
-        
         loadedKnownModels = mergedModels;
     }
 
@@ -223,7 +215,6 @@ const App: React.FC = () => {
         return k;
     });
 
-    // 初始化核心 LLM 服务
     setLlmService(new LLMService(
         effectiveKeys, 
         {
@@ -233,21 +224,29 @@ const App: React.FC = () => {
                     if (isFatal) return { ...k, isActive: false, lastErrorCode: errorCode };
                     else return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
                 }));
-                // Only toast on fatal errors here, LLMService handles other status messages
                 if (isFatal) addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
             },
             onStatusMessage: (msg, type) => addToast(msg, type)
         }
     ));
 
-    // 安全锁检查
+    // --- 核心更新：初始加载与自动锁逻辑 ---
     if (loadedSettings.security.enabled) {
+        const lastActive = loadedSettings.security.lastLogin || 0;
         const lockoutThresholdMs = (loadedSettings.security.lockoutDurationSeconds || 86400) * 1000;
-        if (Date.now() - (loadedSettings.security.lastLogin || 0) > lockoutThresholdMs) setIsLocked(true);
-        else setSettings({ ...loadedSettings, security: { ...loadedSettings.security, lastLogin: Date.now() } });
+        
+        if (Date.now() - lastActive > lockoutThresholdMs) {
+            setIsLocked(true);
+        } else {
+            // 更新活跃状态
+            lastActivityRef.current = Date.now();
+            setSettings(prev => ({ 
+                ...prev, 
+                security: { ...prev.security, lastLogin: Date.now() } 
+            }));
+        }
     }
 
-    // 会话恢复
     const storedSessions = localStorage.getItem(STORAGE_SESSIONS_KEY);
     const storedActiveId = localStorage.getItem(STORAGE_ACTIVE_SESSION_KEY);
     
@@ -262,6 +261,69 @@ const App: React.FC = () => {
     } else createNewSession();
   }, []);
 
+  /**
+   * 核心更新：实时安全锁监控（离开检测）
+   */
+  useEffect(() => {
+      if (!settings.security.enabled || isLocked) return;
+
+      const checkSecurityThreshold = () => {
+          const now = Date.now();
+          const lastActive = lastActivityRef.current;
+          const limit = (settings.security.lockoutDurationSeconds || 86400) * 1000;
+          
+          if (now - lastActive > limit) {
+              setIsLocked(true);
+          } else {
+              // 活跃状态归来，更新最后活跃时间
+              lastActivityRef.current = Date.now();
+              setSettings(prev => ({
+                  ...prev,
+                  security: { ...prev.security, lastLogin: Date.now() }
+              }));
+          }
+      };
+
+      // 监听用户返回页面的行为
+      const onFocusChange = () => {
+          if (document.visibilityState === 'visible' || document.hasFocus()) {
+              checkSecurityThreshold();
+          }
+      };
+
+      // 监听用户交互（更新活跃时间）
+      let lastUpdate = 0;
+      const onUserInteraction = () => {
+          const now = Date.now();
+          lastActivityRef.current = now;
+          
+          // 节流更新：每10秒同步一次持久化存储，避免由于高频操作导致的性能下降
+          if (now - lastUpdate > 10000) {
+              lastUpdate = now;
+              setSettings(prev => ({
+                  ...prev,
+                  security: { ...prev.security, lastLogin: now }
+              }));
+          }
+      };
+
+      window.addEventListener('focus', onFocusChange);
+      document.addEventListener('visibilitychange', onFocusChange);
+      window.addEventListener('mousedown', onUserInteraction, { passive: true });
+      window.addEventListener('keydown', onUserInteraction, { passive: true });
+      window.addEventListener('scroll', onUserInteraction, { passive: true });
+      window.addEventListener('touchstart', onUserInteraction, { passive: true });
+
+      return () => {
+          window.removeEventListener('focus', onFocusChange);
+          document.removeEventListener('visibilitychange', onFocusChange);
+          window.removeEventListener('mousedown', onUserInteraction);
+          window.removeEventListener('keydown', onUserInteraction);
+          window.removeEventListener('scroll', onUserInteraction);
+          window.removeEventListener('touchstart', onUserInteraction);
+      };
+  }, [settings.security.enabled, settings.security.lockoutDurationSeconds, isLocked]);
+
   const createNewSession = () => {
     const newId = uuidv4();
     const newSession: ChatSession = {
@@ -269,7 +331,7 @@ const App: React.FC = () => {
       title: t('msg.new_chat_title', settings.language),
       messages: [],
       createdAt: Date.now(),
-      memory: '' // Initialize with empty memory
+      memory: '' 
     };
     setSessions(prev => [newSession, ...prev]);
     setActiveSessionId(newId);
@@ -278,7 +340,6 @@ const App: React.FC = () => {
 
   /**
    * 节点 2: 数据同步
-   * 监听状态变动并同步至服务层或持久化存储。
    */
   useEffect(() => {
     const effectiveKeys = apiKeys.map(k => {
@@ -309,7 +370,6 @@ const App: React.FC = () => {
     setSessions(prev => {
       const idx = prev.findIndex(s => s.id === activeSessionId);
       if (idx === -1) return prev;
-      // Only update if messages have changed to avoid unnecessary cycles
       if (prev[idx].messages === messages) return prev;
       
       const updated = [...prev];
@@ -328,7 +388,6 @@ const App: React.FC = () => {
 
   /**
    * 节点 3: 消息处理逻辑
-   * 处理流式响应并将其分片渲染至 UI。
    */
   const triggerBotResponse = async (historyBefore: Message[], userMessage: Message) => {
     if (!llmService) return;
@@ -351,17 +410,9 @@ const App: React.FC = () => {
     const startTime = Date.now();
 
     try {
-      // 1. Get Global System Prompt
       const globalSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
-      
-      // 2. Get Session Specific Memory
-      // Note: We access sessions state directly here. It might lag slightly behind if updated very recently in same tick, 
-      // but memory updates usually happen via dedicated user action.
       const currentSession = sessions.find(s => s.id === activeSessionId);
       const sessionMemory = currentSession?.memory || '';
-
-      // 3. Combine Instructions (Memory acts as a high-priority system context)
-      // Using array filter to remove empty strings before joining
       const finalSystemInstruction = [globalSystemInstruction, sessionMemory].filter(Boolean).join('\n\n');
 
       let historyForApi = historyBefore.filter(m => m.id !== userMessage.id);
@@ -381,7 +432,6 @@ const App: React.FC = () => {
           contextToSend = historyForApi.slice(-settings.historyContextLimit);
       }
 
-      // 执行流式调用
       const { text: fullText, usedKeyIndex, provider, usedModel, groundingMetadata } = await llmService.streamChatResponse(
         '', 
         contextToSend, 
@@ -407,7 +457,6 @@ const App: React.FC = () => {
           processedFinalText = executeFilterScript(settings.scripts.outputFilterCode, fullText, { role: 'model', history: [...historyBefore, userMessage] });
       }
 
-      // Resolve Group Name
       let groupName: string | undefined;
       if (usedKeyIndex && usedKeyIndex > 0 && usedKeyIndex <= apiKeys.length) {
           const usedKey = apiKeys[usedKeyIndex - 1];
@@ -427,20 +476,15 @@ const App: React.FC = () => {
               model: usedModel, 
               executionTime: executionTime,
               groupName: groupName,
-              groundingMetadata: groundingMetadata // Store metadata
+              groundingMetadata: groundingMetadata 
           } : msg
         )
       );
 
-      // --- Auto-Generate Chat Memory Logic ---
       if (settings.enableAutoMemory && !controller.signal.aborted) {
-          // Check if we hit the interval. We add 2 (User + AI) to current history length before this turn.
-          // Or simpler: check total message count including the new ones.
           const totalMessages = historyBefore.length + 2; 
           const interval = settings.autoMemoryInterval || 20;
-          
           if (totalMessages > 0 && totalMessages % interval === 0) {
-              // Trigger memory update silently in background
               generateAutoMemory(sessionMemory, userMessage.text, processedFinalText);
           }
       }
@@ -463,36 +507,23 @@ const App: React.FC = () => {
     }
   };
 
-  /**
-   * Helper function to update conversation memory automatically in background.
-   */
   const generateAutoMemory = async (currentMemory: string, userText: string, aiText: string) => {
       if (!llmService) return;
-      
-      // Construct a meta-prompt for memory consolidation
-      // Updated to focus on "key facts, conclusions, and context" rather than just role/settings
       const memoryPrompt = `
 Existing Memory: ${currentMemory}
-
 User Input: ${userText.slice(0, 500)}
 AI Response: ${aiText.slice(0, 500)}
-
 Instruction: Analyze the exchange and update the Existing Memory. Focus on preserving key facts, user preferences, important conclusions, and context. Remove obsolete details. Keep it concise. Return ONLY the updated memory text.
 `;
-
       try {
-          // We use streamChatResponse but ignore the chunks, just wait for final text.
-          // Using a blank system instruction for this meta-task.
-          // IMPORTANT: Disable search for memory generation to save tokens/latency
           const memoryGenConfig = { ...settings.generation, stream: false, googleSearch: false };
-
           const { text: newMemory } = await llmService.streamChatResponse(
               '', 
               [], 
               memoryPrompt, 
               undefined, 
               undefined, 
-              memoryGenConfig, // Use non-streaming and no-search
+              memoryGenConfig, 
               undefined,
               undefined,
               settings.language
@@ -503,7 +534,6 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
               addToast(t('msg.memory_updated', settings.language), 'info');
           }
       } catch (e) {
-          // Silent fail for background tasks, or maybe log to console
           console.warn("Auto-memory generation failed", e);
       }
   };
@@ -551,30 +581,20 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
     }
   };
 
-  /**
-   * 节点 4: 加载对话功能修复与增强
-   * 将对话作为新会话导入，而不是覆盖当前会话，避免用户误操作。
-   */
   const handleLoadSession = (loadedMessages: any[], title?: string) => {
       handleStopGeneration();
-      
-      // 生成新的会话对象
       const newId = uuidv4();
       const newSession: ChatSession = {
           id: newId,
           title: title || t('msg.new_chat_title', settings.language),
           messages: loadedMessages,
           createdAt: Date.now(),
-          memory: '' // Import defaults to empty unless we import full session objects later
+          memory: '' 
       };
-
-      // 插入到会话列表最前端并立即切换
       setSessions(prev => [newSession, ...prev]);
       setActiveSessionId(newId);
       setMessages(loadedMessages);
       setInput('');
-      
-      // 使用更明确的“对话已导入”提示
       addToast(t('success.chat_import', settings.language) || t('msg.config_imported', settings.language), 'success');
   };
 
@@ -590,7 +610,7 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
         title, 
         date: new Date().toISOString(), 
         messages,
-        memory: activeSession?.memory || '' // Export memory too
+        memory: activeSession?.memory || '' 
     };
     const blob = new Blob([JSON.stringify(chatData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -623,7 +643,20 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
   if (isLocked) return (
     <div className={`${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark' : ''}`}>
         <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950"></div>}>
-            <SecurityLock config={settings.security} onUnlock={() => setIsLocked(false)} lang={settings.language} theme={settings.theme} kirbyThemeColor={settings.kirbyThemeColor} />
+            <SecurityLock 
+                config={settings.security} 
+                onUnlock={() => {
+                    setIsLocked(false);
+                    lastActivityRef.current = Date.now(); // 解锁后重置时间
+                    setSettings(prev => ({ 
+                        ...prev, 
+                        security: { ...prev.security, lastLogin: Date.now() } 
+                    }));
+                }} 
+                lang={settings.language} 
+                theme={settings.theme} 
+                kirbyThemeColor={settings.kirbyThemeColor} 
+            />
         </Suspense>
     </div>
   );
