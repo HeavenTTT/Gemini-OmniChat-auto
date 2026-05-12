@@ -49,14 +49,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const lang = localSettings.language;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize local state
+  // Initialize local state only when modal opens
   useEffect(() => {
     if (isOpen) {
       setLocalKeys(JSON.parse(JSON.stringify(apiKeys || []))); 
       setLocalSettings(JSON.parse(JSON.stringify(settings || {})));
       setLocalKnownModels(JSON.parse(JSON.stringify(knownModels || [])));
     }
-  }, [isOpen, apiKeys, settings, knownModels]);
+  }, [isOpen]); // Only react to isOpen changes to avoid resets from prop updates while open
 
   // --- Theme Preview Logic ---
   useEffect(() => {
