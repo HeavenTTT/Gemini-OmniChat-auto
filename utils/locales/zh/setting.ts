@@ -70,6 +70,16 @@ export const setting = {
   'param.maxTokens': '最大输出长度',
   'param.thinkingBudget': '思考预算 (Thinking Budget)',
   'param.thinkingBudget_desc': '适用于支持 Thinking 的模型 (如 Gemini 2.5 / 2.0 Thinking)。预算越高推理越强。设为0禁用。',
+  // 关键节点：Ollama Think 思考参数相关的简体中文翻译
+  // Key Node: Ollama Think parameter related Simplified Chinese translations
+  'param.ollamaThink': 'Ollama 思考设置 (Ollama Think)',
+  'param.ollamaThink_desc': '配置 Ollama 模型的 "think" 思考参数。适用于带思考/推论能力的模型（如 DeepSeek-R1 系列）。',
+  'param.ollamaThink.none': '默认 (不发送)',
+  'param.ollamaThink.true': '开启 (true)',
+  'param.ollamaThink.false': '关闭 (false)',
+  'param.ollamaThink.high': '高 (high)',
+  'param.ollamaThink.medium': '中 (medium)',
+  'param.ollamaThink.low': '低 (low)',
   'param.historyContextLimit': '历史上下文限制 (条)',
   'param.historyContextLimit_desc': '发送给模型的最大历史消息数量。0 = 无限制。',
   'param.frequencyPenalty': '频率惩罚 (Frequency Penalty)',

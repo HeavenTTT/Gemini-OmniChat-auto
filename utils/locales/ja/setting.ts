@@ -70,6 +70,16 @@ export const setting = {
   'param.maxTokens': '最大出力トークン',
   'param.thinkingBudget': '思考予算 (Thinking Budget)',
   'param.thinkingBudget_desc': 'Thinking対応モデル用 (Gemini 2.5 / 2.0 Thinking など)。予算が高いほど推論が強化されます。0で無効。',
+  // Key Node: Ollama Think parameter related Japanese translations
+  // 关键节点：Ollama Think 思考参数相关的日文翻译
+  'param.ollamaThink': 'Ollama 思考設定',
+  'param.ollamaThink_desc': '有効にすると、指定したレベルでOllamaモデル（DeepSeek-R1など）の思考部を構成できます。',
+  'param.ollamaThink.none': 'デフォルト (送信なし)',
+  'param.ollamaThink.true': '有効 (true)',
+  'param.ollamaThink.false': '無効 (false)',
+  'param.ollamaThink.high': '高 (high)',
+  'param.ollamaThink.medium': '中 (medium)',
+  'param.ollamaThink.low': '低 (low)',
   'param.historyContextLimit': 'コンテキスト制限 (メッセージ数)',
   'param.historyContextLimit_desc': '送信する過去のメッセージの最大数。0 =无制限。',
   'param.frequencyPenalty': '頻度ペナルティ (Frequency Penalty)',

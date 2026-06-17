@@ -101,6 +101,9 @@ export interface GenerationConfig {
   stripThoughts?: boolean; // New: Strip <think> tags from history to save tokens
   frequencyPenalty?: number; // New: Frequency penalty parameter
   googleSearch?: boolean; // New: Enable Google Search Grounding
+  // 关键节点：新增 Ollama Think 思考模式设置参数，支持布尔值或程度选项 (high/medium/low)
+  // Key Node: Added Ollama Think mode config supporting boolean or levels (high/medium/low)
+  ollamaThink?: 'none' | 'true' | 'false' | 'high' | 'medium' | 'low';
 }
 
 export interface ScriptConfig {

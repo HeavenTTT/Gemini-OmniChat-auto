@@ -33,7 +33,10 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
             thinkingBudget: 0,
             stripThoughts: false,
             frequencyPenalty: 0,
-            googleSearch: false
+            googleSearch: false,
+            // 关键节点：重置 AI 参数时清空 Ollama 思考设置
+            // Key Node: Reset Ollama Think config when resetting AI parameters
+            ollamaThink: 'none'
         }
     });
   };
@@ -109,6 +112,39 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                     />
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                         {t('param.thinkingBudget_desc', lang)}
+                    </p>
+                </div>
+
+                {/* 关键节点：Ollama 思考设置（Think Mode），包含多语言和下拉选择框 */}
+                {/* Key Node: Ollama Thinking Mode setting with multi-language and drop-down block */}
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30 space-y-2">
+                    <div className="flex items-center gap-2">
+                        <Brain className="w-4 h-4 text-amber-550 dark:text-amber-450" />
+                        <label htmlFor="ollama-think-select" className="text-gray-800 dark:text-gray-200 font-medium text-sm">
+                            {t('param.ollamaThink', lang)}
+                        </label>
+                    </div>
+                    <select
+                        id="ollama-think-select"
+                        value={settings.generation.ollamaThink || 'none'}
+                        onChange={(e) => onUpdateSettings({
+                            ...settings,
+                            generation: {
+                                ...settings.generation,
+                                ollamaThink: e.target.value as any
+                            }
+                        })}
+                        className="input-standard bg-white dark:bg-gray-900 w-full"
+                    >
+                        <option value="none">{t('param.ollamaThink.none', lang)}</option>
+                        <option value="true">{t('param.ollamaThink.true', lang)}</option>
+                        <option value="false">{t('param.ollamaThink.false', lang)}</option>
+                        <option value="high">{t('param.ollamaThink.high', lang)}</option>
+                        <option value="medium">{t('param.ollamaThink.medium', lang)}</option>
+                        <option value="low">{t('param.ollamaThink.low', lang)}</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t('param.ollamaThink_desc', lang)}
                     </p>
                 </div>
 

@@ -82,7 +82,10 @@ const App: React.FC = () => {
         thinkingBudget: 0, 
         stripThoughts: false,
         frequencyPenalty: 0,
-        googleSearch: false
+        googleSearch: false,
+        // 关键节点：给全局 generation 设置默认的 ollamaThink 参数
+        // Key Node: Set the default ollamaThink parameter for the global generation settings
+        ollamaThink: 'none'
     },
     scripts: {
         inputFilterEnabled: false,

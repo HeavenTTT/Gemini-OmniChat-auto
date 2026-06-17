@@ -128,7 +128,20 @@ export class OllamaService {
         images: images ? images.map(this.extractBase64) : undefined
     });
 
-    const requestOptions = {
+    // 关键节点：解析并设置 Ollama 思考选项 think 参数的值 
+    // Key Node: Parse and set of the think option value for Ollama
+    let thinkValue: any = undefined;
+    if (config.ollamaThink && config.ollamaThink !== 'none') {
+      if (config.ollamaThink === 'true') {
+        thinkValue = true;
+      } else if (config.ollamaThink === 'false') {
+        thinkValue = false;
+      } else {
+        thinkValue = config.ollamaThink;
+      }
+    }
+
+    const requestOptions: any = {
       model: modelId,
       messages: messages,
       stream: config.stream,
@@ -140,6 +153,10 @@ export class OllamaService {
           frequency_penalty: config.frequencyPenalty,
       }
     };
+
+    if (thinkValue !== undefined) {
+      requestOptions.think = thinkValue;
+    }
 
     try {
       if (config.stream) {
@@ -209,12 +226,19 @@ export class OllamaService {
       } else {
         // Non-streaming mode: Use the library for simplicity
         const client = this.getClient(apiKey);
-        const response = await client.chat({
+        // 关键节点：非流式模式下，动态注入 think 属性到请求参数对象中
+        // Key Node: In non-streaming mode, dynamically inject the think attribute into the request payload
+        const chatPayload: any = {
           model: modelId,
           messages: messages,
           stream: false,
           options: requestOptions.options
-        });
+        };
+        if (thinkValue !== undefined) {
+          chatPayload.think = thinkValue;
+        }
+        
+        const response = await client.chat(chatPayload);
         
         if (abortSignal?.aborted) {
            throw new Error("Aborted by user");
