@@ -190,7 +190,11 @@ export class OllamaService {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let fullText = "";
+        
+        // 关键节点：分别定义并累加思考内容与正文内容
+        // Key Node: Separately define and accumulate thinking content and body content
+        let thinkingText = "";
+        let responseText = "";
         let buffer = "";
 
         while (true) {
@@ -210,9 +214,27 @@ export class OllamaService {
                     const json = JSON.parse(line);
                     if (json.done) break;
                     
-                    if (json.message?.content) {
-                        const content = json.message.content;
-                        fullText += content;
+                    // 关键节点：获取思考/推理内容并累加进行合并
+                    // Key Node: Fetch and accumulate thinking/reasoning content
+                    const think = json.message?.think || json.think;
+                    const content = json.message?.content || json.content;
+                    
+                    if (think) {
+                        thinkingText += think;
+                    }
+                    if (content) {
+                        responseText += content;
+                    }
+
+                    // 关键节点：如果存在思考内容，包装进 <think> 标签以便前端进行解析及漂亮渲染
+                    // Key Node: If thinking text exists, wrap it in <think> tags for elegant frontend extraction
+                    let fullText = "";
+                    if (thinkingText) {
+                        fullText += `<think>${thinkingText}</think>`;
+                    }
+                    fullText += responseText;
+
+                    if (think || content) {
                         if (onChunk) onChunk(fullText);
                     }
                 } catch (e) {
@@ -221,7 +243,13 @@ export class OllamaService {
             }
         }
         
-        return { text: fullText };
+        let finalFullText = "";
+        if (thinkingText) {
+            finalFullText += `<think>${thinkingText}</think>`;
+        }
+        finalFullText += responseText;
+        
+        return { text: finalFullText };
 
       } else {
         // Non-streaming mode: Use the library for simplicity
@@ -244,7 +272,18 @@ export class OllamaService {
            throw new Error("Aborted by user");
         }
 
-        return { text: response.message.content };
+        // 关键节点：非流式模式下也获取并合并思考与正文内容
+        // Key Node: In non-streaming mode, retrieve and combine think and body contents as well
+        const thinkText = response.message?.think || (response as any).think;
+        const contentText = response.message?.content || (response as any).content;
+        
+        let resultText = "";
+        if (thinkText) {
+            resultText += `<think>${thinkText}</think>`;
+        }
+        resultText += contentText || "";
+
+        return { text: resultText };
       }
 
     } catch (error: any) {
