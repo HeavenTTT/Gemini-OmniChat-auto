@@ -216,11 +216,11 @@ export class OllamaService {
                     
                     // 关键节点：获取思考/推理内容并累加进行合并
                     // Key Node: Fetch and accumulate thinking/reasoning content
-                    const think = json.message?.think || json.think;
+                    const thinking = json.message?.thinking || json.thinking;
                     const content = json.message?.content || json.content;
                     
-                    if (think) {
-                        thinkingText += think;
+                    if (thinking) {
+                        thinkingText += thinking;
                     }
                     if (content) {
                         responseText += content;
