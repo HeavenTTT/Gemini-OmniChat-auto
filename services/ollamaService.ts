@@ -234,7 +234,7 @@ export class OllamaService {
                     }
                     fullText += responseText;
 
-                    if (think || content) {
+                    if (thinking || content) {
                         if (onChunk) onChunk(fullText);
                     }
                 } catch (e) {
@@ -274,7 +274,7 @@ export class OllamaService {
 
         // 关键节点：非流式模式下也获取并合并思考与正文内容
         // Key Node: In non-streaming mode, retrieve and combine think and body contents as well
-        const thinkText = response.message?.think || (response as any).think;
+        const thinkText = response.message?.thinking || (response as any).thinking;
         const contentText = response.message?.content || (response as any).content;
         
         let resultText = "";
