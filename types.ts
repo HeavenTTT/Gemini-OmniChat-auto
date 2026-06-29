@@ -152,6 +152,14 @@ export interface ToastMessage {
   id: string;
   message: string;
   type: 'success' | 'error' | 'info' | 'warning';
+  /**
+   * 消息出现的重复/合并计数 (Count of duplicate/similar notifications)
+   */
+  count?: number;
+  /**
+   * 消息最新生成的时间戳，用于在重绘或合并相似消息时重新触发定时器 (Latest timestamp for resetting timer)
+   */
+  timestamp?: number;
 }
 
 export interface DialogConfig {

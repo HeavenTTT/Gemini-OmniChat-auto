@@ -14,6 +14,7 @@ import { ToastContainer } from './components/ui/Toast';
 import { CustomDialog } from './components/ui/CustomDialog';
 import { executeFilterScript } from './utils/scriptExecutor';
 import { dbGetItem, dbSetItem } from './utils/indexedDB';
+import { calculateSimilarity } from './utils/similarity';
 
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const SecurityLock = lazy(() => import('./components/SecurityLock'));
@@ -114,8 +115,39 @@ const App: React.FC = () => {
   const lastActivityRef = useRef<number>(Date.now());
 
   // --- 辅助工具函数 ---
+  /**
+   * 添加一个 Toast 消息通知
+   * 自动合并 80% 及以上相似度的消息，合并刷屏，并刷新计时器和角标计数
+   * @param message 消息内容
+   * @param type 消息类型
+   */
   const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
-      setToasts(prev => [...prev, { id: uuidv4(), message, type }]);
+      setToasts(prev => {
+          // 寻找类型相同且相似度超过 80% 的已有消息项
+          const similarIdx = prev.findIndex(t => {
+              if (t.type !== type) return false;
+              // 计算两者内容的相似度 (LCS/编辑距离)
+              const sim = calculateSimilarity(t.message, message);
+              return sim >= 0.8;
+          });
+
+          if (similarIdx !== -1) {
+              const updated = [...prev];
+              const existing = updated[similarIdx];
+              updated[similarIdx] = {
+                  ...existing,
+                  // 合并时保留可能更长更详尽的报错或消息正文
+                  message: message.length > existing.message.length ? message : existing.message,
+                  count: (existing.count || 1) + 1,
+                  // 刷新时间戳，以便在 ToastItem 中重置生存时间
+                  timestamp: Date.now()
+              };
+              return updated;
+          }
+
+          // 不存在相似消息则直接新增一个独立的 Toast 通知项
+          return [...prev, { id: uuidv4(), message, type, count: 1, timestamp: Date.now() }];
+      });
   };
   
   const removeToast = (id: string) => {
