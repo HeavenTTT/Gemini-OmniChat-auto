@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 'react';
@@ -118,6 +117,12 @@ const App: React.FC = () => {
   } = useChatSessions(isDbLoaded, settings.language);
 
   const { isLocked, setIsLocked, lastActivityRef, unlock } = useSecurityLock(isDbLoaded, settings, setSettings);
+
+  // 保持一个对最新 messages 状态的引用，以便在 useCallback 依赖不改变的情况下获取最新值
+  const messagesRef = useRef(messages);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
 
   const [llmService, setLlmService] = useState<LLMService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -300,6 +305,7 @@ const App: React.FC = () => {
     setMessages([...historyBefore, userMessage, botMessage]);
 
     const startTime = Date.now();
+    let bufferInterval: any = null;
 
     try {
       const globalSystemInstruction = settings.systemPrompts.filter(p => p.isActive).map(p => p.content).join('\n\n');
@@ -324,6 +330,30 @@ const App: React.FC = () => {
           contextToSend = historyForApi.slice(-settings.historyContextLimit);
       }
 
+      // 设立文本缓冲区与控制状态，以削减极高频流式渲染对主线程 CPU 的过度占用
+      let latestText = '';
+      let lastRenderedText = '';
+
+      /**
+       * 执行渲染帧缓冲更新，按控制帧率将最新流数据刷入组件状态
+       * @param text 待刷入的流文本
+       */
+      const updateBufferedState = (text: string) => {
+        let processedChunk = text;
+        if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
+            processedChunk = executeFilterScript(settings.scripts.outputFilterCode, text, { role: 'model', history: [...historyBefore, userMessage] });
+        }
+        setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
+        lastRenderedText = text;
+      };
+
+      // 开启流频率控制（每 80ms 检查并刷新一次数据），阻断不必要的 React 渲染，大幅降低流式输出时的卡顿与 CPU 高开销
+      bufferInterval = setInterval(() => {
+        if (latestText !== lastRenderedText) {
+          updateBufferedState(latestText);
+        }
+      }, 80);
+
       const { text: fullText, usedKeyIndex, provider, usedModel, groundingMetadata } = await llmService.streamChatResponse(
         '', 
         contextToSend, 
@@ -332,11 +362,7 @@ const App: React.FC = () => {
         finalSystemInstruction,
         settings.generation,
         (chunkText) => {
-           let processedChunk = chunkText;
-           if (settings.scripts?.outputFilterEnabled && settings.scripts.outputFilterCode) {
-               processedChunk = executeFilterScript(settings.scripts.outputFilterCode, chunkText, { role: 'model', history: [...historyBefore, userMessage] });
-           }
-           setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
+           latestText = chunkText;
         },
         controller.signal,
         settings.language,
@@ -344,6 +370,12 @@ const App: React.FC = () => {
             setLoadingStatus({ status, ...details });
         }
       );
+
+      // 停止流式缓冲控制计时器
+      if (bufferInterval) {
+        clearInterval(bufferInterval);
+        bufferInterval = null;
+      }
       
       const executionTime = Date.now() - startTime;
       let processedFinalText = fullText;
@@ -361,6 +393,7 @@ const App: React.FC = () => {
           }
       }
 
+      // 将最终获得的完整 AI 文本与模型元数据一并刷入状态，确保完整性与功能逻辑
       setMessages(prev => 
         prev.map(msg => 
           msg.id === tempBotId ? { 
@@ -397,11 +430,50 @@ const App: React.FC = () => {
          setMessages(prev => prev.filter(m => m.id !== tempBotId).concat(errorMessage));
       }
     } finally {
+      if (bufferInterval) {
+         clearInterval(bufferInterval);
+      }
       setIsLoading(false);
       setLoadingStatus({ status: 'idle' });
       abortControllerRef.current = null;
     }
   };
+
+  /**
+   * 编辑特定消息的内容并保存
+   * @param id 消息 ID
+   * @param newText 新的消息内容文本
+   */
+  const handleEditMessage = useCallback((id: string, newText: string) => {
+    setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, text: newText } : msg));
+  }, [setMessages]);
+
+  /**
+   * 删除特定消息并刷新聊天列表
+   * @param id 待删除的消息 ID
+   */
+  const handleDeleteMessage = useCallback((id: string) => {
+    setMessages(prev => prev.filter(msg => msg.id !== id));
+  }, [setMessages]);
+
+  /**
+   * 基于特定消息重新生成模型回复
+   * @param id 消息 ID，若是用户消息则基于此消息重新生成，若是模型消息则基于前一条用户消息重新生成
+   */
+  const handleRegenerateMessage = useCallback(async (id: string) => {
+    if (!llmService) return;
+    const currentMessages = messagesRef.current;
+    const index = currentMessages.findIndex(m => m.id === id);
+    if (index === -1) return;
+    const targetMsg = currentMessages[index];
+    if (targetMsg.role === Role.USER) {
+       await triggerBotResponse(currentMessages.slice(0, index), targetMsg);
+    } else {
+       let userMsgIndex = index - 1;
+       while (userMsgIndex >= 0 && currentMessages[userMsgIndex].role !== Role.USER) userMsgIndex--;
+       if (userMsgIndex !== -1) await triggerBotResponse(currentMessages.slice(0, userMsgIndex), currentMessages[userMsgIndex]);
+    }
+  }, [llmService]);
 
   const generateAutoMemory = async (currentMemory: string, userText: string, aiText: string) => {
       if (!llmService) return;
@@ -668,21 +740,9 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
           <ChatInterface 
               messages={messages} isLoading={isLoading} 
               loadingStatus={loadingStatus}
-              onEditMessage={(id, newText) => setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, text: newText } : msg))} 
-              onDeleteMessage={(id) => setMessages(prev => prev.filter(msg => msg.id !== id))} 
-              onRegenerate={async (id) => {
-                if (!llmService) return;
-                const index = messages.findIndex(m => m.id === id);
-                if (index === -1) return;
-                const targetMsg = messages[index];
-                if (targetMsg.role === Role.USER) {
-                   await triggerBotResponse(messages.slice(0, index), targetMsg);
-                } else {
-                  let userMsgIndex = index - 1;
-                  while (userMsgIndex >= 0 && messages[userMsgIndex].role !== Role.USER) userMsgIndex--;
-                  if (userMsgIndex !== -1) await triggerBotResponse(messages.slice(0, userMsgIndex), messages[userMsgIndex]);
-                }
-              }} 
+              onEditMessage={handleEditMessage} 
+              onDeleteMessage={handleDeleteMessage} 
+              onRegenerate={handleRegenerateMessage} 
               language={settings.language} fontSize={settings.fontSize} 
               textWrapping={settings.textWrapping} bubbleTransparency={settings.bubbleTransparency}
               showModelName={settings.showModelName} showGroupName={settings.showGroupName} showResponseTimer={settings.showResponseTimer} theme={settings.theme}

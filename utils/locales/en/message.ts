@@ -1,4 +1,3 @@
-
 /**
  * English messages and inputs localization config
  */
@@ -54,6 +53,7 @@ export const message = {
   'msg.sync_success': 'Model synced successfully.',
   'msg.config_exported': 'Configuration exported.',
   'msg.config_imported': 'Key configuration imported.',
+  'success.chat_import': 'Chat history imported successfully.',
   'success.settings_import': 'Application settings imported successfully.',
   'msg.invalid_format': 'Invalid format.',
   'msg.confirm_clear_chat': 'Are you sure you want to clear all messages in this chat?',

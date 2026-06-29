@@ -119,7 +119,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   /**
    * 监听滚动事件，检测用户是否主动向上滚动，以决定是否暂停自动触底。
    */
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
     
@@ -129,7 +129,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     
     // We strictly track this state to allow reading history while generating
     isUserScrolledUp.current = !isAtBottom;
-  };
+  }, []);
 
   /**
    * 将聊天容器滚动到底部，如果用户没有主动向上滚动。
@@ -213,15 +213,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return () => {
       if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
     };
-  }, [messages]);
+  }, []);
 
   /**
    * 开始编辑某条特定的消息，重置二次确认删除状态。
    */
-  const startEditing = (msg: Message) => { 
+  const startEditing = useCallback((msg: Message) => { 
     setEditingId(msg.id); 
     setConfirmDeleteId(null);
-  };
+  }, []);
 
   // Calculate dynamic background color for loading bubble based on transparency
   // Note: structure and basic styles are now in CSS .loading-bubble

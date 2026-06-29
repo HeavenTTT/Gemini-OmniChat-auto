@@ -1,4 +1,3 @@
-
 /**
  * 日本語アクションローカライズ設定
  */
@@ -100,6 +99,7 @@ export const action = {
   'action.save_current_chat': '現在のチャットをJSON文件として保存',
   'action.load_chat_file': 'JSON文件からチャットを読み込む',
   'action.select_chat_file': 'チャットJSON文件を選択',
+  'action.drag_to_reorder': 'ドラッグして並べ替え',
   'action.add_group': 'グループを追加',
   'action.delete_group': 'グループを削除',
   'action.rename_group': '名前変更',

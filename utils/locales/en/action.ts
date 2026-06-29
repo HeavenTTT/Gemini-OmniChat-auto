@@ -1,4 +1,3 @@
-
 /**
  * English actions localization config
  */
@@ -100,6 +99,7 @@ export const action = {
   'action.save_current_chat': 'Save current chat session as a JSON file',
   'action.load_chat_file': 'Load a chat session from a JSON file',
   'action.select_chat_file': 'Select a chat session JSON file',
+  'action.drag_to_reorder': 'Drag to reorder',
   'action.add_group': 'Add Group',
   'action.delete_group': 'Delete Group',
   'action.rename_group': 'Rename',

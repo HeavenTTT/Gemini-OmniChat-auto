@@ -1,4 +1,3 @@
-
 /**
  * 日本語メッセージ・入力ローカライズ設定
  */
@@ -54,6 +53,7 @@ export const message = {
   'msg.sync_success': 'モデルの同期に成功しました。',
   'msg.config_exported': '设定をエクスポートしました。',
   'msg.config_imported': 'キー设定をインポートしました。',
+  'success.chat_import': 'チャット履歴が正常にインポートされました。',
   'success.settings_import': 'アプリケーション設定が正常にインポートされました。',
   'msg.invalid_format': '形式が無效です。',
   'msg.confirm_clear_chat': 'このチャットのすべてのメッセージを消去してもよろしいですか？',
