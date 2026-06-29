@@ -9,17 +9,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
+    "lucide-react": "^0.555.0",
+    "motion": "^12.42.0",
+    "ollama": "^0.5.14",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "lucide-react": "^0.555.0",
-    "@google/genai": "^1.30.0",
     "react-markdown": "^10.1.0",
-    "uuid": "^13.0.0",
-    "remark-math": "^6.0.0",
+    "react-syntax-highlighter": "^15.5.0",
     "rehype-katex": "^7.0.0",
     "remark-gfm": "^4.0.0",
-    "react-syntax-highlighter": "^15.5.0",
-    "ollama": "^0.5.14"
+    "remark-math": "^6.0.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

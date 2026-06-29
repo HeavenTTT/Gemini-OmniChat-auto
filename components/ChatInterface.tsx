@@ -248,6 +248,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       onScrollToBottom={scrollToBottom}
                       avatarVisibility={avatarVisibility}
                       onViewImage={setPreviewImageUrl}
+                      isRecent={index >= messages.length - 6} // 关键节点：判断该条记录是否属于最后6条，进而决定是否显示功能按钮
                   />
               </div>
           ))}

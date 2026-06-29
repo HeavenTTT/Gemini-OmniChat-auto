@@ -319,8 +319,10 @@ export const Header: React.FC<HeaderProps> = ({
             <Menu className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-1 overflow-hidden min-w-0">
+            {/* 关键节点：优化移动端标题的最大宽度，使其在不同尺寸的手机上展示更长、更完整的文本 */}
+            {/* Key Node: Optimize the max-width of session title in mobile view to display more text dynamically */}
             <span 
-                className="font-bold text-lg dark:text-white truncate max-w-[120px] cursor-pointer hover:underline decoration-dashed underline-offset-4"
+                className="font-bold text-lg dark:text-white truncate max-w-[180px] min-[375px]:max-w-[220px] min-[414px]:max-w-[260px] cursor-pointer hover:underline decoration-dashed underline-offset-4"
                 onClick={onRename}
                 title={t('action.rename_manually', language)}
                 aria-label={t('action.rename_current_chat', language)}
