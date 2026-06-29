@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AlertCircle, RotateCcw, ChevronDown, ChevronUp, Brain, BookOpen, Globe } from 'lucide-react';
 import { AppSettings, Language } from '../../types';
@@ -91,35 +90,11 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                     </label>
                 </div>
 
-                {/* Thinking Budget (Gemini 2.5) */}
-                <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30">
-                    <div className="flex justify-between text-sm mb-2 items-center">
-                        <label htmlFor="thinking-budget-input" className="text-gray-800 dark:text-gray-200 font-medium flex items-center gap-2">
-                            <Brain className="w-4 h-4 text-purple-500" />
-                            {t('param.thinkingBudget', lang)}
-                        </label>
-                        <span className="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded text-xs font-mono">
-                            {settings.generation.thinkingBudget || 0}
-                        </span>
-                    </div>
-                    <input 
-                        id="thinking-budget-input"
-                        type="range" min="0" max="32768" step="1024"
-                        value={settings.generation.thinkingBudget || 0}
-                        onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, thinkingBudget: parseInt(e.target.value)}})}
-                        className="slider-standard accent-purple-500"
-                        aria-label={t('param.thinking_budget_input', lang)}
-                    />
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                        {t('param.thinkingBudget_desc', lang)}
-                    </p>
-                </div>
-
-                {/* 关键节点：Ollama 思考设置（Think Mode），包含多语言和下拉选择框 */}
-                {/* Key Node: Ollama Thinking Mode setting with multi-language and drop-down block */}
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30 space-y-2">
+                {/* 关键节点：合并后的 AI 思考/推理深度设置（Thinking Settings），包含多语言和下拉选择框 */}
+                {/* Key Node: Unified AI Thinking Settings with multi-language and drop-down block */}
+                <div className="p-3 bg-purple-50 dark:bg-purple-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 space-y-3">
                     <div className="flex items-center gap-2">
-                        <Brain className="w-4 h-4 text-amber-550 dark:text-amber-450" />
+                        <Brain className="w-4 h-4 text-purple-550 dark:text-purple-450" />
                         <label htmlFor="ollama-think-select" className="text-gray-800 dark:text-gray-200 font-medium text-sm">
                             {t('param.ollamaThink', lang)}
                         </label>
@@ -146,6 +121,25 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                         {t('param.ollamaThink_desc', lang)}
                     </p>
+
+                    {/* Strip Thoughts Toggle inlined inside unified thinking config */}
+                    <div className="pt-2 border-t border-purple-100 dark:border-purple-800/30 flex items-center justify-between">
+                        <div>
+                            <label htmlFor="strip-thoughts-toggle" className="text-gray-800 dark:text-gray-200 font-medium text-xs block">{t('param.strip_thoughts', lang)}</label>
+                            <span className="text-[11px] text-gray-550 dark:text-gray-400 block mt-0.5">{t('param.strip_thoughts_desc', lang)}</span>
+                        </div>
+                        <label htmlFor="strip-thoughts-toggle" className="toggle-switch-label ml-4 flex-shrink-0">
+                            <input 
+                                id="strip-thoughts-toggle"
+                                type="checkbox" 
+                                className="toggle-checkbox"
+                                checked={settings.generation.stripThoughts || false}
+                                onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, stripThoughts: e.target.checked}})}
+                                aria-label={t('param.strip_thoughts', lang)}
+                            />
+                            <div className="toggle-slider"></div>
+                        </label>
+                    </div>
                 </div>
 
                 {/* Auto Role Memory Config */}
@@ -193,25 +187,6 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             </p>
                         </div>
                     )}
-                </div>
-
-                {/* Strip Thoughts Toggle */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <label htmlFor="strip-thoughts-toggle" className="text-gray-700 dark:text-gray-300 font-medium text-sm block">{t('param.strip_thoughts', lang)}</label>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{t('param.strip_thoughts_desc', lang)}</span>
-                    </div>
-                    <label htmlFor="strip-thoughts-toggle" className="toggle-switch-label ml-4 flex-shrink-0">
-                        <input 
-                            id="strip-thoughts-toggle"
-                            type="checkbox" 
-                            className="toggle-checkbox"
-                            checked={settings.generation.stripThoughts || false}
-                            onChange={(e) => onUpdateSettings({...settings, generation: {...settings.generation, stripThoughts: e.target.checked}})}
-                            aria-label={t('param.strip_thoughts', lang)}
-                        />
-                         <div className="toggle-slider"></div>
-                    </label>
                 </div>
 
                 {/* Advanced Parameters Toggle */}
@@ -311,7 +286,7 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
                             </div>
                             <input 
                                 id="context-limit-input"
-                                type="range" min="0" max="50" step="2"
+                                type="range" min="0" max="100" step="2"
                                 value={settings.historyContextLimit || 0}
                                 onChange={(e) => onUpdateSettings({...settings, historyContextLimit: parseInt(e.target.value)})}
                                 className="slider-standard"

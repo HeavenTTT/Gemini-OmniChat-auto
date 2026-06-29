@@ -70,16 +70,16 @@ export const setting = {
   'param.maxTokens': 'Max Output Tokens',
   'param.thinkingBudget': 'Thinking Budget',
   'param.thinkingBudget_desc': 'For supported Thinking models (e.g. Gemini 2.5 / 2.0 Thinking). Higher budget = more reasoning. 0 to disable.',
-  // Key Node: Ollama Think parameter related English translations
-  // 关键节点：Ollama Think 思考参数相关的英文翻译
-  'param.ollamaThink': 'Ollama Think Mode',
-  'param.ollamaThink_desc': 'Configure the "think" parameter for Ollama models (such as DeepSeek-R1) to configure thinking/reasoning levels.',
-  'param.ollamaThink.none': 'Default (Not Sent)',
-  'param.ollamaThink.true': 'Enable (true)',
-  'param.ollamaThink.false': 'Disable (false)',
-  'param.ollamaThink.high': 'High (high)',
-  'param.ollamaThink.medium': 'Medium (medium)',
-  'param.ollamaThink.low': 'Low (low)',
+  // Key Node: AI Thinking/Reasoning Settings English translations
+  // 关键节点：AI 思考与推理设置相关的英文翻译
+  'param.ollamaThink': 'AI Thinking & Reasoning Settings',
+  'param.ollamaThink_desc': 'Configure the thinking/reasoning level for supported models (such as Ollama DeepSeek-R1 or Google Gemini 2.5 Thinking). High/Medium/Low automatically maps to Gemini thinking budgets (4000/2000/1000) or Ollama thinking parameters.',
+  'param.ollamaThink.none': 'Default (Model Controlled)',
+  'param.ollamaThink.true': 'Enable (True)',
+  'param.ollamaThink.false': 'Disable (False / No budget)',
+  'param.ollamaThink.high': 'High (High)',
+  'param.ollamaThink.medium': 'Medium (Medium)',
+  'param.ollamaThink.low': 'Low (Low)',
   'param.historyContextLimit': 'Context Limit (Messages)',
   'param.historyContextLimit_desc': 'Max number of past messages to send. 0 = Unlimited.',
   'param.frequencyPenalty': 'Frequency Penalty',

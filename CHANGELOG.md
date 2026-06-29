@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-06-29
+### Added
+- **客户端 IndexedDB 持久化存储引擎 (IndexedDB Storage Engine)**：
+  - 使用异步高性能的 `IndexedDB` 替代了传统的 5MB 受限的 `localStorage`。
+  - 彻底解决了在长会话、大容量历史消息记录或附加高分辨率图片时，容易触发浏览器配额溢出 (`QuotaExceededError`) 的痛点，为大型复杂对话带来持久安稳的运行体验。
+  - **无缝自动迁移**：支持在首次加载时自动、异步地将原 `localStorage` 中存储的所有会话历史、全局设置、密钥池、自定义模型等数据安全移至 `IndexedDB` 并优雅清理旧存储，确保用户无感过渡且数据零损失。
+  - 在初始化未完成前，提供了优雅美观的骨架屏 / 加载屏幕。
+
+- **全局会话与消息匹配搜索栏 (Global Session & Message Search Engine)**：
+  - 在电脑端侧边栏和手机端抽屉菜单顶部新增了多功能检索输入框，提供实时会话与历史消息全文匹配检索。
+  - **上下文高亮检索片段 (Contextual Match Snippet)**：如果匹配到消息中的内容，会自动在历史项下方显示关键字前后关联的文段上下文片段（Snippet），提供直观的消息溯源和定位跳转体验。
+
+- **等待加载状态元数据感知 (API Status Feedback & Key Monitoring)**：
+  - 聊天生成过程支持精细的多阶段生命周期状态反馈：连接中 (`connecting`) -> 思考中 (`thinking`) -> 正在生成 (`responding`) -> 准备就绪 (`idle`)。
+  - **实时调试透明度**：在对话等待加载气泡内实时展示当前响应的**具体模型 ID**（智能溢出自动截断，悬停显示全称）和多 Key 轮询中**当前生效的 API 密钥序号**（如 `#1`），大大增强开发者及多密钥用户调试的可观测性。
+
 ## [1.5.6] - 2026-06-28
 ### Added
 - **移动端消息气泡功能按钮优化 (Mobile Chat Bubble Action Buttons)**：

@@ -70,16 +70,16 @@ export const setting = {
   'param.maxTokens': '最大输出长度',
   'param.thinkingBudget': '思考预算 (Thinking Budget)',
   'param.thinkingBudget_desc': '适用于支持 Thinking 的模型 (如 Gemini 2.5 / 2.0 Thinking)。预算越高推理越强。设为0禁用。',
-  // 关键节点：Ollama Think 思考参数相关的简体中文翻译
-  // Key Node: Ollama Think parameter related Simplified Chinese translations
-  'param.ollamaThink': 'Ollama 思考设置 (Ollama Think)',
-  'param.ollamaThink_desc': '配置 Ollama 模型的 "think" 思考参数。适用于带思考/推论能力的模型（如 DeepSeek-R1 系列）。',
-  'param.ollamaThink.none': '默认 (不发送)',
-  'param.ollamaThink.true': '开启 (true)',
-  'param.ollamaThink.false': '关闭 (false)',
-  'param.ollamaThink.high': '高 (high)',
-  'param.ollamaThink.medium': '中 (medium)',
-  'param.ollamaThink.low': '低 (low)',
+  // 关键节点：AI 思考/推理深度相关的简体中文翻译
+  // Key Node: AI Thinking/Reasoning depth related Simplified Chinese translations
+  'param.ollamaThink': 'AI 思考与推理设置 (Thinking Settings)',
+  'param.ollamaThink_desc': '配置 AI 模型 (支持 Think 的 Ollama DeepSeek 系列，或谷歌 Gemini 2.5/2.0 Thinking 模型) 的思考级别。设置为"高/中/低"会自动映射为谷歌模型的不同思考 Token 预算 (4000/2000/1000) 或 Ollama 思考参数。',
+  'param.ollamaThink.none': '默认 (由模型决定)',
+  'param.ollamaThink.true': '开启 (True)',
+  'param.ollamaThink.false': '关闭 (False / 禁用思考)',
+  'param.ollamaThink.high': '高 (High)',
+  'param.ollamaThink.medium': '中 (Medium)',
+  'param.ollamaThink.low': '低 (Low)',
   'param.historyContextLimit': '历史上下文限制 (条)',
   'param.historyContextLimit_desc': '发送给模型的最大历史消息数量。0 = 无限制。',
   'param.frequencyPenalty': '频率惩罚 (Frequency Penalty)',

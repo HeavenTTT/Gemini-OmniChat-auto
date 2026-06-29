@@ -196,8 +196,28 @@ export class GoogleService {
             frequencyPenalty: config.frequencyPenalty,
         };
 
-        // Apply thinking budget if set and > 0
-        if (config.thinkingBudget && config.thinkingBudget > 0) {
+        // 关键节点：整合ollama和谷歌思考预算设置，使用ollama的设置，high/medium/low对应谷歌不同预算数字
+        // Key Node: Integrate Ollama and Google Thinking Budget settings. Use Ollama settings,
+        // mapping high/medium/low directly to different Google Thinking Budget numbers.
+        let finalThinkingBudget = config.thinkingBudget;
+        if (config.ollamaThink && config.ollamaThink !== 'none') {
+            if (config.ollamaThink === 'high') {
+                finalThinkingBudget = 8192;
+            } else if (config.ollamaThink === 'medium') {
+                finalThinkingBudget = 4096;
+            } else if (config.ollamaThink === 'low') {
+                finalThinkingBudget = 2048;
+            } else if (config.ollamaThink === 'true') {
+                finalThinkingBudget = 2048;
+            } else if (config.ollamaThink === 'false') {
+                finalThinkingBudget = 0;
+            }
+        }
+
+        // 显式配置谷歌模型的思考预算选项 (Thinking Config)
+        if (finalThinkingBudget !== undefined) {
+            commonConfig.thinkingConfig = { thinkingBudget: finalThinkingBudget };
+        } else if (config.thinkingBudget && config.thinkingBudget > 0) {
             commonConfig.thinkingConfig = { thinkingBudget: config.thinkingBudget };
         }
 
