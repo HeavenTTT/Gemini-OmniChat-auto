@@ -75,4 +75,8 @@ export const message = {
   'msg.switching_group': '切换到分组 "{group}"',
   'msg.key_error_verbose': '密钥 #{index} 错误: {error}。正在重试...',
   'msg.memory_updated': '对话记忆已更新。',
+  'msg.test_models_failed': '测试模型失败：请确保在上方启用至少一个 API 密钥！',
+  'msg.batch_test_completed_with_errors': '批量测试已完成！自动剔除了 {failed} 个报错模型，保留了 {success} 个可用模型。',
+  'msg.batch_test_completed_success': '批量测试已完成！所有已知模型均可用！',
+  'msg.no_known_models': '暂无已知模型，请在密钥卡片中点击“获取可用模型”',
 };

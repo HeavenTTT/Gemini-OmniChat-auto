@@ -74,4 +74,8 @@ export const message = {
   'msg.switching_group': 'グループ "{group}" に切り替え',
   'msg.key_error_verbose': 'キー #{index} エラー: {error}。再試行中...',
   'msg.memory_updated': '会話メモリが更新されました。',
+  'msg.test_models_failed': 'テスト失敗：有効な API キーがありません！',
+  'msg.batch_test_completed_with_errors': 'テスト完了！エラーが発生した {failed} 個のモデルが削除され、{success} 個が残りました。',
+  'msg.batch_test_completed_success': 'テスト完了！すべてのモデルが正常に動作します。',
+  'msg.no_known_models': '利用可能なモデルはありません',
 };

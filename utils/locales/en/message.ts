@@ -74,4 +74,8 @@ export const message = {
   'msg.switching_group': 'Switching to Group "{group}"',
   'msg.key_error_verbose': 'Key #{index} Error: {error}. Retrying...',
   'msg.memory_updated': 'Chat memory updated.',
+  'msg.test_models_failed': 'Test failed: Please enable at least one active API key first!',
+  'msg.batch_test_completed_with_errors': 'Batch test completed! Removed {failed} failed models, kept {success} working models.',
+  'msg.batch_test_completed_success': 'Batch test completed! All known models are working perfectly!',
+  'msg.no_known_models': 'No known models. Click "Fetch Models" on API key cards.',
 };

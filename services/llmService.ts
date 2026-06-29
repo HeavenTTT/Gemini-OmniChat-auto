@@ -128,14 +128,16 @@ export class LLMService {
    */
   public async listModels(keyConfig: KeyConfig): Promise<ModelInfo[]> {
     return this.enqueueTask(async () => {
+      let models: ModelInfo[] = [];
       if (keyConfig.provider === 'openai') {
           if (!keyConfig.baseUrl) throw new Error("Base URL is required for OpenAI provider");
-          return await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
+          models = await this.openAIService.listModels(keyConfig.key, keyConfig.baseUrl);
       } else if (keyConfig.provider === 'ollama') {
-          return await this.ollamaService.listModels(keyConfig.baseUrl || '', keyConfig.key);
+          models = await this.ollamaService.listModels(keyConfig.baseUrl || '', keyConfig.key);
       } else {
-          return await this.googleService.listModels(keyConfig.key);
+          models = await this.googleService.listModels(keyConfig.key);
       }
+      return models.map(m => ({ ...m, provider: keyConfig.provider }));
     });
   }
 
@@ -454,25 +456,42 @@ export class LLMService {
         topP: 0.1,
         topK: 1,
         maxOutputTokens: 2,
-        stream: false
+        stream: true
       };
       
-      if (keyConfig.provider === 'openai') {
-        if (!keyConfig.baseUrl) return false;
-        await this.openAIService.streamChat(
-          keyConfig.key, keyConfig.baseUrl, modelId, [], 
-          'Hi', undefined, undefined, miniConfig, undefined, undefined
-        );
-      } else if (keyConfig.provider === 'ollama') {
-        await this.ollamaService.streamChat(
-          keyConfig.baseUrl || '', modelId, [], 
-          'Hi', undefined, undefined, miniConfig, keyConfig.key, undefined, undefined
-        );
-      } else {
-        await this.googleService.streamChat(
-          keyConfig.key, modelId, [], 
-          'Hi', undefined, undefined, miniConfig, undefined, undefined
-        );
+      const abortController = new AbortController();
+      let hasReceivedChunk = false;
+
+      const onChunk = (text: string) => {
+          if (text) {
+              hasReceivedChunk = true;
+              abortController.abort();
+          }
+      };
+
+      try {
+        if (keyConfig.provider === 'openai') {
+          if (!keyConfig.baseUrl) return false;
+          await this.openAIService.streamChat(
+            keyConfig.key, keyConfig.baseUrl, modelId, [], 
+            'Hi', undefined, undefined, miniConfig, onChunk, abortController.signal
+          );
+        } else if (keyConfig.provider === 'ollama') {
+          await this.ollamaService.streamChat(
+            keyConfig.baseUrl || '', modelId, [], 
+            'Hi', undefined, undefined, miniConfig, keyConfig.key, onChunk, abortController.signal
+          );
+        } else {
+          await this.googleService.streamChat(
+            keyConfig.key, modelId, [], 
+            'Hi', undefined, undefined, miniConfig, onChunk, abortController.signal
+          );
+        }
+      } catch (err: any) {
+        if (err.name === 'AbortError' && hasReceivedChunk) {
+            return true;
+        }
+        throw err;
       }
       return true;
     } catch (e) {

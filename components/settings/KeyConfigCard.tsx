@@ -118,10 +118,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
                 localStorage.setItem(`gemini_model_cache_${config.id}`, JSON.stringify(modelNames));
                 
                 // Update global known models with limits via callback
-                // Only for Google provider to separate lists
-                if (config.provider === 'google') {
-                    onUpdateKnownModels(modelsInfo);
-                }
+                onUpdateKnownModels(modelsInfo);
 
                 if (!config.model) onUpdate({ model: modelNames[0] });
                 onShowToast(t('msg.fetch_success_count', lang).replace('{count}', modelNames.length.toString()), 'success');

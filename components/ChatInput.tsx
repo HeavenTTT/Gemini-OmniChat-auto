@@ -197,16 +197,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
       <div className={`${containerClass} w-full`}>
         
         {/* Collapsible Toolbar (Top Left) */}
-        <div className="flex items-center gap-2 mb-2 px-1 h-8">
+        <div className="flex items-start gap-2 mb-2 px-1 min-h-[32px]">
             <button
                 onClick={() => setIsToolsOpen(!isToolsOpen)}
-                className={`p-1.5 rounded-full transition-all duration-300 ${isToolsOpen ? 'bg-gray-200 dark:bg-gray-700 rotate-45' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'} text-gray-500 dark:text-gray-400`}
+                className={`p-1.5 shrink-0 rounded-full transition-all duration-300 ${isToolsOpen ? 'bg-gray-200 dark:bg-gray-700 rotate-45' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'} text-gray-500 dark:text-gray-400`}
                 title={t('tooltip.expand_tools', language)}
             >
                 <Plus className="w-5 h-5" />
             </button>
 
-            <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out ${isToolsOpen ? 'w-auto opacity-100 translate-x-0' : 'w-0 opacity-0 -translate-x-4 pointer-events-none'}`}>
+            {isToolsOpen && (
+                <div className="flex flex-wrap items-center gap-2 animate-slide-in-left w-full">
                  <button 
                     onClick={() => fileInputRef.current?.click()}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 hover:bg-primary-100 dark:hover:bg-primary-900/40 transition-colors text-xs font-medium whitespace-nowrap"
@@ -259,7 +260,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         <span>Search</span>
                     </button>
                  )}
-            </div>
+                </div>
+            )}
             
             <input 
                 type="file" 

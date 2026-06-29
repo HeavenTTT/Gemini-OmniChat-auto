@@ -63,6 +63,8 @@ export interface ModelInfo {
   displayName?: string;
   inputTokenLimit?: number;
   outputTokenLimit?: number;
+  provider?: ModelProvider;
+  testStatus?: 'idle' | 'testing' | 'success' | 'failed';
 }
 
 export interface SystemPrompt {
