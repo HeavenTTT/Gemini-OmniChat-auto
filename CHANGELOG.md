@@ -13,16 +13,6 @@ All notable changes to this project will be documented in this file.
   - 优化手机端触屏体验，对话气泡的功能按钮（编辑、重试、删除）在移动端下默认显示，无需悬停。
   - 新增智能过滤逻辑：只对最近 6 条消息记录展示功能按钮，以前的消息自动隐藏。
   - 结合 Framer Motion 精确封装了容器级的折叠与展开高度过渡（AnimatePresence + height 变化），使得按钮展示和消失时极为顺滑。
-- **消息流式文本更新节流 (State Update Throttling)**：
-  - 在流式传输文本时引入了更新节流机制。对首个字符/分词即时无延迟渲染，后续流传输则按照 `60ms` 周期节流，有效降低高频流式重绘导致的页面重绘卡顿与输入阻尼。
-- **存储层异步升级 (IndexedDB Engine)**：
-  - 新增基于 HTML5 IndexedDB 的高容量持久化存储驱动，替换原有的 `5MB` 限制且同步阻塞的 LocalStorage，提供异步读写并具备自动故障转移/优雅降级回退。
-  - 完整支持对旧 LocalStorage 中历史对话数据的无损检测与静默自动迁移 (Migration Tool)。
-- **智能对话续写与截断处理 (Edit & Delete Continuation)**：
-  - 完善了编辑消息 (Edit & Continue) 表现：当用户对历史聊天记录进行编辑保存时，自动对编辑点之后的消息执行智能截断，并自动使用新提示词和截断后的上下文发起续写，带来更加流畅和符合直觉的对话体验。
-  - 完善了删除消息 (Delete & Continue) 表现：删除用户历史输入时，会自动递归截断并清理其引发的后续多轮对话上下文，保持上下文的高度语境完整性。
-- **主动本地安全拦截机制 (Local Safety Safeguards)**：
-  - 新增了应用级主动安全拦截器，用于在用户输入层提早识别和拦截潜在的 Prompt Injection 提示词指令篡改行为，并对模型输出中的敏感 API Key 提供智能检测和自动脱敏/遮蔽防护。
 
 ### Fixed
 - **手机浏览器设置重置 Bug**：
