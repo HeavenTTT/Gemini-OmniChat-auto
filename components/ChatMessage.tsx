@@ -1,6 +1,6 @@
+
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { User, X, Save, Edit2, RefreshCw, Trash2, Clock, Folder } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -34,7 +34,6 @@ interface ChatMessageProps {
   onScrollToBottom?: () => void;
   avatarVisibility: AvatarVisibility;
   onViewImage?: (url: string) => void;
-  isRecent?: boolean; // 新增：是否为最近6条消息记录，用于控制操作按钮可见性与高度折叠动画
 }
 
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
@@ -63,8 +62,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   isLast = false,
   onScrollToBottom,
   avatarVisibility,
-  onViewImage,
-  isRecent = true // 默认最近记录为 true
+  onViewImage
 }) => {
   const safeText = msg.text || '';
   const [editText, setEditText] = useState(safeText);
@@ -335,45 +333,33 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     )}
                 </div>
                 )}
-                {!isEditing && (
-                <AnimatePresence initial={false}>
-                  {isRecent && !isLoading && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
-                      className="overflow-hidden flex items-center"
+                {!isLoading && !isEditing && (
+                <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    <button 
+                    onClick={() => startEditing(msg)} 
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    title={t('action.edit', language)}
+                    aria-label={t('action.edit_message', language)}
                     >
-                      <div className="flex items-center gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => startEditing(msg)} 
-                          className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={t('action.edit', language)}
-                          aria-label={t('action.edit_message', language)}
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                          onClick={handleRegenerateClick} 
-                          className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
-                          aria-label={t('action.regenerate', language)}
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                          onClick={handleDeleteClick} 
-                          className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
-                          title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
-                          aria-label={t('action.delete_message', language)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                    <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                    onClick={handleRegenerateClick} 
+                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                    title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                    aria-label={t('action.regenerate', language)}
+                    >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                    onClick={handleDeleteClick} 
+                    className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
+                    title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
+                    aria-label={t('action.delete_message', language)}
+                    >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                </div>
                 )}
             </div>
             </div>
@@ -397,7 +383,6 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     prev.kirbyThemeColor === next.kirbyThemeColor &&
     prev.smoothAnimation === next.smoothAnimation &&
     prev.isLast === next.isLast &&
-    prev.avatarVisibility === next.avatarVisibility &&
-    prev.isRecent === next.isRecent
+    prev.avatarVisibility === next.avatarVisibility
   );
 });

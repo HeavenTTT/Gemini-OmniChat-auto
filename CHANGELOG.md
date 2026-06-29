@@ -6,13 +6,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - **Ollama 思考设置 (Ollama Think Mode)**：
   - 引入了对 Ollama 模型 "think" 思考配置参数的支持（提供默认、开启、关闭、高、中、低六种级别选择）。
-  - 支持分别捕获、累加并合并 Ollama 接口返回的流式/非流式中的 `thinking` 字段 and `content` 字段。
+  - 支持分别捕获、累加并合并 Ollama 接口返回的流式/非流式中的 `thinking` 字段和 `content` 字段。
   - 将累加的思考链内容自动用 `<think>...</think>` 标签包装，让前端消息渲染器能够漂亮地展示和实时折叠/渲染 Ollama 模型的思考过程。
   - 新增中、英、日三国语言本地化词条支持。
-- **手机端对话按钮交互与高度展开动画**：
-  - 优化手机端触屏体验，对话气泡的功能按钮（编辑、重试、删除）在移动端下默认显示，无需悬停。
-  - 新增智能过滤逻辑：只对最近 6 条消息记录展示功能按钮，以前的消息自动隐藏。
-  - 结合 Framer Motion 精确封装了容器级的折叠与展开高度过渡（AnimatePresence + height 变化），使得按钮展示和消失时极为顺滑。
 
 ### Fixed
 - **手机浏览器设置重置 Bug**：
