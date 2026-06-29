@@ -58,4 +58,9 @@ export const common = {
   'tooltip.group_name': '使用グループ',
   'tooltip.response_time': '応答時間',
   'tooltip.expand_tools': 'ツールを展開',
+  'status.connecting': 'API接続中...',
+  'status.thinking': 'AIが思考中...',
+  'status.responding': '回答を生成中...',
+  'sidebar.search_placeholder': 'チャットやメッセージを検索...',
+  'sidebar.no_search_results': '一致するセッションが見つかりません',
 };

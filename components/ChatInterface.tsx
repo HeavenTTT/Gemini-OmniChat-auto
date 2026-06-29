@@ -8,7 +8,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus, vs } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { User, AlertCircle, Check, Copy, X, Save, Edit2, RefreshCw, Trash2, Clock, Brain, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
-import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
+import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility, LoadingStatus } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
 import { ChatMessage } from './ChatMessage';
@@ -16,6 +16,7 @@ import { ChatMessage } from './ChatMessage';
 interface ChatInterfaceProps {
   messages: Message[];
   isLoading: boolean;
+  loadingStatus?: LoadingStatus;
   onEditMessage: (id: string, newText: string) => void;
   onDeleteMessage: (id: string) => void;
   onRegenerate: (id: string) => void;
@@ -32,6 +33,27 @@ interface ChatInterfaceProps {
   smoothAnimation?: boolean;
   avatarVisibility: AvatarVisibility;
 }
+
+/**
+ * 根据语言获取当前的加载状态文本，并提供本地化兜底。
+ * 
+ * @param status 加载状态标识
+ * @param lang 当前界面语言
+ * @returns 本地化状态文本
+ */
+const getStatusText = (status: 'connecting' | 'thinking' | 'responding' | 'idle', lang: Language): string => {
+  const localized = t(`status.${status}`, lang);
+  if (localized !== `status.${status}`) {
+    return localized;
+  }
+  const fallbacks: Record<string, string> = {
+    connecting: lang === 'zh' ? '正在建立 API 连接...' : lang === 'ja' ? 'API接続中...' : 'Connecting to API...',
+    thinking: lang === 'zh' ? 'AI 正在思考中...' : lang === 'ja' ? 'AIが思考中...' : 'AI is thinking...',
+    responding: lang === 'zh' ? '正在生成回复...' : lang === 'ja' ? '回答を生成中...' : 'Generating...',
+    idle: lang === 'zh' ? '准备就绪' : lang === 'ja' ? '準備完了' : 'Ready'
+  };
+  return fallbacks[status] || '...';
+};
 
 /**
  * 渲染正在加载的秒数计时器组件。
@@ -61,6 +83,7 @@ const LoadingTimer = () => {
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     messages, 
     isLoading, 
+    loadingStatus,
     onEditMessage, 
     onDeleteMessage, 
     onRegenerate, 
@@ -279,13 +302,34 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       </div>
                   )}
                   <div 
-                      className="loading-bubble"
+                      className="loading-bubble flex flex-col sm:flex-row items-start sm:items-center gap-2 px-3 py-2 sm:py-1.5"
                       style={dynamicStyle}
                   >
-                      <div className="typing-dot" style={{ animationDelay: '0ms' }}></div>
-                      <div className="typing-dot" style={{ animationDelay: '150ms' }}></div>
-                      <div className="typing-dot" style={{ animationDelay: '300ms' }}></div>
-                      {showResponseTimer && <LoadingTimer />}
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                          <div className="typing-dot" style={{ animationDelay: '0ms' }}></div>
+                          <div className="typing-dot" style={{ animationDelay: '150ms' }}></div>
+                          <div className="typing-dot" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                      
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 select-none border-t sm:border-t-0 sm:border-l pt-1.5 sm:pt-0 sm:pl-2 border-gray-200 dark:border-gray-800/80 w-full sm:w-auto">
+                          <span className="font-medium text-primary-600 dark:text-primary-400 whitespace-nowrap animate-pulse">
+                              {getStatusText(loadingStatus?.status || 'connecting', language)}
+                          </span>
+                          
+                          {loadingStatus?.model && (
+                              <span className="text-[10px] opacity-80 font-mono bg-gray-100 dark:bg-gray-800/40 px-1 rounded border border-gray-200 dark:border-gray-800 max-w-[150px] truncate" title={loadingStatus.model}>
+                                  {loadingStatus.model}
+                              </span>
+                          )}
+                          
+                          {loadingStatus?.keyIndex && (
+                              <span className="text-[10px] opacity-80 font-mono bg-primary-50/50 dark:bg-primary-900/10 text-primary-600 dark:text-primary-400 px-1 rounded border border-primary-100/50 dark:border-primary-900/30 whitespace-nowrap" title={t('tooltip.key_index', language)}>
+                                  #{loadingStatus.keyIndex}
+                              </span>
+                          )}
+
+                          {showResponseTimer && <LoadingTimer />}
+                      </div>
                   </div>
               </div>
               </div>

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, Suspense, lazy, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { LLMService } from './services/llmService';
-import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo } from './types';
+import { Message, Role, GeminiModel, AppSettings, KeyConfig, ChatSession, ModelProvider, APP_VERSION, ToastMessage, DialogConfig, ModelInfo, LoadingStatus } from './types';
 import ChatInterface from './components/ChatInterface';
 import Sidebar from './components/Sidebar';
 import { Header } from './components/Header';
@@ -13,6 +13,7 @@ import { t } from './utils/i18n';
 import { ToastContainer } from './components/ui/Toast';
 import { CustomDialog } from './components/ui/CustomDialog';
 import { executeFilterScript } from './utils/scriptExecutor';
+import { dbGetItem, dbSetItem } from './utils/indexedDB';
 
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const SecurityLock = lazy(() => import('./components/SecurityLock'));
@@ -40,12 +41,14 @@ const App: React.FC = () => {
   const [input, setInput] = useState(''); // 输入框文本
   const [inputImages, setInputImages] = useState<string[]>([]); // 待发送的图片
   const [isLoading, setIsLoading] = useState(false); // 是否正在生成回复
+  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ status: 'idle' }); // 正在生成时的加载状态
   const [isSummarizing, setIsSummarizing] = useState(false); // 是否正在总结标题
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // 设置弹窗开关
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 移动端侧边栏开关
   const [isLocked, setIsLocked] = useState(false); // 隐私安全锁状态
   const [apiKeys, setApiKeys] = useState<KeyConfig[]>([]); // API 密钥池
   const [knownModels, setKnownModels] = useState<ModelInfo[]>(DEFAULT_KNOWN_MODELS); // 已知模型缓存
+  const [isDbLoaded, setIsDbLoaded] = useState(false); // 数据库加载完毕状态
   
   // --- 应用配置 ---
   const [settings, setSettings] = useState<AppSettings>({
@@ -150,125 +153,133 @@ const App: React.FC = () => {
    * 节点 1: 挂载初始化与安全检测
    */
   useEffect(() => {
-    const storedKeys = localStorage.getItem(STORAGE_KEYS_KEY);
-    const oldKeysV3 = localStorage.getItem('gemini_omnichat_keys_v3');
-    const oldSettingsStr = localStorage.getItem(STORAGE_SETTINGS_KEY);
-    const oldSettings = safeJsonParse(oldSettingsStr);
-    const globalModel = oldSettings?.model || DEFAULT_MODEL;
-    const globalBaseUrl = oldSettings?.openAIBaseUrl || 'https://api.openai.com/v1';
+    const initApp = async () => {
+      // 核心更新：全异步从 IndexedDB 加载
+      const storedKeys = await dbGetItem<KeyConfig[]>(STORAGE_KEYS_KEY);
+      const oldKeysV3 = await dbGetItem<any>('gemini_omnichat_keys_v3') || (typeof localStorage !== 'undefined' ? localStorage.getItem('gemini_omnichat_keys_v3') : null);
+      const oldSettings = await dbGetItem<any>(STORAGE_SETTINGS_KEY);
+      
+      const globalModel = oldSettings?.defaultModel || DEFAULT_MODEL;
+      const globalBaseUrl = oldSettings?.defaultBaseUrl || 'https://api.openai.com/v1';
 
-    let initialKeys: KeyConfig[] = [];
+      let initialKeys: KeyConfig[] = [];
 
-    if (storedKeys) {
-      initialKeys = safeJsonParse(storedKeys, []);
-    } else if (oldKeysV3) {
-      const parsed = safeJsonParse(oldKeysV3, []);
-      initialKeys = parsed.map((k: any) => ({
-          ...k,
-          model: globalModel,
-          baseUrl: k.provider === 'openai' ? globalBaseUrl : ''
-      }));
-    } else if (ENV_KEY) {
-      initialKeys = ENV_KEY.split(',').map(k => k.trim()).filter(Boolean).map(k => ({
-        id: uuidv4(),
-        key: k,
-        provider: 'google' as ModelProvider,
-        isActive: true,
-        usageLimit: 5, 
-        isRateLimited: false,
-        lastUsed: 0,
-        model: DEFAULT_MODEL
-      }));
-    }
-    setApiKeys(initialKeys);
-    
-    const storedSettings = localStorage.getItem(STORAGE_SETTINGS_KEY);
-    let loadedSettings = settings;
-    let loadedKnownModels = DEFAULT_KNOWN_MODELS;
-
-    const storedKnownModels = localStorage.getItem(STORAGE_KNOWN_MODELS_KEY);
-    if (storedKnownModels) {
-        const parsedStoredModels = safeJsonParse(storedKnownModels, []);
-        const mergedModels = [...DEFAULT_KNOWN_MODELS];
-        parsedStoredModels.forEach((m: any) => {
-            if (!mergedModels.find(dm => dm.name === m.name)) {
-                mergedModels.push(m);
-            }
-        });
-        loadedKnownModels = mergedModels;
-    }
-
-    if (storedSettings) {
-      const parsedSettings = safeJsonParse(storedSettings);
-      if (parsedSettings) {
-          if (parsedSettings.knownModels && !storedKnownModels) {
-              loadedKnownModels = parsedSettings.knownModels;
-          }
-          if ('knownModels' in parsedSettings) delete parsedSettings.knownModels;
-          loadedSettings = { ...settings, ...parsedSettings };
+      if (storedKeys) {
+        initialKeys = storedKeys;
+      } else if (oldKeysV3) {
+        const parsed = typeof oldKeysV3 === 'string' ? safeJsonParse(oldKeysV3, []) : oldKeysV3;
+        initialKeys = parsed.map((k: any) => ({
+            ...k,
+            model: globalModel,
+            baseUrl: k.provider === 'openai' ? globalBaseUrl : ''
+        }));
+      } else if (ENV_KEY) {
+        initialKeys = ENV_KEY.split(',').map(k => k.trim()).filter(Boolean).map(k => ({
+          id: uuidv4(),
+          key: k,
+          provider: 'google' as ModelProvider,
+          isActive: true,
+          usageLimit: 5, 
+          isRateLimited: false,
+          lastUsed: 0,
+          model: DEFAULT_MODEL
+        }));
       }
-    } 
-    setSettings(loadedSettings);
-    setKnownModels(loadedKnownModels);
-    
-    const effectiveKeys = initialKeys.map(k => {
-        if (!k.groupId) return k;
-        const group = loadedSettings.keyGroups?.find(g => g.id === k.groupId);
-        if (group && group.isActive === false) return { ...k, isActive: false };
-        return k;
-    });
+      setApiKeys(initialKeys);
+      
+      const storedSettings = await dbGetItem<AppSettings>(STORAGE_SETTINGS_KEY);
+      let loadedSettings = settings;
+      let loadedKnownModels = DEFAULT_KNOWN_MODELS;
 
-    setLlmService(new LLMService(
-        effectiveKeys, 
-        {
-            onKeyError: (id, errorCode, isFatal = true) => {
-                setApiKeys(prev => prev.map(k => {
-                    if (k.id !== id) return k;
-                    if (isFatal) return { ...k, isActive: false, lastErrorCode: errorCode };
-                    else return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
-                }));
-                if (isFatal) addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
-            },
-            onStatusMessage: (msg, type) => addToast(msg, type)
-        }
-    ));
+      const storedKnownModels = await dbGetItem<ModelInfo[]>(STORAGE_KNOWN_MODELS_KEY);
+      if (storedKnownModels) {
+          const mergedModels = [...DEFAULT_KNOWN_MODELS];
+          storedKnownModels.forEach((m: any) => {
+              if (!mergedModels.find(dm => dm.name === m.name)) {
+                  mergedModels.push(m);
+              }
+          });
+          loadedKnownModels = mergedModels;
+      }
 
-    // --- 核心更新：初始加载与自动锁逻辑 ---
-    if (loadedSettings.security.enabled) {
-        const lastActive = loadedSettings.security.lastLogin || 0;
-        const lockoutThresholdMs = (loadedSettings.security.lockoutDurationSeconds || 86400) * 1000;
-        
-        if (Date.now() - lastActive > lockoutThresholdMs) {
-            setIsLocked(true);
-        } else {
-            // 更新活跃状态
-            lastActivityRef.current = Date.now();
-            setSettings(prev => ({ 
-                ...prev, 
-                security: { ...prev.security, lastLogin: Date.now() } 
-            }));
-        }
-    }
+      if (storedSettings) {
+         loadedSettings = { ...settings, ...storedSettings };
+      } 
+      setSettings(loadedSettings);
+      setKnownModels(loadedKnownModels);
+      
+      const effectiveKeys = initialKeys.map(k => {
+          if (!k.groupId) return k;
+          const group = loadedSettings.keyGroups?.find(g => g.id === k.groupId);
+          if (group && group.isActive === false) return { ...k, isActive: false };
+          return k;
+      });
 
-    const storedSessions = localStorage.getItem(STORAGE_SESSIONS_KEY);
-    const storedActiveId = localStorage.getItem(STORAGE_ACTIVE_SESSION_KEY);
-    
-    if (storedSessions) {
-      const parsedSessions = safeJsonParse(storedSessions, []) as ChatSession[];
-      if (parsedSessions.length > 0) {
-        setSessions(parsedSessions);
-        const targetId = (storedActiveId && parsedSessions.find(s => s.id === storedActiveId)) ? storedActiveId : parsedSessions[0].id;
-        setActiveSessionId(targetId);
-        setMessages(parsedSessions.find(s => s.id === targetId)?.messages || []);
-      } else createNewSession();
-    } else createNewSession();
+      setLlmService(new LLMService(
+          effectiveKeys, 
+          {
+              onKeyError: (id, errorCode, isFatal = true) => {
+                  setApiKeys(prev => prev.map(k => {
+                      if (k.id !== id) return k;
+                      if (isFatal) return { ...k, isActive: false, lastErrorCode: errorCode };
+                      else return { ...k, isRateLimited: true, lastUsed: Date.now(), lastErrorCode: errorCode };
+                  }));
+                  if (isFatal) addToast(`${t('error.key_auto_disabled', loadedSettings.language)}${errorCode ? ` (${errorCode})` : ''}`, 'error');
+              },
+              onStatusMessage: (msg, type) => addToast(msg, type)
+          }
+      ));
+
+      // --- 核心更新：初始加载与自动锁逻辑 ---
+      if (loadedSettings.security.enabled) {
+          const lastActive = loadedSettings.security.lastLogin || 0;
+          const lockoutThresholdMs = (loadedSettings.security.lockoutDurationSeconds || 86400) * 1000;
+          
+          if (Date.now() - lastActive > lockoutThresholdMs) {
+              setIsLocked(true);
+          } else {
+              // 更新活跃状态
+              lastActivityRef.current = Date.now();
+              setSettings(prev => ({ 
+                  ...prev, 
+                  security: { ...prev.security, lastLogin: Date.now() } 
+              }));
+          }
+      }
+
+      const storedSessions = await dbGetItem<ChatSession[]>(STORAGE_SESSIONS_KEY);
+      const storedActiveId = await dbGetItem<string>(STORAGE_ACTIVE_SESSION_KEY);
+      
+      if (storedSessions && storedSessions.length > 0) {
+          setSessions(storedSessions);
+          const targetId = (storedActiveId && storedSessions.find(s => s.id === storedActiveId)) ? storedActiveId : storedSessions[0].id;
+          setActiveSessionId(targetId);
+          setMessages(storedSessions.find(s => s.id === targetId)?.messages || []);
+      } else {
+          const newId = uuidv4();
+          const newSession: ChatSession = {
+            id: newId,
+            title: t('msg.new_chat_title', loadedSettings.language),
+            messages: [],
+            createdAt: Date.now(),
+            memory: '' 
+          };
+          setSessions([newSession]);
+          setActiveSessionId(newId);
+          setMessages([]);
+      }
+
+      setIsDbLoaded(true);
+    };
+
+    initApp();
   }, []);
 
   /**
    * 核心更新：实时安全锁监控（离开检测）
    */
   useEffect(() => {
-      if (!settings.security.enabled || isLocked) return;
+      if (!isDbLoaded || !settings.security.enabled || isLocked) return;
 
       const checkSecurityThreshold = () => {
           const now = Date.now();
@@ -325,7 +336,7 @@ const App: React.FC = () => {
           window.removeEventListener('scroll', onUserInteraction);
           window.removeEventListener('touchstart', onUserInteraction);
       };
-  }, [settings.security.enabled, settings.security.lockoutDurationSeconds, isLocked]);
+  }, [isDbLoaded, settings.security.enabled, settings.security.lockoutDurationSeconds, isLocked]);
 
   const createNewSession = () => {
     const newId = uuidv4();
@@ -345,6 +356,7 @@ const App: React.FC = () => {
    * 节点 2: 数据同步
    */
   useEffect(() => {
+    if (!isDbLoaded) return;
     const effectiveKeys = apiKeys.map(k => {
         if (!k.groupId) return k;
         const group = settings.keyGroups?.find(g => g.id === k.groupId);
@@ -353,48 +365,65 @@ const App: React.FC = () => {
     });
 
     if (llmService) llmService.updateKeys(effectiveKeys, settings.keyGroups || []);
-    localStorage.setItem(STORAGE_KEYS_KEY, JSON.stringify(apiKeys));
-  }, [apiKeys, llmService, settings.keyGroups]);
+    dbSetItem(STORAGE_KEYS_KEY, apiKeys);
+  }, [apiKeys, llmService, settings.keyGroups, isDbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_SETTINGS_KEY, JSON.stringify(settings));
+    if (!isDbLoaded) return;
+    dbSetItem(STORAGE_SETTINGS_KEY, settings);
     const root = document.documentElement;
     root.classList.remove('dark', 'theme-dark', 'theme-light', 'theme-twilight', 'theme-sky', 'theme-pink', 'theme-sunrise', 'theme-lime', 'theme-panda', 'theme-chocolate', 'theme-vscode-light', 'theme-vscode-dark');
     root.classList.add(`theme-${settings.theme}`);
     if (['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme)) root.classList.add('dark');
-  }, [settings]);
+  }, [settings, isDbLoaded]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KNOWN_MODELS_KEY, JSON.stringify(knownModels));
-  }, [knownModels]);
+    if (!isDbLoaded) return;
+    dbSetItem(STORAGE_KNOWN_MODELS_KEY, knownModels);
+  }, [knownModels, isDbLoaded]);
 
   useEffect(() => {
-    if (!activeSessionId) return;
-    setSessions(prev => {
-      const idx = prev.findIndex(s => s.id === activeSessionId);
-      if (idx === -1) return prev;
-      if (prev[idx].messages === messages) return prev;
-      
-      const updated = [...prev];
-      updated[idx] = { ...updated[idx], messages };
-      return updated;
-    });
-  }, [messages, activeSessionId]);
+    if (!isDbLoaded) return;
+    if (activeSessionId) {
+      setSessions(prev => {
+        const idx = prev.findIndex(s => s.id === activeSessionId);
+        if (idx === -1) return prev;
+        if (prev[idx].messages === messages) return prev;
+        
+        const updated = [...prev];
+        updated[idx] = { ...updated[idx], messages };
+        return updated;
+      });
+    }
+  }, [messages, activeSessionId, isDbLoaded]);
 
   useEffect(() => {
-    if (sessions.length > 0) localStorage.setItem(STORAGE_SESSIONS_KEY, JSON.stringify(sessions));
-  }, [sessions]);
+    if (!isDbLoaded) return;
+    if (sessions.length > 0) {
+      dbSetItem(STORAGE_SESSIONS_KEY, sessions);
+    }
+  }, [sessions, isDbLoaded]);
 
   useEffect(() => {
-    if (activeSessionId) localStorage.setItem(STORAGE_ACTIVE_SESSION_KEY, activeSessionId);
-  }, [activeSessionId]);
+    if (!isDbLoaded) return;
+    if (activeSessionId) {
+      dbSetItem(STORAGE_ACTIVE_SESSION_KEY, activeSessionId);
+    }
+  }, [activeSessionId, isDbLoaded]);
 
   /**
    * 节点 3: 消息处理逻辑
    */
+  /**
+   * 触发 AI 的回复响应生成，管理整个请求的生命周期和加载状态。
+   * 
+   * @param historyBefore 消息发送前的会话历史记录
+   * @param userMessage 新发送的用户消息
+   */
   const triggerBotResponse = async (historyBefore: Message[], userMessage: Message) => {
     if (!llmService) return;
     setIsLoading(true);
+    setLoadingStatus({ status: 'connecting' });
     
     if (abortControllerRef.current) abortControllerRef.current.abort();
     const controller = new AbortController();
@@ -450,7 +479,10 @@ const App: React.FC = () => {
            setMessages(prev => prev.map(msg => msg.id === tempBotId ? { ...msg, text: processedChunk } : msg));
         },
         controller.signal,
-        settings.language
+        settings.language,
+        (status, details) => {
+            setLoadingStatus({ status, ...details });
+        }
       );
       
       const executionTime = Date.now() - startTime;
@@ -506,6 +538,7 @@ const App: React.FC = () => {
       }
     } finally {
       setIsLoading(false);
+      setLoadingStatus({ status: 'idle' });
       abortControllerRef.current = null;
     }
   };
@@ -643,6 +676,15 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
   const currentSessionTitle = currentSession?.title || t('app.title', settings.language);
   const currentSessionMemory = currentSession?.memory || '';
   
+  if (!isDbLoaded) return (
+    <div className={`flex h-screen items-center justify-center font-sans ${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark bg-gray-950 text-gray-400' : 'bg-gray-50 text-gray-500'}`}>
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+        <span className="animate-pulse text-xs tracking-wider font-mono">LOADING DATABASE...</span>
+      </div>
+    </div>
+  );
+
   if (isLocked) return (
     <div className={`${['dark', 'twilight', 'vscode-dark', 'chocolate'].includes(settings.theme) ? 'dark' : ''}`}>
         <Suspense fallback={<div className="flex h-screen items-center justify-center bg-gray-100 dark:bg-gray-950"></div>}>
@@ -769,6 +811,7 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
 
           <ChatInterface 
               messages={messages} isLoading={isLoading} 
+              loadingStatus={loadingStatus}
               onEditMessage={(id, newText) => setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, text: newText } : msg))} 
               onDeleteMessage={(id) => setMessages(prev => prev.filter(msg => msg.id !== id))} 
               onRegenerate={async (id) => {

@@ -58,4 +58,9 @@ export const common = {
   'tooltip.group_name': '使用的分组',
   'tooltip.response_time': '响应耗时',
   'tooltip.expand_tools': '展开工具栏',
+  'status.connecting': '正在建立 API 连接...',
+  'status.thinking': 'AI 正在思考中...',
+  'status.responding': '正在生成回复...',
+  'sidebar.search_placeholder': '搜索会话或消息...',
+  'sidebar.no_search_results': '未找到匹配的会话',
 };

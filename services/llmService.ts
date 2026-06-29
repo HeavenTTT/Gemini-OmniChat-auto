@@ -246,6 +246,17 @@ export class LLMService {
   /**
    * 节点 5: 核心重试与分发逻辑
    * 在发生非致命错误（如速率限制）时自动切换密钥并重试。
+   * 
+   * @param _ignoredGlobalModelId 已弃用的全局模型 ID
+   * @param history 会话历史消息记录
+   * @param newMessage 新发送的消息内容
+   * @param images 新发送的附带图片（Base64 URL）数组
+   * @param systemInstruction 系统提示词
+   * @param generationConfig 模型生成参数配置
+   * @param onChunk 收到流式文本时的回调
+   * @param abortSignal 用于中断请求的 AbortSignal
+   * @param lang 界面当前的语言，用于错误及状态提示本地化
+   * @param onStatusChange 请求连接/思考/响应状态变更时的回调
    */
   public async streamChatResponse(
     _ignoredGlobalModelId: string, 
@@ -256,7 +267,8 @@ export class LLMService {
     generationConfig: GenerationConfig,
     onChunk?: (text: string) => void,
     abortSignal?: AbortSignal,
-    lang: Language = 'en'
+    lang: Language = 'en',
+    onStatusChange?: (status: 'connecting' | 'thinking' | 'responding' | 'idle', details?: { model?: string; keyIndex?: number }) => void
   ): Promise<{ text: string, usedKeyIndex: number, provider: ModelProvider, usedModel: string, groundingMetadata?: any }> {
 
     return this.enqueueTask(async () => {
@@ -297,9 +309,24 @@ export class LLMService {
 
             const modelToUse = keyConfig.model || _ignoredGlobalModelId || 'gemini-3-flash-preview';
 
+            // 触发正在连接 API 的状态更新
+            onStatusChange?.('connecting', { model: modelToUse, keyIndex: currentKeyIndex });
+
             try {
+                // 触发开始等待 API 思考响应的状态更新
+                onStatusChange?.('thinking', { model: modelToUse, keyIndex: currentKeyIndex });
                 let response: { text: string; groundingMetadata?: any } = { text: "", groundingMetadata: undefined };
                 
+                // 封装一个 chunk 计数器，一旦收到首个 chunk 文本就更新状态为正在接收响应中 (responding)
+                let isFirstChunk = true;
+                const wrappedOnChunk = (text: string) => {
+                    if (isFirstChunk) {
+                        isFirstChunk = false;
+                        onStatusChange?.('responding', { model: modelToUse, keyIndex: currentKeyIndex });
+                    }
+                    onChunk?.(text);
+                };
+
                 // 根据提供商分发请求
                 if (keyConfig.provider === 'google' && modelToUse.toLowerCase().includes('imagen')) {
                      const imageMarkdown = await this.googleService.generateImage(keyConfig.key, modelToUse, newMessage);
@@ -309,21 +336,24 @@ export class LLMService {
                     if (!keyConfig.baseUrl) throw new Error(t('error.base_url_required', lang));
                     response = await this.openAIService.streamChat(
                         keyConfig.key, keyConfig.baseUrl, modelToUse, validHistory, 
-                        newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
+                        newMessage, images, systemInstruction, generationConfig, wrappedOnChunk, abortSignal
                     );
                 } 
                 else if (keyConfig.provider === 'ollama') {
                     response = await this.ollamaService.streamChat(
                         keyConfig.baseUrl || '', modelToUse, validHistory, 
-                        newMessage, images, systemInstruction, generationConfig, keyConfig.key, onChunk, abortSignal
+                        newMessage, images, systemInstruction, generationConfig, keyConfig.key, wrappedOnChunk, abortSignal
                     );
                 } 
                 else {
                     response = await this.googleService.streamChat(
                         keyConfig.key, modelToUse, validHistory, 
-                        newMessage, images, systemInstruction, generationConfig, onChunk, abortSignal
+                        newMessage, images, systemInstruction, generationConfig, wrappedOnChunk, abortSignal
                     );
                 }
+
+                // 成功后触发 idle 状态
+                onStatusChange?.('idle');
 
                 return { 
                     text: response.text, 

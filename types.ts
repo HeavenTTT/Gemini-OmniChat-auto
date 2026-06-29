@@ -164,3 +164,12 @@ export interface DialogConfig {
   onConfirm: (value?: string) => void;
   onCancel?: () => void;
 }
+
+/**
+ * 消息生成时的加载状态模型，用于控制加载气泡的状态和文本展示。
+ */
+export interface LoadingStatus {
+  status: 'connecting' | 'thinking' | 'responding' | 'idle';
+  model?: string;
+  keyIndex?: number;
+}

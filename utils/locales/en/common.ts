@@ -58,4 +58,9 @@ export const common = {
   'tooltip.group_name': 'Group Used',
   'tooltip.response_time': 'Response Time',
   'tooltip.expand_tools': 'Expand tools',
+  'status.connecting': 'Connecting to API...',
+  'status.thinking': 'AI is thinking...',
+  'status.responding': 'Generating response...',
+  'sidebar.search_placeholder': 'Search chats or messages...',
+  'sidebar.no_search_results': 'No matching sessions found',
 };
