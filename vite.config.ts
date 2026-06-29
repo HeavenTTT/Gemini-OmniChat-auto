@@ -23,7 +23,22 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
-      plugins: [react()],
+      plugins: [
+        react(),
+        {
+          name: 'remove-importmap-in-build',
+          /**
+           * transformIndexHtml
+           * 钩子函数：在处理 HTML 模板时触发
+           * 构建打包时安全移除 index.html 内的 importmap 标签，从而消除在 Vercel 等纯静态公网生产部署下的 CDN 跨域限制与空白屏隐患
+           * @param {string} html 原始 HTML 字符串
+           * @returns {string} 处理后的 HTML 字符串
+           */
+          transformIndexHtml(html) {
+            return html.replace(/<script type="importmap">[\s\S]*?<\/script>/gi, '');
+          }
+        }
+      ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)

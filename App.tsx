@@ -26,7 +26,11 @@ const STORAGE_SESSIONS_KEY = 'gemini_omnichat_sessions_v1';
 const STORAGE_ACTIVE_SESSION_KEY = 'gemini_omnichat_active_session_v1';
 const STORAGE_KNOWN_MODELS_KEY = 'gemini_omnichat_known_models_v1';
 
-const ENV_KEY = process.env.API_KEY || '';
+/**
+ * 环境变量 API 密钥声明 (API Key Environment Declaration)
+ * 兼容不同的加载与部署环境，防止在特定的公网部署环境下因 process 引用产生运行时 ReferenceError，同时提供安全的默认值
+ */
+const ENV_KEY = (typeof process !== 'undefined' && process.env ? process.env.API_KEY : '') || '';
 
 const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
     { name: 'gemini-3-flash-preview', inputTokenLimit: 1048576, outputTokenLimit: 8192 },
@@ -937,5 +941,4 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
     </div>
   );
 };
-
 export default App;
