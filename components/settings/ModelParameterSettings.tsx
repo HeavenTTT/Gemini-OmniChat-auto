@@ -10,6 +10,9 @@ interface ModelParameterSettingsProps {
   lang: Language;
 }
 
+/**
+ * 模型参数设置组件，提供生成温度、TopP/K、思考深度、自动会话记忆、系统预设过滤等控制。
+ */
 export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
   settings,
   onUpdateSettings,
@@ -17,6 +20,9 @@ export const ModelParameterSettings: React.FC<ModelParameterSettingsProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  /**
+   * 重置高级及基础参数到默认值
+   */
   const handleReset = () => {
     onUpdateSettings({
         ...settings,

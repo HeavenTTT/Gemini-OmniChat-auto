@@ -15,6 +15,10 @@ import { CustomDialog } from './components/ui/CustomDialog';
 import { executeFilterScript } from './utils/scriptExecutor';
 import { dbGetItem, dbSetItem } from './utils/indexedDB';
 import { calculateSimilarity } from './utils/similarity';
+import { useToast } from './hooks/useToast';
+import { useDialog } from './hooks/useDialog';
+import { useSecurityLock } from './hooks/useSecurityLock';
+import { useChatSessions } from './hooks/useChatSessions';
 
 const SettingsModal = lazy(() => import('./components/SettingsModal'));
 const SecurityLock = lazy(() => import('./components/SecurityLock'));
@@ -35,18 +39,9 @@ const DEFAULT_KNOWN_MODELS: ModelInfo[] = [
 ];
 
 const App: React.FC = () => {
-  // --- 状态定义 ---
-  const [sessions, setSessions] = useState<ChatSession[]>([]); // 会话列表
-  const [activeSessionId, setActiveSessionId] = useState<string>(''); // 当前活动会话 ID
-  const [messages, setMessages] = useState<Message[]>([]); // 当前会话的消息记录
-  const [input, setInput] = useState(''); // 输入框文本
-  const [inputImages, setInputImages] = useState<string[]>([]); // 待发送的图片
-  const [isLoading, setIsLoading] = useState(false); // 是否正在生成回复
-  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ status: 'idle' }); // 正在生成时的加载状态
-  const [isSummarizing, setIsSummarizing] = useState(false); // 是否正在总结标题
+  // --- 状态与自定义 Hooks 引入 ---
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // 设置弹窗开关
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // 移动端侧边栏开关
-  const [isLocked, setIsLocked] = useState(false); // 隐私安全锁状态
   const [apiKeys, setApiKeys] = useState<KeyConfig[]>([]); // API 密钥池
   const [knownModels, setKnownModels] = useState<ModelInfo[]>(DEFAULT_KNOWN_MODELS); // 已知模型缓存
   const [isDbLoaded, setIsDbLoaded] = useState(false); // 数据库加载完毕状态
@@ -101,75 +96,32 @@ const App: React.FC = () => {
     keyGroups: []
   });
 
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
-  const [dialog, setDialog] = useState<DialogConfig>({
-      isOpen: false,
-      type: 'alert',
-      title: '',
-      onConfirm: () => {}
-  });
+  const [input, setInput] = useState(''); // 输入框文本
+  const [inputImages, setInputImages] = useState<string[]>([]); // 待发送的图片
+  const [isLoading, setIsLoading] = useState(false); // 是否正在生成回复
+  const [loadingStatus, setLoadingStatus] = useState<LoadingStatus>({ status: 'idle' }); // 正在生成时的加载状态
+  const [isSummarizing, setIsSummarizing] = useState(false); // 是否正在总结标题
+
+  // 使用自定义 Hook
+  const { toasts, addToast, removeToast } = useToast();
+  const { dialog, showDialog, closeDialog } = useDialog();
+  const {
+    sessions,
+    setSessions,
+    activeSessionId,
+    setActiveSessionId,
+    messages,
+    setMessages,
+    createNewSession,
+    loadInitialSessions,
+    handleUpdateSessionMemory
+  } = useChatSessions(isDbLoaded, settings.language);
+
+  const { isLocked, setIsLocked, lastActivityRef, unlock } = useSecurityLock(isDbLoaded, settings, setSettings);
 
   const [llmService, setLlmService] = useState<LLMService | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const isProcessingRef = useRef(false);
-  const lastActivityRef = useRef<number>(Date.now());
-
-  // --- 辅助工具函数 ---
-  /**
-   * 添加一个 Toast 消息通知
-   * 自动合并 80% 及以上相似度的消息，合并刷屏，并刷新计时器和角标计数
-   * @param message 消息内容
-   * @param type 消息类型
-   */
-  const addToast = (message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
-      setToasts(prev => {
-          // 寻找类型相同且相似度超过 80% 的已有消息项
-          const similarIdx = prev.findIndex(t => {
-              if (t.type !== type) return false;
-              // 计算两者内容的相似度 (LCS/编辑距离)
-              const sim = calculateSimilarity(t.message, message);
-              return sim >= 0.8;
-          });
-
-          if (similarIdx !== -1) {
-              const updated = [...prev];
-              const existing = updated[similarIdx];
-              updated[similarIdx] = {
-                  ...existing,
-                  // 合并时保留可能更长更详尽的报错或消息正文
-                  message: message.length > existing.message.length ? message : existing.message,
-                  count: (existing.count || 1) + 1,
-                  // 刷新时间戳，以便在 ToastItem 中重置生存时间
-                  timestamp: Date.now()
-              };
-              return updated;
-          }
-
-          // 不存在相似消息则直接新增一个独立的 Toast 通知项
-          return [...prev, { id: uuidv4(), message, type, count: 1, timestamp: Date.now() }];
-      });
-  };
-  
-  const removeToast = (id: string) => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-  };
-
-  const showDialog = (config: Partial<DialogConfig> & { title: string, onConfirm: (value?: string) => void }) => {
-      setDialog({
-          isOpen: true,
-          type: config.type || 'alert',
-          title: config.title,
-          message: config.message,
-          inputValue: config.inputValue,
-          inputPlaceholder: config.inputPlaceholder,
-          onConfirm: config.onConfirm,
-          onCancel: config.onCancel
-      });
-  };
-
-  const closeDialog = () => {
-      setDialog(prev => ({ ...prev, isOpen: false }));
-  };
 
   const safeJsonParse = (str: string | null, fallback: any = null) => {
     if (!str || !str.trim()) return fallback;
@@ -281,25 +233,7 @@ const App: React.FC = () => {
 
       const storedSessions = await dbGetItem<ChatSession[]>(STORAGE_SESSIONS_KEY);
       const storedActiveId = await dbGetItem<string>(STORAGE_ACTIVE_SESSION_KEY);
-      
-      if (storedSessions && storedSessions.length > 0) {
-          setSessions(storedSessions);
-          const targetId = (storedActiveId && storedSessions.find(s => s.id === storedActiveId)) ? storedActiveId : storedSessions[0].id;
-          setActiveSessionId(targetId);
-          setMessages(storedSessions.find(s => s.id === targetId)?.messages || []);
-      } else {
-          const newId = uuidv4();
-          const newSession: ChatSession = {
-            id: newId,
-            title: t('msg.new_chat_title', loadedSettings.language),
-            messages: [],
-            createdAt: Date.now(),
-            memory: '' 
-          };
-          setSessions([newSession]);
-          setActiveSessionId(newId);
-          setMessages([]);
-      }
+      loadInitialSessions(storedSessions, storedActiveId);
 
       setIsDbLoaded(true);
     };
@@ -308,84 +242,7 @@ const App: React.FC = () => {
   }, []);
 
   /**
-   * 核心更新：实时安全锁监控（离开检测）
-   */
-  useEffect(() => {
-      if (!isDbLoaded || !settings.security.enabled || isLocked) return;
-
-      const checkSecurityThreshold = () => {
-          const now = Date.now();
-          const lastActive = lastActivityRef.current;
-          const limit = (settings.security.lockoutDurationSeconds || 86400) * 1000;
-          
-          if (now - lastActive > limit) {
-              setIsLocked(true);
-          } else {
-              // 活跃状态归来，更新最后活跃时间
-              lastActivityRef.current = Date.now();
-              setSettings(prev => ({
-                  ...prev,
-                  security: { ...prev.security, lastLogin: Date.now() }
-              }));
-          }
-      };
-
-      // 监听用户返回页面的行为
-      const onFocusChange = () => {
-          if (document.visibilityState === 'visible' || document.hasFocus()) {
-              checkSecurityThreshold();
-          }
-      };
-
-      // 监听用户交互（更新活跃时间）
-      let lastUpdate = 0;
-      const onUserInteraction = () => {
-          const now = Date.now();
-          lastActivityRef.current = now;
-          
-          // 节流更新：每10秒同步一次持久化存储，避免由于高频操作导致的性能下降
-          if (now - lastUpdate > 10000) {
-              lastUpdate = now;
-              setSettings(prev => ({
-                  ...prev,
-                  security: { ...prev.security, lastLogin: now }
-              }));
-          }
-      };
-
-      window.addEventListener('focus', onFocusChange);
-      document.addEventListener('visibilitychange', onFocusChange);
-      window.addEventListener('mousedown', onUserInteraction, { passive: true });
-      window.addEventListener('keydown', onUserInteraction, { passive: true });
-      window.addEventListener('scroll', onUserInteraction, { passive: true });
-      window.addEventListener('touchstart', onUserInteraction, { passive: true });
-
-      return () => {
-          window.removeEventListener('focus', onFocusChange);
-          document.removeEventListener('visibilitychange', onFocusChange);
-          window.removeEventListener('mousedown', onUserInteraction);
-          window.removeEventListener('keydown', onUserInteraction);
-          window.removeEventListener('scroll', onUserInteraction);
-          window.removeEventListener('touchstart', onUserInteraction);
-      };
-  }, [isDbLoaded, settings.security.enabled, settings.security.lockoutDurationSeconds, isLocked]);
-
-  const createNewSession = () => {
-    const newId = uuidv4();
-    const newSession: ChatSession = {
-      id: newId,
-      title: t('msg.new_chat_title', settings.language),
-      messages: [],
-      createdAt: Date.now(),
-      memory: '' 
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setActiveSessionId(newId);
-    setMessages([]);
-  };
-
-  /**
-   * 节点 2: 数据同步
+   * 节点 2: 数据同步与持久化
    */
   useEffect(() => {
     if (!isDbLoaded) return;
@@ -413,35 +270,6 @@ const App: React.FC = () => {
     if (!isDbLoaded) return;
     dbSetItem(STORAGE_KNOWN_MODELS_KEY, knownModels);
   }, [knownModels, isDbLoaded]);
-
-  useEffect(() => {
-    if (!isDbLoaded) return;
-    if (activeSessionId) {
-      setSessions(prev => {
-        const idx = prev.findIndex(s => s.id === activeSessionId);
-        if (idx === -1) return prev;
-        if (prev[idx].messages === messages) return prev;
-        
-        const updated = [...prev];
-        updated[idx] = { ...updated[idx], messages };
-        return updated;
-      });
-    }
-  }, [messages, activeSessionId, isDbLoaded]);
-
-  useEffect(() => {
-    if (!isDbLoaded) return;
-    if (sessions.length > 0) {
-      dbSetItem(STORAGE_SESSIONS_KEY, sessions);
-    }
-  }, [sessions, isDbLoaded]);
-
-  useEffect(() => {
-    if (!isDbLoaded) return;
-    if (activeSessionId) {
-      dbSetItem(STORAGE_ACTIVE_SESSION_KEY, activeSessionId);
-    }
-  }, [activeSessionId, isDbLoaded]);
 
   /**
    * 节点 3: 消息处理逻辑
@@ -664,10 +492,6 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
       setMessages(loadedMessages);
       setInput('');
       addToast(t('success.chat_import', settings.language) || t('msg.config_imported', settings.language), 'success');
-  };
-
-  const handleUpdateSessionMemory = (newMemory: string) => {
-      setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, memory: newMemory } : s));
   };
 
   const handleSaveChat = () => {
