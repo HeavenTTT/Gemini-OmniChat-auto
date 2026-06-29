@@ -1,6 +1,5 @@
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { User, X, Save, Edit2, RefreshCw, Trash2, Clock, Folder } from 'lucide-react';
-import { motion } from 'motion/react';
 import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -357,43 +356,44 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 </div>
                 )}
                 {!isLoading && !isEditing && (
-                <motion.div
-                    initial={{ height: isRecent ? 'auto' : 0 }}
-                    animate={{ height: isRecent ? 'auto' : 0 }}
-                    transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className="overflow-hidden flex items-center"
+                <div
+                    className={`grid transition-[grid-template-rows,opacity] duration-300 ease-in-out ${
+                        isRecent ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+                    }`}
                 >
-                    <div className={`flex items-center gap-2 transition-opacity duration-200 ${
-                        isRecent 
-                            ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100' 
-                            : 'opacity-0 pointer-events-none'
-                    }`}>
-                        <button 
-                        onClick={() => startEditing(msg)} 
-                        className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                        title={t('action.edit', language)}
-                        aria-label={t('action.edit_message', language)}
-                        >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                        onClick={handleRegenerateClick} 
-                        className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                        title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
-                        aria-label={t('action.regenerate', language)}
-                        >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <button 
-                        onClick={handleDeleteClick} 
-                        className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
-                        title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
-                        aria-label={t('action.delete_message', language)}
-                        >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    <div className="overflow-hidden flex items-center">
+                        <div className={`flex items-center gap-2 transition-opacity duration-200 ${
+                            isRecent 
+                                ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100' 
+                                : 'opacity-0 pointer-events-none'
+                        }`}>
+                            <button 
+                            onClick={() => startEditing(msg)} 
+                            className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            title={t('action.edit', language)}
+                            aria-label={t('action.edit_message', language)}
+                            >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                            onClick={handleRegenerateClick} 
+                            className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                            aria-label={t('action.regenerate', language)}
+                            >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                            <button 
+                            onClick={handleDeleteClick} 
+                            className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
+                            title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
+                            aria-label={t('action.delete_message', language)}
+                            >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
                     </div>
-                </motion.div>
+                </div>
                 )}
             </div>
             </div>

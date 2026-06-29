@@ -23,7 +23,21 @@ export default defineConfig(({ mode }) => {
           }
         }
       },
-      plugins: [react()],
+      plugins: [
+        react(),
+        {
+          name: 'remove-import-map-for-production',
+          /**
+           * 在生产构建打包时自动执行，剥离 index.html 中的 importmap 标签。
+           * 这样可以防止 Vercel 生产环境运行时由于跨域、DNS 无法解析或双重 React 加载错误导致白屏。
+           * @param html 原始 index.html 文本内容
+           * @returns 过滤掉 importmap 后的 HTML 文本内容
+           */
+          transformIndexHtml(html: string) {
+            return html.replace(/<script type="importmap">[\s\S]*?<\/script>/gi, '');
+          }
+        }
+      ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
