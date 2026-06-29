@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, Trash2, Edit2, Box, ChevronDown, ChevronRight, GripVertical } from 'lucide-react';
+import { Plus, Key, ExternalLink, Network, Loader2, Upload, FolderPlus, Folder, Trash2, Edit2, Box, ChevronDown, ChevronRight, GripVertical, Sparkles } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyConfig, Language, ModelProvider, GeminiModel, DialogConfig, AppSettings, ModelInfo, KeyGroup } from '../../types';
 import { LLMService } from '../../services/llmService';
@@ -43,6 +43,11 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  
+  // 模型批量测试相关状态
+  const [isModelsSectionExpanded, setIsModelsSectionExpanded] = useState(false);
+  const [isBatchTestingModels, setIsBatchTestingModels] = useState(false);
+  const [testingModelStatus, setTestingModelStatus] = useState<Record<string, 'idle' | 'testing' | 'success' | 'failed'>>({});
   
   // 导入文件的 input ref
   const importFileInputRef = useRef<HTMLInputElement>(null);
@@ -423,6 +428,119 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
     setDraggedGroupIndex(null);
   };
 
+  /**
+   * 批量测试已知模型的可用性
+   * 依次对每一个已知模型发起 Hi 的极简聊天会话
+   * 自动剔除报错或不可用的模型，并更新全局模型缓存
+   */
+  const handleBatchTestModels = async () => {
+      if (!llmService) return;
+      const activeKey = keys.find(k => k.isActive);
+      if (!activeKey) {
+          onShowToast(
+              lang === 'zh' 
+                ? '测试模型失败：请确保在上方启用至少一个 API 密钥！' 
+                : lang === 'ja'
+                  ? 'テスト失敗：有効な API キーがありません！'
+                  : 'Test failed: Please enable at least one active API key first!', 
+              'error'
+          );
+          return;
+      }
+
+      setIsBatchTestingModels(true);
+      const initialStatus: Record<string, 'idle' | 'testing' | 'success' | 'failed'> = {};
+      knownModels.forEach(m => {
+          initialStatus[m.name] = 'idle';
+      });
+      setTestingModelStatus(initialStatus);
+
+      const workingModels: ModelInfo[] = [];
+      const failedModelNames: string[] = [];
+
+      for (const model of knownModels) {
+          // 将当前测试模型的组件状态设为 testing
+          setTestingModelStatus(prev => ({ ...prev, [model.name]: 'testing' }));
+          
+          // 进行轻量测试提问
+          const success = await llmService.testModelAvailability(model.name, activeKey);
+          
+          if (success) {
+              setTestingModelStatus(prev => ({ ...prev, [model.name]: 'success' }));
+              workingModels.push(model);
+          } else {
+              setTestingModelStatus(prev => ({ ...prev, [model.name]: 'failed' }));
+              failedModelNames.push(model.name);
+          }
+          
+          // 稍微延迟一小会，提供更平滑的视觉滚屏体验，让人类可以看到测试进度的飞速流动
+          await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // 再次短暂停留让用户看清哪些失败了
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 自动移除报错不可用的模型，更新 knownModels
+      onUpdateKnownModels(workingModels);
+      setIsBatchTestingModels(false);
+
+      if (failedModelNames.length > 0) {
+          onShowToast(
+              lang === 'zh'
+                ? `批量测试已完成！自动剔除了 ${failedModelNames.length} 个报错模型，保留了 ${workingModels.length} 个可用模型。`
+                : lang === 'ja'
+                  ? `テスト完了！エラーが発生した ${failedModelNames.length} 個のモデルが削除され、${workingModels.length} 個が残りました。`
+                  : `Batch test completed! Removed ${failedModelNames.length} failed models, kept ${workingModels.length} working models.`,
+              'success'
+          );
+      } else {
+          onShowToast(
+              lang === 'zh'
+                ? '批量测试已完成！所有已知模型均可用！'
+                : lang === 'ja'
+                  ? 'テスト完了！すべてのモデルが正常に动作します。'
+                  : 'Batch test completed! All known models are working perfectly!',
+              'success'
+          );
+      }
+  };
+
+  /**
+   * 渲染每个模型对应的测试状态徽章
+   * @param modelName 模型名称
+   * @returns React.ReactNode 对应的徽章 UI 节点
+   */
+  const renderModelTestStatusBadge = (modelName: string) => {
+      const status = testingModelStatus[modelName];
+      if (!status || status === 'idle') {
+          return (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-900 text-gray-500">
+                  {lang === 'zh' ? '待测试' : lang === 'ja' ? '待機中' : 'Pending'}
+              </span>
+          );
+      }
+      if (status === 'testing') {
+          return (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400">
+                  <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                  {lang === 'zh' ? '测试中' : lang === 'ja' ? 'テスト中' : 'Testing'}
+              </span>
+          );
+      }
+      if (status === 'success') {
+          return (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-green-50 dark:bg-green-950/30 text-green-600 dark:text-green-400">
+                  {lang === 'zh' ? '可用' : lang === 'ja' ? '利用可能' : 'Available'}
+              </span>
+          );
+      }
+      return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400">
+              {lang === 'zh' ? '不可用' : lang === 'ja' ? 'エラー' : 'Failed'}
+          </span>
+      );
+  };
+
   // --- Rendering Helpers ---
 
   /**
@@ -624,17 +742,17 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
             {settings.enableKeyGrouping ? (
                 <div className="space-y-6">
                     {/* Add Group Input */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 items-center w-full">
                          <input 
                             type="text"
                             value={newGroupName}
                             onChange={(e) => setNewGroupName(e.target.value)}
                             placeholder={t('input.group_name_placeholder', lang)}
-                            className="input-standard"
+                            className="input-standard flex-1"
                         />
                         <button 
                             onClick={handleAddGroup}
-                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+                            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium flex items-center gap-2 whitespace-nowrap shrink-0 transition-colors"
                         >
                             <FolderPlus className="w-4 h-4" /> {t('action.add_group', lang)}
                         </button>
@@ -745,6 +863,98 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
             
             {/* Add Buttons (Always visible at the bottom) */}
             {renderAddButtons()}
+
+            {/* 已获取的模型池缓存管理 */}
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 shadow-sm overflow-hidden mt-4">
+                <div 
+                    className="bg-gray-50/50 dark:bg-gray-900/20 px-4 py-3 flex items-center justify-between cursor-pointer border-b border-gray-100 dark:border-gray-800"
+                    onClick={() => setIsModelsSectionExpanded(!isModelsSectionExpanded)}
+                >
+                    <div className="flex items-center gap-2">
+                        <div className="p-1 bg-amber-50 dark:bg-amber-900/20 rounded text-amber-600 dark:text-amber-400">
+                            <Sparkles className="w-4 h-4" />
+                        </div>
+                        <h4 className="font-semibold text-sm text-gray-800 dark:text-gray-200">
+                            {lang === 'zh' ? '已知模型缓存池' : lang === 'ja' ? '既知のモデルプール' : 'Known Models Pool'}
+                        </h4>
+                        <span className="text-xs text-gray-400 font-mono bg-gray-100 dark:bg-gray-900/50 px-1.5 py-0.5 rounded">
+                            {knownModels.length}
+                        </span>
+                    </div>
+                    <div className="text-gray-400">
+                        {isModelsSectionExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                    </div>
+                </div>
+                
+                {isModelsSectionExpanded && (
+                    <div className="p-4 space-y-4 animate-fade-in-up">
+                        {/* 顶栏控制 */}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="text-xs text-gray-500 dark:text-gray-400 max-w-md">
+                                {lang === 'zh' 
+                                  ? '这里的模型会作为聊天中可选择的模型。批量极轻量测试会依次对所有模型提问并自动剔除报错的不可用模型。' 
+                                  : lang === 'ja'
+                                    ? 'ここにあるモデルはチャットで選択可能になります。一括テストは各モデルに簡単な質問を行い、エラーのモデルを自動削除します。'
+                                    : 'These models are available in chat. Batch test will query each model with a mini request and remove failed ones automatically.'}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleBatchTestModels}
+                                    disabled={isBatchTestingModels || knownModels.length === 0}
+                                    className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-300 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                >
+                                    {isBatchTestingModels ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Network className="w-3.5 h-3.5" />
+                                    )}
+                                    {lang === 'zh' ? '批量轻量测试模型' : lang === 'ja' ? 'モデル一括テスト' : 'Batch Test Models'}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* 模型列表 */}
+                        <div className="border border-gray-100 dark:border-gray-800 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                            <table className="w-full text-left text-xs">
+                                <thead className="bg-gray-50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
+                                    <tr>
+                                        <th className="px-3 py-2 text-gray-500 font-semibold">{lang === 'zh' ? '模型标识符' : lang === 'ja' ? 'モデルID' : 'Model ID'}</th>
+                                        <th className="px-3 py-2 text-gray-500 font-semibold text-right">{lang === 'zh' ? '输入限制' : lang === 'ja' ? '入力制限' : 'Input Limit'}</th>
+                                        <th className="px-3 py-2 text-gray-500 font-semibold text-right">{lang === 'zh' ? '输出限制' : lang === 'ja' ? '出力制限' : 'Output Limit'}</th>
+                                        <th className="px-3 py-2 text-gray-500 font-semibold text-center w-24">{lang === 'zh' ? '测试状态' : lang === 'ja' ? 'テスト状態' : 'Test Status'}</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                                    {knownModels.length > 0 ? (
+                                        knownModels.map((model) => (
+                                            <tr key={model.name} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/10 transition-colors">
+                                                <td className="px-3 py-2 font-mono text-gray-700 dark:text-gray-300 font-medium">
+                                                    {model.name}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-mono text-gray-500">
+                                                    {model.inputTokenLimit ? model.inputTokenLimit.toLocaleString() : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-mono text-gray-500">
+                                                    {model.outputTokenLimit ? model.outputTokenLimit.toLocaleString() : '-'}
+                                                </td>
+                                                <td className="px-3 py-2 text-center">
+                                                    {renderModelTestStatusBadge(model.name)}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={4} className="px-3 py-6 text-center text-gray-400 italic">
+                                                {lang === 'zh' ? '暂无已知模型，请在密钥卡片中点击“获取可用模型”' : lang === 'ja' ? '利用可能なモデルはありません' : 'No known models. Click "Fetch Models" on API key cards.'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
     </div>
   );

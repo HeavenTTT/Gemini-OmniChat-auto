@@ -25,6 +25,9 @@ interface ChatInputProps {
   theme?: Theme;
   isSearchEnabled?: boolean;
   onToggleSearch?: (enabled: boolean) => void;
+  knownModels?: any[];
+  currentModel?: string;
+  onQuickChangeModel?: (modelName: string) => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -45,7 +48,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onGetTokenCount,
   theme,
   isSearchEnabled,
-  onToggleSearch
+  onToggleSearch,
+  knownModels = [],
+  currentModel = '',
+  onQuickChangeModel
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -220,6 +226,27 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     <FileText className="w-4 h-4" />
                     <span>{t('action.upload_file', language)}</span>
                  </button>
+
+                 {knownModels && knownModels.length > 0 && onQuickChangeModel && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs font-medium relative select-none">
+                        <Zap className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <select
+                            value={currentModel || ''}
+                            onChange={(e) => onQuickChangeModel(e.target.value)}
+                            className="bg-transparent border-none p-0 pr-4 text-xs font-medium cursor-pointer focus:ring-0 outline-none appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22none%22%3E%3Cpath%20d%3D%22M7%209l3%203%203-3%22%20stroke%3D%22%236B7280%22%20stroke-width%3D%221.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_center] bg-no-repeat text-gray-700 dark:text-gray-300 font-sans"
+                            disabled={isDisabled}
+                        >
+                            <option value="" disabled hidden className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                                {language === 'zh' ? '快速切换' : language === 'ja' ? 'クイック切替' : 'Switch Model'}
+                            </option>
+                            {knownModels.map(m => (
+                                <option key={m.name} value={m.name} className="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+                                    {m.displayName || m.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                 )}
 
                  {onToggleSearch && (
                     <button

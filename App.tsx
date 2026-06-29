@@ -475,6 +475,29 @@ const App: React.FC = () => {
     }
   }, [llmService]);
 
+  /**
+   * 对话框上方快速切换模型逻辑：
+   * 切换后将所有 API 密钥 (KeyConfigs) 的 model 字段同步更新为目标模型，并触发持久化与全局服务更新。
+   * @param modelName 选中的新模型名称
+   */
+  const handleQuickChangeModel = useCallback((modelName: string) => {
+    setApiKeys(prevKeys => {
+      const updated = prevKeys.map(key => ({
+        ...key,
+        model: modelName
+      }));
+      return updated;
+    });
+    
+    // 触发提示气泡，增加用户体验感知
+    const localizedMsg = settings.language === 'zh' 
+      ? `所有 API 密钥的模型已同步切换为：${modelName}` 
+      : settings.language === 'ja'
+        ? `すべての API キーのモデルが同期されました: ${modelName}`
+        : `All API keys have been synced to model: ${modelName}`;
+    addToast(localizedMsg, 'success');
+  }, [setApiKeys, settings.language, addToast]);
+
   const generateAutoMemory = async (currentMemory: string, userText: string, aiText: string) => {
       if (!llmService) return;
       const memoryPrompt = `
@@ -765,6 +788,9 @@ Instruction: Analyze the exchange and update the Existing Memory. Focus on prese
                 theme={settings.theme}
                 isSearchEnabled={settings.generation.googleSearch}
                 onToggleSearch={(enabled) => setSettings({ ...settings, generation: { ...settings.generation, googleSearch: enabled } })}
+                knownModels={knownModels}
+                currentModel={apiKeys.length > 0 ? (apiKeys.find(k => k.isActive)?.model || apiKeys[0].model) : ''}
+                onQuickChangeModel={handleQuickChangeModel}
              />
              <div className="text-center text-[10px] text-gray-400 dark:text-gray-600 pb-0 select-none">
                 {t('footer.ai_generated', settings.language)}{APP_VERSION}

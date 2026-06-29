@@ -440,4 +440,44 @@ export class LLMService {
           );
       });
   }
+
+  /**
+   * 极轻量测试特定模型是否可用
+   * @param modelId 模型名称/标识符
+   * @param keyConfig 用于测试的 API 密钥配置信息
+   * @returns 承诺返回布尔值表示模型是否能够顺利生成回应
+   */
+  public async testModelAvailability(modelId: string, keyConfig: KeyConfig): Promise<boolean> {
+    try {
+      const miniConfig: GenerationConfig = {
+        temperature: 0.1,
+        topP: 0.1,
+        topK: 1,
+        maxOutputTokens: 2,
+        stream: false
+      };
+      
+      if (keyConfig.provider === 'openai') {
+        if (!keyConfig.baseUrl) return false;
+        await this.openAIService.streamChat(
+          keyConfig.key, keyConfig.baseUrl, modelId, [], 
+          'Hi', undefined, undefined, miniConfig, undefined, undefined
+        );
+      } else if (keyConfig.provider === 'ollama') {
+        await this.ollamaService.streamChat(
+          keyConfig.baseUrl || '', modelId, [], 
+          'Hi', undefined, undefined, miniConfig, keyConfig.key, undefined, undefined
+        );
+      } else {
+        await this.googleService.streamChat(
+          keyConfig.key, modelId, [], 
+          'Hi', undefined, undefined, miniConfig, undefined, undefined
+        );
+      }
+      return true;
+    } catch (e) {
+      console.error(`Model ${modelId} testing failed:`, e);
+      return false;
+    }
+  }
 }
