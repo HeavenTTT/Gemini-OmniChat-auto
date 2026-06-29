@@ -48,9 +48,6 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
   // 导入文件的 input ref
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Derived from known models prop
-  const sharedGeminiModels = knownModels.map(m => m.name) || [];
-
   /**
    * 添加新的 API 密钥
    * Add a new API key to the list, optionally assigning it to a group.
@@ -483,16 +480,19 @@ export const ApiKeyManagement: React.FC<ApiKeyManagementProps> = ({
                             const existing = knownModels || [];
                             const merged = [...existing];
                             newModels.forEach(nm => {
-                                const idx = merged.findIndex(em => em.name === nm.name);
-                                if (idx !== -1) merged[idx] = nm;
-                                else merged.push(nm);
+                                const idx = merged.findIndex(em => em.name === nm.name && (em.provider || 'google') === (nm.provider || 'google'));
+                                if (idx !== -1) {
+                                    merged[idx] = { ...nm, testStatus: merged[idx].testStatus };
+                                } else {
+                                    merged.push(nm);
+                                }
                             });
                             onUpdateKnownModels(merged);
                         }}
                         lang={lang}
                         llmService={llmService}
                         onShowToast={onShowToast}
-                        sharedModels={sharedGeminiModels}
+                        knownModels={knownModels}
                         groups={settings.keyGroups}
                         enableGrouping={settings.enableKeyGrouping}
                         

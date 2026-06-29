@@ -46,6 +46,7 @@ export const action = {
   'action.export': '导出',
   'action.test_and_import': '测试并导入',
   'action.search_models': '搜索模型...',
+  'action.search': '搜索',
   'action.upload_script': '上传脚本',
   'action.download_example': '下载示例',
   'action.view_github_examples': '在 GitHub 查看示例',

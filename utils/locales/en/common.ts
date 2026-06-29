@@ -13,6 +13,7 @@ export const common = {
   'status.inactive': 'Inactive',
   'status.history': 'History',
   'status.no_history': 'No history yet',
+  'status.success': 'Success',
   'label.model': 'Model',
   'label.poll': 'Poll',
   'label.poll_count': 'Poll Count',

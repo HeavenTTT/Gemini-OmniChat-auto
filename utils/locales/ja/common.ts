@@ -13,6 +13,7 @@ export const common = {
   'status.inactive': '無効',
   'status.history': '履歴',
   'status.no_history': '履歴なし',
+  'status.success': '成功',
   'label.model': 'モデル',
   'label.poll': 'ポール',
   'label.poll_count': 'ポール回数',

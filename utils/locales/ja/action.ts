@@ -45,6 +45,7 @@ export const action = {
   'action.export': 'エクスポート',
   'action.test_and_import': 'テストしてインポート',
   'action.search_models': 'モデルを検索...',
+  'action.search': '検索',
   'action.upload_script': 'スクリプトをアップロード',
   'action.download_example': '例をダウンロード',
   'action.view_github_examples': 'GitHubで例を見る',

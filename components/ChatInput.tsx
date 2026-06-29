@@ -257,7 +257,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         disabled={isDisabled}
                     >
                         <Globe className="w-4 h-4" />
-                        <span>Search</span>
+                        <span>{t('action.search', language)}</span>
                     </button>
                  )}
                 </div>

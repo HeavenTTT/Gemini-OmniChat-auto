@@ -18,7 +18,7 @@ interface KeyConfigCardProps {
   lang: Language;
   llmService: LLMService | null;
   onShowToast: (message: string, type: 'success' | 'error' | 'info') => void;
-  sharedModels: string[];
+  knownModels: ModelInfo[];
   enableGrouping?: boolean;
   groups?: KeyGroup[];
   
@@ -39,7 +39,7 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
   lang, 
   llmService, 
   onShowToast, 
-  sharedModels, 
+  knownModels, 
   enableGrouping, 
   groups, 
   index,
@@ -171,10 +171,19 @@ export const KeyConfigCard: React.FC<KeyConfigCardProps> = ({
         return `${key.substring(0, 4)}****${key.substring(key.length - 4)}`;
     };
 
-    // Combine local availableModels with sharedModels if provider is google
-    const displayModels = config.provider === 'google' 
-        ? Array.from(new Set([...availableModels, ...sharedModels])) 
-        : availableModels;
+    // Combine local availableModels with knownModels, filtering out failed ones
+    const displayModels = Array.from(new Set([
+        ...availableModels,
+        ...knownModels
+            .filter(m => {
+                const p = m.provider || 'google';
+                return p === config.provider && m.testStatus !== 'failed';
+            })
+            .map(m => m.name)
+    ])).filter(name => {
+        const km = knownModels.find(m => m.name === name && (m.provider || 'google') === config.provider);
+        return !km || km.testStatus !== 'failed';
+    });
 
     const getProviderIcon = () => {
         switch (config.provider) {

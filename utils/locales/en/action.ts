@@ -45,6 +45,7 @@ export const action = {
   'action.export': 'Export',
   'action.test_and_import': 'Test & Import',
   'action.search_models': 'Search models...',
+  'action.search': 'Search',
   'action.upload_script': 'Upload Script',
   'action.download_example': 'Download Example',
   'action.view_github_examples': 'View Examples on GitHub',

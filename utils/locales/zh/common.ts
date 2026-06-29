@@ -13,6 +13,7 @@ export const common = {
   'status.inactive': '未启用',
   'status.history': '历史记录',
   'status.no_history': '暂无历史',
+  'status.success': '成功',
   'label.model': '模型',
   'label.poll': '轮询',
   'label.poll_count': '轮询次数',

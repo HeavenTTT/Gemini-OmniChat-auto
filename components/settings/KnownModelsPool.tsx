@@ -118,7 +118,7 @@ export const KnownModelsPool: React.FC<KnownModelsPoolProps> = ({
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        onUpdateKnownModels(workingModels);
+        onUpdateKnownModels([...currentModels]);
         setIsBatchTestingModels(false);
         isTestingActiveRef.current = false;
 
