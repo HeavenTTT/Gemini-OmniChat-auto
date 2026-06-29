@@ -33,6 +33,9 @@ interface ChatInterfaceProps {
   avatarVisibility: AvatarVisibility;
 }
 
+/**
+ * 渲染正在加载的秒数计时器组件。
+ */
 const LoadingTimer = () => {
   const [tenths, setTenths] = useState(0);
 
@@ -52,6 +55,9 @@ const LoadingTimer = () => {
   );
 };
 
+/**
+ * 聊天主界面组件，用于管理和展示整个会话的消息气泡流，并提供滚动的自动粘底等控制功能。
+ */
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
     messages, 
     isLoading, 
@@ -87,7 +93,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // --- Scroll Logic ---
 
-  // 1. Check if user is near bottom to enable/disable sticky mode
+  /**
+   * 监听滚动事件，检测用户是否主动向上滚动，以决定是否暂停自动触底。
+   */
   const handleScroll = () => {
     if (!scrollContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
@@ -100,8 +108,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     isUserScrolledUp.current = !isAtBottom;
   };
 
-  // 2. Callback passed to ChatMessage to trigger scroll on text expansion
-  // This ensures smooth scrolling even if the network request finished but animation is still playing
+  /**
+   * 将聊天容器滚动到底部，如果用户没有主动向上滚动。
+   */
   const scrollToBottom = useCallback(() => {
      if (scrollContainerRef.current && !isUserScrolledUp.current) {
          // Force scroll to absolute bottom
@@ -183,6 +192,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   }, [messages]);
 
+  /**
+   * 开始编辑某条特定的消息，重置二次确认删除状态。
+   */
   const startEditing = (msg: Message) => { 
     setEditingId(msg.id); 
     setConfirmDeleteId(null);
@@ -219,38 +231,42 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           className="flex-1 scrollbar-overlay p-2 md:p-4 h-full relative"
       >
         <div className="flex flex-col space-y-4 pb-4 min-h-0">
-          {messages.map((msg, index) => (
-              <div key={msg.id} data-role={msg.role}>
-                  <ChatMessage
-                      msg={msg}
-                      isEditing={editingId === msg.id}
-                      isConfirmingDelete={confirmDeleteId === msg.id}
-                      isLoading={isLoading}
-                      bubbleTransparency={bubbleTransparency}
-                      textWrapping={textWrapping}
-                      fontSize={fontSize}
-                      showModelName={showModelName}
-                      showGroupName={showGroupName}
-                      showResponseTimer={showResponseTimer}
-                      language={language}
-                      theme={theme}
-                      kirbyThemeColor={kirbyThemeColor}
-                      onEditMessage={onEditMessage}
-                      onDeleteMessage={onDeleteMessage}
-                      onRegenerate={onRegenerate}
-                      setEditingId={setEditingId}
-                      setConfirmDeleteId={setConfirmDeleteId}
-                      startEditing={startEditing}
-                      deleteTimerRef={deleteTimerRef}
-                      onShowToast={onShowToast}
-                      smoothAnimation={smoothAnimation}
-                      isLast={index === messages.length - 1}
-                      onScrollToBottom={scrollToBottom}
-                      avatarVisibility={avatarVisibility}
-                      onViewImage={setPreviewImageUrl}
-                  />
-              </div>
-          ))}
+          {messages.map((msg, index) => {
+              const isRecent = messages.length - index <= 6;
+              return (
+                  <div key={msg.id} data-role={msg.role}>
+                      <ChatMessage
+                          msg={msg}
+                          isEditing={editingId === msg.id}
+                          isConfirmingDelete={confirmDeleteId === msg.id}
+                          isLoading={isLoading}
+                          bubbleTransparency={bubbleTransparency}
+                          textWrapping={textWrapping}
+                          fontSize={fontSize}
+                          showModelName={showModelName}
+                          showGroupName={showGroupName}
+                          showResponseTimer={showResponseTimer}
+                          language={language}
+                          theme={theme}
+                          kirbyThemeColor={kirbyThemeColor}
+                          onEditMessage={onEditMessage}
+                          onDeleteMessage={onDeleteMessage}
+                          onRegenerate={onRegenerate}
+                          setEditingId={setEditingId}
+                          setConfirmDeleteId={setConfirmDeleteId}
+                          startEditing={startEditing}
+                          deleteTimerRef={deleteTimerRef}
+                          onShowToast={onShowToast}
+                          smoothAnimation={smoothAnimation}
+                          isLast={index === messages.length - 1}
+                          onScrollToBottom={scrollToBottom}
+                          avatarVisibility={avatarVisibility}
+                          onViewImage={setPreviewImageUrl}
+                          isRecent={isRecent}
+                      />
+                  </div>
+              );
+          })}
           
           {isLoading && (
               <div className={`flex justify-start w-full ${containerClass} mx-auto animate-fade-in-up px-2 md:px-0`} data-role="loading">

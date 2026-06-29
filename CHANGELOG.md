@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.6] - 2026-06-28
+### Added
+- **移动端消息气泡功能按钮优化 (Mobile Chat Bubble Action Buttons)**：
+  - 在手机模式（移动端）下，对话气泡的功能操作按钮（编辑、重新生成、删除）默认直接显示，无需再通过悬停（hover）触发，便于触摸屏用户操作。
+  - 限制仅在最近的 6 条消息记录中默认显示这些操作按钮控件，更早的消息记录默认隐藏操作按钮以保持界面整洁。
+  - 为功能按钮的隐藏和显示添加了平滑的折叠展开动画，展开形式为控件高度动态变化的平滑过渡动画（0.3s easeInOut）。
+  - 更新全局版本号至 `1.5.6`（包括 `package.json` 和 `types.ts`），使底部状态栏、设置等各处显示的软件版本保持同步。
+
 ## [1.5.4] - 2026-06-28
 ### Added
 - **Ollama 思考设置 (Ollama Think Mode)**：

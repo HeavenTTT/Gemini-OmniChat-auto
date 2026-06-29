@@ -1,6 +1,6 @@
-
 import React, { useRef, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import { User, X, Save, Edit2, RefreshCw, Trash2, Clock, Folder } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Message, Role, Language, TextWrappingMode, Theme, AvatarVisibility } from '../types';
 import { t } from '../utils/i18n';
 import { KirbyIcon } from './Kirby';
@@ -34,8 +34,12 @@ interface ChatMessageProps {
   onScrollToBottom?: () => void;
   avatarVisibility: AvatarVisibility;
   onViewImage?: (url: string) => void;
+  isRecent?: boolean;
 }
 
+/**
+ * 聊天消息气泡组件，负责渲染单条消息，支持动画、编辑、重新生成和删除。
+ */
 export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   msg,
   isEditing,
@@ -62,7 +66,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   isLast = false,
   onScrollToBottom,
   avatarVisibility,
-  onViewImage
+  onViewImage,
+  isRecent = true
 }) => {
   const safeText = msg.text || '';
   const [editText, setEditText] = useState(safeText);
@@ -136,18 +141,27 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
   // --- 处理方法 ---
 
+  /**
+   * 取消当前消息的编辑状态，重置编辑框文字并清除删除确认状态。
+   */
   const cancelEditing = () => { 
     setEditingId(null); 
     setEditText(''); 
     setConfirmDeleteId(null);
   };
 
+  /**
+   * 保存编辑后的文本，如果与原内容不同，则触发回调，然后重置状态。
+   */
   const saveEdit = () => { 
     if (editText.trim() !== safeText) onEditMessage(msg.id, editText); 
     setEditingId(null); 
     setConfirmDeleteId(null);
   };
 
+  /**
+   * 处理编辑输入框的键盘快捷键，按 Enter 键（不含 Shift）保存，按 Escape 键取消编辑。
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => { 
     if (e.key === 'Enter' && !e.shiftKey) { 
       e.preventDefault(); 
@@ -156,6 +170,9 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     if (e.key === 'Escape') cancelEditing(); 
   };
 
+  /**
+   * 处理删除按钮的点击。如果处于确认删除状态则执行删除回调，否则启动二次确认计时。
+   */
   const handleDeleteClick = () => {
     setEditingId(null);
     if (isConfirmingDelete) {
@@ -172,11 +189,17 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     }
   };
 
+  /**
+   * 触发重新生成对应消息的回调，并清除删除确认状态。
+   */
   const handleRegenerateClick = () => {
     onRegenerate(msg.id);
     setConfirmDeleteId(null);
-  }
+  };
 
+  /**
+   * 点击图片的处理逻辑，启动大图预览。
+   */
   const handleImageClick = (src: string) => {
       if (onViewImage) {
           onViewImage(src);
@@ -334,32 +357,43 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 </div>
                 )}
                 {!isLoading && !isEditing && (
-                <div className={`flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                    <button 
-                    onClick={() => startEditing(msg)} 
-                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    title={t('action.edit', language)}
-                    aria-label={t('action.edit_message', language)}
-                    >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                    onClick={handleRegenerateClick} 
-                    className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                    title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
-                    aria-label={t('action.regenerate', language)}
-                    >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                    onClick={handleDeleteClick} 
-                    className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
-                    title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
-                    aria-label={t('action.delete_message', language)}
-                    >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                </div>
+                <motion.div
+                    initial={{ height: isRecent ? 'auto' : 0 }}
+                    animate={{ height: isRecent ? 'auto' : 0 }}
+                    transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    className="overflow-hidden flex items-center"
+                >
+                    <div className={`flex items-center gap-2 transition-opacity duration-200 ${
+                        isRecent 
+                            ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100' 
+                            : 'opacity-0 pointer-events-none'
+                    }`}>
+                        <button 
+                        onClick={() => startEditing(msg)} 
+                        className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        title={t('action.edit', language)}
+                        aria-label={t('action.edit_message', language)}
+                        >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                        onClick={handleRegenerateClick} 
+                        className="p-4 md:p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        title={msg.role === Role.USER ? t('action.regenerate_from_user_message', language) : t('action.regenerate_response', language)}
+                        aria-label={t('action.regenerate', language)}
+                        >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                        onClick={handleDeleteClick} 
+                        className={`p-4 md:p-1 transition-colors ${isConfirmingDelete ? 'text-red-500 bg-red-50 dark:bg-red-900/20 rounded' : 'text-gray-400 hover:text-red-500'}`}
+                        title={isConfirmingDelete ? t('action.confirm_delete', language) : t('action.delete', language)}
+                        aria-label={t('action.delete_message', language)}
+                        >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                </motion.div>
                 )}
             </div>
             </div>
@@ -383,6 +417,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     prev.kirbyThemeColor === next.kirbyThemeColor &&
     prev.smoothAnimation === next.smoothAnimation &&
     prev.isLast === next.isLast &&
-    prev.avatarVisibility === next.avatarVisibility
+    prev.avatarVisibility === next.avatarVisibility &&
+    prev.isRecent === next.isRecent
   );
 });
